@@ -1,0 +1,5 @@
+﻿{
+  "type": "minecraft:crafting_shapeless",
+  "ingredients": [ { "item": "minecraft:bone" }, { "item": "minecraft:yellow_dye" } ],
+  "result": { "item": "barbarajones:yellow_teeth", "count": 1 }
+}

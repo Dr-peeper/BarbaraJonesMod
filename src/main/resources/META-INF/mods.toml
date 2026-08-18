@@ -1,0 +1,27 @@
+modLoader="javafml"
+loaderVersion="[47,)"
+license="All Rights Reserved"
+
+[[mods]]
+modId="barbarajones"
+version="${mod_version}"
+displayName="The Barbara Jones Mod"
+description='''
+Barbara Jones, Cayden Cobb, the Krave Monster, and a questline that ends in ten
+escalating apocalypses. Now with Terraria-style housing: Cayden will not live
+just anywhere.
+'''
+
+[[dependencies.barbarajones]]
+    modId="forge"
+    mandatory=true
+    versionRange="[47,)"
+    ordering="NONE"
+    side="BOTH"
+
+[[dependencies.barbarajones]]
+    modId="minecraft"
+    mandatory=true
+    versionRange="[1.20.1,1.21)"
+    ordering="NONE"
+    side="BOTH"

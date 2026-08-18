@@ -1,0 +1,5 @@
+﻿{
+  "type": "minecraft:crafting_shapeless",
+  "ingredients": [ { "item": "minecraft:string" }, { "item": "minecraft:red_dye" } ],
+  "result": { "item": "barbarajones:managers_tie", "count": 1 }
+}

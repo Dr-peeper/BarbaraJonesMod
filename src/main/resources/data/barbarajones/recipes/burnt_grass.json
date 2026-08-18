@@ -1,0 +1,5 @@
+﻿{
+  "type": "minecraft:crafting_shapeless",
+  "ingredients": [ { "item": "barbarajones:diced_grass" }, { "item": "barbarajones:blowtorch" } ],
+  "result": { "item": "barbarajones:burnt_grass", "count": 1 }
+}

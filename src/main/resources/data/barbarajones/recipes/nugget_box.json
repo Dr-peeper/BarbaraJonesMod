@@ -1,0 +1,5 @@
+﻿{
+  "type": "minecraft:crafting_shapeless",
+  "ingredients": [ { "item": "barbarajones:chicken_nuggets" }, { "item": "barbarajones:chicken_nuggets" }, { "item": "minecraft:paper" } ],
+  "result": { "item": "barbarajones:nugget_box", "count": 1 }
+}

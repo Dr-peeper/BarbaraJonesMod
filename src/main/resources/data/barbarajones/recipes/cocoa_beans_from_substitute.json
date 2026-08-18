@@ -1,0 +1,7 @@
+﻿{
+  "type": "minecraft:smelting",
+  "ingredient": { "item": "barbarajones:cocoa_substitute" },
+  "result": "minecraft:cocoa_beans",
+  "experience": 0.2,
+  "cookingtime": 200
+}

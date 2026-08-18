@@ -1,0 +1,5 @@
+﻿{
+  "type": "minecraft:crafting_shapeless",
+  "ingredients": [ { "item": "minecraft:snowball" }, { "item": "minecraft:paper" } ],
+  "result": { "item": "barbarajones:fake_cocaine", "count": 3 }
+}

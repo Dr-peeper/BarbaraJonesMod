@@ -1,0 +1,5 @@
+﻿{
+  "type": "minecraft:crafting_shapeless",
+  "ingredients": [ { "item": "barbarajones:rolled_joint" }, { "item": "minecraft:gold_ingot" } ],
+  "result": { "item": "barbarajones:golden_joint", "count": 1 }
+}

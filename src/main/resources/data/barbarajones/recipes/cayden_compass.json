@@ -1,0 +1,5 @@
+﻿{
+  "type": "minecraft:crafting_shapeless",
+  "ingredients": [ { "item": "minecraft:compass" }, { "item": "barbarajones:krave_cereal" }, { "item": "minecraft:lapis_lazuli" } ],
+  "result": { "item": "barbarajones:cayden_compass", "count": 1 }
+}

@@ -1,0 +1,5 @@
+﻿{
+  "type": "minecraft:crafting_shapeless",
+  "ingredients": [ { "item": "minecraft:black_wool" }, { "item": "minecraft:string" } ],
+  "result": { "item": "barbarajones:ski_mask", "count": 1 }
+}

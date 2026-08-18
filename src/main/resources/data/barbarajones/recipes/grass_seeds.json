@@ -1,0 +1,5 @@
+﻿{
+  "type": "minecraft:crafting_shapeless",
+  "ingredients": [ { "item": "barbarajones:handful_of_grass" }, { "item": "minecraft:wheat_seeds" } ],
+  "result": { "item": "barbarajones:grass_seeds", "count": 2 }
+}

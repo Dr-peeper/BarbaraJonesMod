@@ -1,0 +1,5 @@
+﻿{
+  "type": "minecraft:crafting_shapeless",
+  "ingredients": [ { "item": "minecraft:stick" }, { "item": "minecraft:bone" } ],
+  "result": { "item": "barbarajones:toothbrush", "count": 1 }
+}

@@ -1,0 +1,5 @@
+﻿{
+  "type": "minecraft:crafting_shapeless",
+  "ingredients": [ { "item": "minecraft:bowl" }, { "item": "barbarajones:krave_cereal" }, { "item": "barbarajones:krave_milk" } ],
+  "result": { "item": "barbarajones:cereal_bowl", "count": 1 }
+}

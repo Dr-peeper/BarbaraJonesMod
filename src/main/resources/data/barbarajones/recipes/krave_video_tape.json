@@ -1,0 +1,5 @@
+﻿{
+  "type": "minecraft:crafting_shapeless",
+  "ingredients": [ { "item": "minecraft:paper" }, { "item": "barbarajones:krave_cereal" }, { "item": "minecraft:redstone" } ],
+  "result": { "item": "barbarajones:krave_video_tape", "count": 1 }
+}

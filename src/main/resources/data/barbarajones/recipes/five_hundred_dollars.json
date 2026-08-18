@@ -1,0 +1,5 @@
+﻿{
+  "type": "minecraft:crafting_shapeless",
+  "ingredients": [ { "item": "minecraft:gold_ingot" }, { "item": "minecraft:gold_ingot" }, { "item": "minecraft:paper" } ],
+  "result": { "item": "barbarajones:five_hundred_dollars", "count": 1 }
+}

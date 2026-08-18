@@ -1,0 +1,5 @@
+﻿{
+  "type": "minecraft:crafting_shapeless",
+  "ingredients": [ { "item": "barbarajones:donut" }, { "item": "barbarajones:donut" }, { "item": "barbarajones:donut" }, { "item": "minecraft:paper" } ],
+  "result": { "item": "barbarajones:donut_box", "count": 1 }
+}

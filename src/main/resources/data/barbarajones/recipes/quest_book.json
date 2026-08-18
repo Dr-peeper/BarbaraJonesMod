@@ -1,0 +1,5 @@
+﻿{
+  "type": "minecraft:crafting_shapeless",
+  "ingredients": [ { "item": "minecraft:book" }, { "item": "barbarajones:krave_cereal" } ],
+  "result": { "item": "barbarajones:quest_book", "count": 1 }
+}

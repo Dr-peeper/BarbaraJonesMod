@@ -1,0 +1,5 @@
+﻿{
+  "type": "minecraft:crafting_shapeless",
+  "ingredients": [ { "item": "minecraft:leather" }, { "item": "minecraft:iron_ingot" } ],
+  "result": { "item": "barbarajones:moms_belt", "count": 1 }
+}

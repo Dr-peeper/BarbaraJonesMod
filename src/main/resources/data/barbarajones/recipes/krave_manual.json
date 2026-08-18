@@ -1,0 +1,8 @@
+{
+  "type": "minecraft:crafting_shapeless",
+  "ingredients": [
+    { "item": "minecraft:book" },
+    { "item": "barbarajones:krave_box" }
+  ],
+  "result": { "item": "barbarajones:krave_manual", "count": 1 }
+}

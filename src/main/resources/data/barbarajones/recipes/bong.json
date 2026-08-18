@@ -1,0 +1,5 @@
+﻿{
+  "type": "minecraft:crafting_shapeless",
+  "ingredients": [ { "item": "minecraft:glass_bottle" }, { "item": "minecraft:iron_ingot" }, { "item": "barbarajones:diced_grass" } ],
+  "result": { "item": "barbarajones:bong", "count": 1 }
+}

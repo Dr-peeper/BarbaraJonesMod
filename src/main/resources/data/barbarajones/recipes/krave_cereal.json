@@ -1,0 +1,5 @@
+﻿{
+  "type": "minecraft:crafting_shapeless",
+  "ingredients": [ { "item": "minecraft:wheat" }, { "item": "minecraft:wheat" }, { "item": "minecraft:sugar" }, { "item": "minecraft:cocoa_beans" } ],
+  "result": { "item": "barbarajones:krave_cereal", "count": 2 }
+}

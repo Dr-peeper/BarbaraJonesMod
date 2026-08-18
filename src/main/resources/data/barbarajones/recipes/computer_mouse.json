@@ -1,0 +1,5 @@
+﻿{
+  "type": "minecraft:crafting_shapeless",
+  "ingredients": [ { "item": "minecraft:iron_ingot" }, { "item": "minecraft:redstone" }, { "item": "minecraft:string" } ],
+  "result": { "item": "barbarajones:computer_mouse", "count": 1 }
+}

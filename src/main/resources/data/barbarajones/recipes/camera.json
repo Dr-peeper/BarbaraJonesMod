@@ -1,0 +1,5 @@
+﻿{
+  "type": "minecraft:crafting_shapeless",
+  "ingredients": [ { "item": "minecraft:iron_ingot" }, { "item": "minecraft:glass" }, { "item": "minecraft:redstone" } ],
+  "result": { "item": "barbarajones:camera", "count": 1 }
+}

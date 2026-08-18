@@ -1,0 +1,5 @@
+﻿{
+  "type": "minecraft:crafting_shapeless",
+  "ingredients": [ { "item": "minecraft:bread" }, { "item": "minecraft:sugar" } ],
+  "result": { "item": "barbarajones:toaster_pastries", "count": 1 }
+}

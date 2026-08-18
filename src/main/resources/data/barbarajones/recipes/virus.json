@@ -1,0 +1,5 @@
+﻿{
+  "type": "minecraft:crafting_shapeless",
+  "ingredients": [ { "item": "barbarajones:minecraft_disc" }, { "item": "minecraft:rotten_flesh" } ],
+  "result": { "item": "barbarajones:virus", "count": 1 }
+}

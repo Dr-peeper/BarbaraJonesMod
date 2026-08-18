@@ -1,0 +1,5 @@
+﻿{
+  "type": "minecraft:crafting_shapeless",
+  "ingredients": [ { "item": "barbarajones:handful_of_grass" }, { "item": "barbarajones:grass_knife" } ],
+  "result": { "item": "barbarajones:diced_grass", "count": 2 }
+}

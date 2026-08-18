@@ -1,0 +1,5 @@
+﻿{
+  "type": "minecraft:crafting_shapeless",
+  "ingredients": [ { "item": "minecraft:paper" }, { "item": "minecraft:paper" }, { "item": "minecraft:paper" } ],
+  "result": { "item": "barbarajones:child_support_papers", "count": 1 }
+}

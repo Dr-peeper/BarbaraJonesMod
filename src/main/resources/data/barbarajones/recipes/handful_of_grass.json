@@ -1,0 +1,5 @@
+﻿{
+  "type": "minecraft:crafting_shapeless",
+  "ingredients": [ { "item": "minecraft:tall_grass" }, { "item": "minecraft:tall_grass" }, { "item": "minecraft:tall_grass" } ],
+  "result": { "item": "barbarajones:handful_of_grass", "count": 1 }
+}

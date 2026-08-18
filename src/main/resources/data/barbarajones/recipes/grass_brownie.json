@@ -1,0 +1,5 @@
+﻿{
+  "type": "minecraft:crafting_shapeless",
+  "ingredients": [ { "item": "barbarajones:diced_grass" }, { "item": "minecraft:cocoa_beans" }, { "item": "minecraft:wheat" } ],
+  "result": { "item": "barbarajones:grass_brownie", "count": 1 }
+}

@@ -1,0 +1,6 @@
+﻿{
+  "type": "minecraft:crafting_shaped",
+  "pattern": [ "KK ", "KS ", " S " ],
+  "key": { "S": { "item": "minecraft:stick" }, "K": { "item": "barbarajones:krave_cereal" } },
+  "result": { "item": "barbarajones:krave_axe", "count": 1 }
+}

@@ -1,0 +1,5 @@
+﻿{
+  "type": "minecraft:crafting_shapeless",
+  "ingredients": [ { "item": "minecraft:potato" }, { "item": "minecraft:potato" } ],
+  "result": { "item": "barbarajones:fries", "count": 2 }
+}
