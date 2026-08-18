@@ -165,6 +165,7 @@ public final class ModItems {
                     .effect(() -> new MobEffectInstance(MobEffects.HUNGER, 400), 1.0F)
                     .effect(() -> new MobEffectInstance(MobEffects.CONFUSION, 160), 0.6F).build());
     public static final RegistryObject<Item> FIVE_HUNDRED_DOLLARS = plain("five_hundred_dollars", 16);
+    public static final RegistryObject<Item> DOLLARS = plain("dollars", 64);
     public static final RegistryObject<Item> FAKE_COCAINE = edible("fake_cocaine",
             food(0, 0.0F).alwaysEat()
                     .effect(() -> new MobEffectInstance(MobEffects.MOVEMENT_SLOWDOWN, 200), 1.0F).build());

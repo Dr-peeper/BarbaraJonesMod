@@ -3,6 +3,8 @@ package com.barbarajones.client;
 import com.barbarajones.BarbaraJonesMod;
 import com.barbarajones.client.render.BarbaraRenderer;
 import com.barbarajones.client.render.CaydenRenderer;
+import com.barbarajones.client.render.DuhlWolRenderer;
+import com.barbarajones.client.render.DuhlWolCarRenderer;
 import com.barbarajones.client.render.GiantKraveBoxRenderer;
 import com.barbarajones.client.render.HumanoidLikeRenderer;
 import com.barbarajones.client.render.KraveMeteorRenderer;
@@ -38,6 +40,8 @@ public final class ClientSetup {
                 ctx -> new HumanoidLikeRenderer<>(ctx, "mom", 0.5F));
         event.registerEntityRenderer(ModEntities.PLUG.get(),
                 ctx -> new HumanoidLikeRenderer<>(ctx, "plug", 0.5F));
+        event.registerEntityRenderer(ModEntities.DUHL_WOL.get(), DuhlWolRenderer::new);
+        event.registerEntityRenderer(ModEntities.DUHL_WOL_CAR.get(), DuhlWolCarRenderer::new);
 
         event.registerEntityRenderer(ModEntities.METEOR.get(), KraveMeteorRenderer::new);
         event.registerEntityRenderer(ModEntities.GIANT_BOX.get(), GiantKraveBoxRenderer::new);

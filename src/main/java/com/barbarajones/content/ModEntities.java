@@ -4,6 +4,8 @@ import com.barbarajones.BarbaraJonesMod;
 import com.barbarajones.entity.BarbaraJones;
 import com.barbarajones.entity.CaydenCobb;
 import com.barbarajones.entity.Daniel;
+import com.barbarajones.entity.DuhlWol;
+import com.barbarajones.entity.DuhlWolCar;
 import com.barbarajones.entity.GiantKraveBox;
 import com.barbarajones.entity.KraveMeteor;
 import com.barbarajones.entity.KraveMonster;
@@ -67,6 +69,18 @@ public final class ModEntities {
                     .of(ThePlug::new, MobCategory.MONSTER)
                     .sized(0.6F, 1.9F).clientTrackingRange(16)
                     .build("the_plug"));
+
+    public static final RegistryObject<EntityType<DuhlWol>> DUHL_WOL =
+            ENTITIES.register("duhl_wol", () -> EntityType.Builder
+                    .of(DuhlWol::new, MobCategory.MONSTER)
+                    .sized(0.6F, 1.9F).clientTrackingRange(16)
+                    .build("duhl_wol"));
+
+    public static final RegistryObject<EntityType<DuhlWolCar>> DUHL_WOL_CAR =
+            ENTITIES.register("duhl_wol_car", () -> EntityType.Builder
+                    .<DuhlWolCar>of(DuhlWolCar::new, MobCategory.MISC)
+                    .sized(1.8F, 1.6F).clientTrackingRange(24).updateInterval(3)
+                    .build("duhl_wol_car"));
 
     // ---- cinematic / projectile entities (no spawn eggs) -------------------
 

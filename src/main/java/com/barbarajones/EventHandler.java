@@ -13,6 +13,8 @@ import net.minecraft.ChatFormatting;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.network.chat.Component;
 import net.minecraft.server.level.ServerLevel;
+import net.minecraft.sounds.SoundEvents;
+import net.minecraft.sounds.SoundSource;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.entity.player.Player;
@@ -88,6 +90,67 @@ public class EventHandler {
         // Sweep the whole graph: any collect quest whose items are now all in the
         // inventory auto-completes, and milestones cascade behind them.
         Quests.tick(player);
+
+        // Duhl Wol: daily spawn and tracking
+        tickDuhlWol(player);
+    }
+
+    private void tickDuhlWol(Player player) {
+        if (player.level().isClientSide) {
+            return;
+        }
+        CompoundTag persist = persisted(player);
+        long gameDay = player.level().getDayTime() / 24000L;
+        int lastDay = persist.getInt("DuhlLastDay");
+
+        // Spawn Duhl Wol on a new day if he hasn't been paid yet
+        if (gameDay > lastDay && !persist.getBoolean("DuhlPaidToday")) {
+            persist.putInt("DuhlLastDay", (int) gameDay);
+            spawnDuhlWol(player);
+        }
+
+        // Reset the "paid" flag every new day
+        if (gameDay > lastDay) {
+            persist.putBoolean("DuhlPaidToday", false);
+        }
+    }
+
+    private void spawnDuhlWol(Player player) {
+        ServerLevel level = player.serverLevel();
+        if (level == null) {
+            return;
+        }
+        try {
+            com.barbarajones.entity.DuhlWol duhl = ModEntities.DUHL_WOL.get().create(level);
+            if (duhl != null) {
+                // Spawn near the player
+                duhl.setPos(player.getX() + 10.0D, player.getY(), player.getZ() + 10.0D);
+                int stage = player.getRandom().nextInt(3);   // random stage 0-2 (dirt, stone, andesite)
+                duhl.setOweStage(stage);
+                duhl.setTimer(6000);   // 5 minutes (300 ticks * 20 = 6000)
+                level.addFreshEntity(duhl);
+
+                // Spawn the car
+                com.barbarajones.entity.DuhlWolCar car = ModEntities.DUHL_WOL_CAR.get().create(level);
+                if (car != null) {
+                    double startX = player.getX() + 20.0D;
+                    double startZ = player.getZ() + 20.0D;
+                    car.setPos(startX, player.getY(), startZ);
+                    car.setState(0);   // arriving
+                    car.setTarget(player.getX() + 10.0D, player.getZ() + 10.0D);
+                    level.addFreshEntity(car);
+                    level.playSound(null, player.blockPosition(), SoundEvents.GENERIC_EXPLODE,
+                            SoundSource.MASTER, 1.2F, 0.5F);   // car horn sound
+                }
+
+                player.sendSystemMessage(Component.literal(ChatFormatting.DARK_RED + "" + ChatFormatting.BOLD
+                        + "Duhl Wol pulls up in his car, jumps out, and looks you dead in the eyes."));
+                player.sendSystemMessage(Component.literal(ChatFormatting.GRAY
+                        + "Duhl Wol: \"Yo, where's my " + duhl.getWantedItem().getHoverName().getString() + "? You got 5 minutes.\""));
+            }
+        } catch (Throwable err) {
+            LOGGER.error("Failed to spawn Duhl Wol", err);
+        }
     }
 
     /** Boss and Plug deaths advance the quest; pet deaths trigger the apocalypse. */
