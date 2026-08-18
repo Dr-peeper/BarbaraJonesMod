@@ -22,8 +22,13 @@ import java.util.function.Consumer;
  */
 public final class ModFluids {
 
+    // ForgeRegistries.FLUID_TYPES.get() resolves eagerly and can be null this
+    // early in mod construction (crashed on launch: NPE in getRegistryKey()
+    // because "reg" was null). The ResourceKey-based overload resolves lazily
+    // instead, which is the same pattern DeferredRegister uses internally for
+    // vanilla registries and is safe to call this early.
     public static final DeferredRegister<FluidType> FLUID_TYPES =
-            DeferredRegister.create(ForgeRegistries.FLUID_TYPES.get(), BarbaraJonesMod.MODID);
+            DeferredRegister.create(ForgeRegistries.Keys.FLUID_TYPES, BarbaraJonesMod.MODID);
     public static final DeferredRegister<Fluid> FLUIDS =
             DeferredRegister.create(ForgeRegistries.FLUIDS, BarbaraJonesMod.MODID);
 
