@@ -124,17 +124,24 @@ public class EventHandler {
             Player owner = cayden.getOwner() instanceof Player p ? p : null;
             if (cayden.isTame() && ownerIsNear(owner, cayden)
                     && !KraveApocalypse.isActiveNear(level, cayden.position())) {
+                int stage = nextDeathStage(owner);
                 KraveApocalypse.start(level, cayden.position(), killer, owner,
-                        true, cayden.getKraveFed(), cayden.isRageUnlocked(), nextDeathStage(owner));
+                        true, cayden.getKraveFed(), cayden.isRageUnlocked(), stage, isEndless(owner));
             }
         } else if (dead instanceof BarbaraJones barbara) {
             Player owner = barbara.getPetOwner();
             if (barbara.isPet() && ownerIsNear(owner, barbara)
                     && !KraveApocalypse.isActiveNear(level, barbara.position())) {
+                int stage = nextDeathStage(owner);
                 KraveApocalypse.start(level, barbara.position(), killer, owner,
-                        false, 0, false, nextDeathStage(owner));
+                        false, 0, false, stage, isEndless(owner));
             }
         }
+    }
+
+    /** Whether THIS player has crossed the 11-death threshold (see nextDeathStage). */
+    private boolean isEndless(@Nullable Player owner) {
+        return owner != null && persisted(owner).getBoolean("KraveEndless");
     }
 
     /**
@@ -158,7 +165,6 @@ public class EventHandler {
                 owner.sendSystemMessage(Component.literal(ChatFormatting.DARK_RED
                         + "It does not stop now. It never stops now."));
             }
-            KraveApocalypse.setEndless(true);
             return 10;
         }
         return count;

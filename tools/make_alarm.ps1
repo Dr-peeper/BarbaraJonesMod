@@ -3,10 +3,19 @@
 # Loopable: exactly 2.0s, starts and ends at zero crossing.
 $ErrorActionPreference = 'Stop'
 
-$ffmpeg = 'C:\Users\ADMIN\BarbaraJonesMod\.tools\ffmpeg\ffmpeg.exe'
-if (-not (Test-Path $ffmpeg)) { throw "ffmpeg not found at $ffmpeg" }
+$repoRoot = Split-Path -Parent $PSScriptRoot
+$candidates = @(
+    "$repoRoot\.tools\ffmpeg\ffmpeg.exe",
+    'C:\Users\ADMIN\BarbaraJonesMod\.tools\ffmpeg\ffmpeg.exe'
+)
+$ffmpeg = $candidates | Where-Object { Test-Path $_ } | Select-Object -First 1
+if (-not $ffmpeg) {
+    $onPath = Get-Command ffmpeg.exe -ErrorAction SilentlyContinue
+    if ($onPath) { $ffmpeg = $onPath.Source }
+}
+if (-not $ffmpeg) { throw "ffmpeg.exe not found. Checked: $($candidates -join ', '), and PATH. Put a copy at $repoRoot\.tools\ffmpeg\ffmpeg.exe or install it on PATH." }
 
-$outDir = 'C:\Users\ADMIN\BarbaraJonesMod1201\src\main\resources\assets\barbarajones\sounds'
+$outDir = "$repoRoot\src\main\resources\assets\barbarajones\sounds"
 $wav    = Join-Path $env:TEMP 'cayden_alarm.wav'
 $ogg    = Join-Path $outDir  'cayden_alarm.ogg'
 

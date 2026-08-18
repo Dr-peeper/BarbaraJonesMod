@@ -1,5 +1,4 @@
-{
-  "subtitles.barbarajones.alarm": "CAYDEN IS DYING",
+﻿{
   "itemGroup.barbarajones.main": "Barbara Jones",
   "item.barbarajones.handful_of_grass": "Handful of Grass",
   "item.barbarajones.diced_grass": "Diced Grass",
@@ -29,7 +28,6 @@
   "item.barbarajones.krave_cereal": "Krave Cereal",
   "item.barbarajones.krave_box": "Krave Box",
   "item.barbarajones.quest_book": "Krave Quest Book",
-  "item.barbarajones.krave_manual": "The Krave Manual",
   "item.barbarajones.recipe_book": "Barbara's Cookbook",
   "item.barbarajones.ashtray": "Barbara's Ashtray",
   "item.barbarajones.grass_seeds": "Premium Grass Seeds",
@@ -67,6 +65,7 @@
   "item.barbarajones.cayden_compass": "Cayden Compass",
   "item.barbarajones.roasted_husk": "Roasted Husk",
   "item.barbarajones.cocoa_substitute": "Cocoa Substitute",
+  "item.barbarajones.krave_cleanse": "Krave Cleanse",
   "entity.barbarajones.barbara_jones": "Barbara Jones",
   "entity.barbarajones.cayden_cobb": "Cayden Cobb",
   "entity.barbarajones.krave_monster": "The Krave Monster",

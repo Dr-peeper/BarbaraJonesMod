@@ -1,7 +1,7 @@
 # v6 additions: Krave tool set, Cayden Compass, and the cocoa-substitute chain.
 # Generates icons, item models and recipe JSON for each.
 Add-Type -AssemblyName System.Drawing
-$root = 'C:\Users\ADMIN\BarbaraJonesMod1201'
+$root = Split-Path -Parent $PSScriptRoot
 $idir = "$root\src\main\resources\assets\barbarajones\textures\item"
 $mdir = "$root\src\main\resources\assets\barbarajones\models\item"
 $rdir = "$root\src\main\resources\data\barbarajones\recipes"

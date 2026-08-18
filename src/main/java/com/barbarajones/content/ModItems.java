@@ -4,6 +4,7 @@ import com.barbarajones.BarbaraJonesMod;
 import com.barbarajones.item.CaydenCompassItem;
 import com.barbarajones.item.ComputerMouseItem;
 import com.barbarajones.item.HousingQueryItem;
+import com.barbarajones.item.KraveCleanseItem;
 import com.barbarajones.item.KraveTools;
 import com.barbarajones.item.JointItem;
 import com.barbarajones.item.KraveBoxItem;
@@ -197,4 +198,9 @@ public final class ModItems {
 
     public static final RegistryObject<Item> CAYDEN_COMPASS =
             ITEMS.register("cayden_compass", () -> new CaydenCompassItem(props().stacksTo(1)));
+
+    // ---- the escape hatch (see Config.ALLOW_KRAVE_CLEANSE) -------------------
+
+    public static final RegistryObject<Item> KRAVE_CLEANSE =
+            ITEMS.register("krave_cleanse", () -> new KraveCleanseItem(props().stacksTo(1)));
 }

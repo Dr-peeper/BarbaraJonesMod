@@ -1,5 +1,6 @@
 # Generates en_us.json from the item registry names, so nothing shows a raw key.
-$new = 'C:\Users\ADMIN\BarbaraJonesMod1201\src\main\resources\assets\barbarajones'
+$repoRoot = Split-Path -Parent $PSScriptRoot
+$new = "$repoRoot\src\main\resources\assets\barbarajones"
 New-Item -ItemType Directory -Force "$new\lang" | Out-Null
 
 $names = [ordered]@{
@@ -26,6 +27,7 @@ $names = [ordered]@{
   krave_pickaxe='Krave Pickaxe'; krave_sword='Krave Sword'; krave_axe='Krave Axe'
   krave_shovel='Krave Shovel'; krave_hoe='Krave Hoe'; cayden_compass='Cayden Compass'
   roasted_husk='Roasted Husk'; cocoa_substitute='Cocoa Substitute'
+  krave_cleanse='Krave Cleanse'
 }
 $entities = [ordered]@{
   barbara_jones='Barbara Jones'; cayden_cobb='Cayden Cobb'; krave_monster='The Krave Monster'

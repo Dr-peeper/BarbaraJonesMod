@@ -49,22 +49,7 @@ import java.util.List;
 public class KraveApocalypse {
 
     private static final List<KraveApocalypse> ACTIVE = new ArrayList<>();
-
-    /**
-     * ENDLESS MODE. Armed permanently on a player's eleventh pet death. From then
-     * on every apocalypse re-arms itself the moment it finishes: the sky never
-     * clears, the meteors never stop, the world simply keeps ending.
-     */
-    private static boolean endless = false;
     private static int endlessCooldown = 0;
-
-    public static void setEndless(boolean on) {
-        endless = on;
-    }
-
-    public static boolean isEndless() {
-        return endless;
-    }
 
     public static final String[] STAGE_NAME = {
         "The Craving", "The O's", "The Spilled Pibb", "Diced", "The Torching",
@@ -79,6 +64,15 @@ public class KraveApocalypse {
     private final int kraveFed;
     private final boolean kraveRage;
     private final int stage;
+    /**
+     * Per-PLAYER endless flag, set from that player's own persisted KraveEndless
+     * data at start(). Deliberately not a static/global flag: it used to be, which
+     * meant one player crossing the 11-death threshold would also re-arm the
+     * apocalypse for any other player whose (unrelated, sub-11) apocalypse ended
+     * while the global flag was set. Each instance now only re-arms for its own
+     * owner, based on that owner's own death count.
+     */
+    private final boolean endlessArmed;
 
     private int t = 0;
     private int collected = 0;
@@ -90,10 +84,11 @@ public class KraveApocalypse {
 
     private KraveApocalypse(ServerLevel level, Vec3 pos, @Nullable LivingEntity killer,
                             @Nullable Player owner, boolean isCayden, int kraveFed,
-                            boolean kraveRage, int stage) {
+                            boolean kraveRage, int stage, boolean endlessArmed) {
         this.level = level; this.pos = pos; this.killer = killer; this.owner = owner;
         this.isCayden = isCayden; this.kraveFed = kraveFed; this.kraveRage = kraveRage;
         this.stage = Math.max(1, Math.min(10, stage));
+        this.endlessArmed = endlessArmed;
 
         if (this.stage >= 6) {
             this.wrathEnd = 200 + this.stage * 30;
@@ -106,11 +101,11 @@ public class KraveApocalypse {
 
     public static void start(ServerLevel level, Vec3 pos, @Nullable LivingEntity killer,
                              @Nullable Player owner, boolean isCayden, int kraveFed,
-                             boolean kraveRage, int stage) {
+                             boolean kraveRage, int stage, boolean endlessArmed) {
         if (isActiveNear(level, pos)) {
             return;   // one at a time: without this, the respawned pet dying loops forever
         }
-        ACTIVE.add(new KraveApocalypse(level, pos, killer, owner, isCayden, kraveFed, kraveRage, stage));
+        ACTIVE.add(new KraveApocalypse(level, pos, killer, owner, isCayden, kraveFed, kraveRage, stage, endlessArmed));
     }
 
     /** True if an apocalypse is running near this position. */
@@ -140,14 +135,14 @@ public class KraveApocalypse {
             if (done) {
                 a.send(PacketApocalypse.PHASE_END, 0);   // always end cleanly
                 ACTIVE.remove(a);
-                if (endless) {
+                if (a.endlessArmed) {
                     a.rearm();
                 }
             }
         }
     }
 
-    /** ENDLESS MODE: the moment one apocalypse ends, the next one begins. */
+    /** ENDLESS MODE: the moment one apocalypse ends, the next one begins - for THIS owner only. */
     private void rearm() {
         if (this.owner == null || !this.owner.isAlive() || endlessCooldown > 0) {
             return;
@@ -155,7 +150,7 @@ public class KraveApocalypse {
         endlessCooldown = 60;   // one breath. that is all you get.
         Vec3 next = this.owner.position();
         ACTIVE.add(new KraveApocalypse(this.level, next, this.killer, this.owner,
-                this.isCayden, this.kraveFed, this.kraveRage, 10));
+                this.isCayden, this.kraveFed, this.kraveRage, 10, true));
         this.owner.sendSystemMessage(Component.literal(ChatFormatting.DARK_RED
                 + "It is not over. It is never over."));
     }

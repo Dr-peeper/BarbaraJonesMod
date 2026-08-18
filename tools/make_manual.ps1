@@ -1,7 +1,8 @@
 # Generates the Krave Manual item icon + its model, and wires the recipe/lang.
 Add-Type -AssemblyName System.Drawing
 
-$root = 'C:\Users\ADMIN\BarbaraJonesMod1201\src\main\resources'
+$repoRoot = Split-Path -Parent $PSScriptRoot
+$root = "$repoRoot\src\main\resources"
 $idir = "$root\assets\barbarajones\textures\item"
 $mdir = "$root\assets\barbarajones\models\item"
 $rdir = "$root\data\barbarajones\recipes"

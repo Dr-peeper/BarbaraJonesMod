@@ -1,9 +1,13 @@
 # Ports every asset from the 1.7.10 mod into the 1.20.1 layout and generates
 # the JSON data files modern Minecraft needs (item models, recipes, sounds.json,
 # lang). Idempotent - safe to re-run.
+$repoRoot = Split-Path -Parent $PSScriptRoot
+# $old points at the legacy 1.7.10 project, which predates this repo and isn't
+# part of it - this migration already ran once and its output is what's in
+# src/ today. Only needed again if you have that old project checked out too.
 $old  = 'C:\Users\ADMIN\BarbaraJonesMod\src\main\resources\assets\barbarajones'
-$new  = 'C:\Users\ADMIN\BarbaraJonesMod1201\src\main\resources\assets\barbarajones'
-$data = 'C:\Users\ADMIN\BarbaraJonesMod1201\src\main\resources\data\barbarajones'
+$new  = "$repoRoot\src\main\resources\assets\barbarajones"
+$data = "$repoRoot\src\main\resources\data\barbarajones"
 
 foreach($d in @("$new\textures\item","$new\textures\entity","$new\textures\gui","$new\sounds",
                 "$new\models\item","$new\lang","$data\recipes","$data\loot_tables\entities")){

@@ -1,0 +1,9 @@
+﻿{
+  "type": "minecraft:crafting_shapeless",
+  "ingredients": [
+    { "item": "minecraft:milk_bucket" },
+    { "item": "barbarajones:quest_book" },
+    { "item": "barbarajones:handful_of_grass" }
+  ],
+  "result": { "item": "barbarajones:krave_cleanse", "count": 1 }
+}
