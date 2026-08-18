@@ -23,6 +23,13 @@ public final class ModNetwork {
     public static void register() {
         CHANNEL.registerMessage(0, PacketApocalypse.class,
                 PacketApocalypse::encode, PacketApocalypse::decode, PacketApocalypse::handle);
+        CHANNEL.registerMessage(1, PacketCaydenStatus.class,
+                PacketCaydenStatus::encode, PacketCaydenStatus::decode, PacketCaydenStatus::handle);
+    }
+
+    /** Send Cayden's vitals to his owner alone. */
+    public static void sendTo(net.minecraft.server.level.ServerPlayer player, Object msg) {
+        CHANNEL.send(PacketDistributor.PLAYER.with(() -> player), msg);
     }
 
     /** Send a cinematic beat to everyone near the death site. */

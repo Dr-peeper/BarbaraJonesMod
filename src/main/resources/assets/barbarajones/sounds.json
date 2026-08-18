@@ -1,4 +1,5 @@
 ﻿{
+  "cayden_alarm": { "subtitle": "subtitles.barbarajones.alarm", "sounds": [ "barbarajones:cayden_alarm" ] },
   "barbara_idle": { "subtitle": "subtitles.barbarajones.barbara", "sounds": [ "barbarajones:va_intro", "barbarajones:va_chepina", "barbarajones:va_bits", "barbarajones:va_nugget", "barbarajones:va_donuts", "barbarajones:va_og" ] },
   "barbara_hurt": { "subtitle": "subtitles.barbarajones.barbara", "sounds": [ "barbarajones:va_ohgod", "barbarajones:va_shower" ] },
   "barbara_death": { "subtitle": "subtitles.barbarajones.barbara", "sounds": [ "barbarajones:va_ohgod2" ] },

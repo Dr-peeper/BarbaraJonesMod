@@ -21,6 +21,10 @@ public final class ClientPacketHandler {
         Minecraft.getInstance().setScreen(new RecipeBookScreen());
     }
 
+    public static void handleCaydenStatus(com.barbarajones.net.PacketCaydenStatus msg) {
+        CaydenHudClient.accept(msg);
+    }
+
     public static void openManual() {
         Minecraft.getInstance().setScreen(new KraveManualScreen());
     }

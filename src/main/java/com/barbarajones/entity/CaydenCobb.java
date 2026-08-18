@@ -232,6 +232,13 @@ public class CaydenCobb extends TamableAnimal {
             }
         }
 
+        if (this.tickCount % 10 == 0 && isTame()
+                && getOwner() instanceof net.minecraft.server.level.ServerPlayer owner) {
+            com.barbarajones.net.ModNetwork.sendTo(owner,
+                    new com.barbarajones.net.PacketCaydenStatus(getHealth(), getMaxHealth(),
+                            (int) Math.sqrt(distanceToSqr(owner)), isHoused()));
+        }
+
         if (--this.homeCheckTimer <= 0) {
             this.homeCheckTimer = 200;
             recheckHome();
