@@ -18,9 +18,11 @@ import net.minecraft.world.effect.MobEffectInstance;
 import net.minecraft.world.effect.MobEffects;
 import net.minecraft.world.food.FoodProperties;
 import net.minecraft.world.item.BlockItem;
+import com.barbarajones.item.KravePropSpawnerItem;
 import net.minecraft.world.item.BucketItem;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.item.Rarity;
+import net.minecraftforge.common.ForgeSpawnEggItem;
 import net.minecraftforge.registries.DeferredRegister;
 import net.minecraftforge.registries.ForgeRegistries;
 import net.minecraftforge.registries.RegistryObject;
@@ -225,4 +227,34 @@ public final class ModItems {
 
     public static final RegistryObject<Item> CHOCOLATE_BUCKET = ITEMS.register("chocolate_bucket",
             () -> new BucketItem(() -> ModFluids.CHOCOLATE.get(), props().stacksTo(1).craftRemainder(net.minecraft.world.item.Items.BUCKET)));
+
+    // ---- spawn eggs ----------------------------------------------------------
+    // ForgeSpawnEggItem only accepts EntityType<? extends Mob>, so the seven
+    // plain-Entity props (the car, meteors, the tornado, beams, cinematics)
+    // cannot have one - KravePropSpawnerItem covers those instead.
+
+    public static final RegistryObject<Item> EGG_BARBARA = ITEMS.register("barbara_jones_spawn_egg",
+            () -> new ForgeSpawnEggItem(ModEntities.BARBARA, 0x6B4A2F, 0xC08A5A, props()));
+    public static final RegistryObject<Item> EGG_CAYDEN = ITEMS.register("cayden_cobb_spawn_egg",
+            () -> new ForgeSpawnEggItem(ModEntities.CAYDEN, 0x3A1E6E, 0xD9A57F, props()));
+    public static final RegistryObject<Item> EGG_KRAVE_MONSTER = ITEMS.register("krave_monster_spawn_egg",
+            () -> new ForgeSpawnEggItem(ModEntities.KRAVE_MONSTER, 0x281046, 0xB060D0, props()));
+    public static final RegistryObject<Item> EGG_NUGGET = ITEMS.register("nugget_spawn_egg",
+            () -> new ForgeSpawnEggItem(ModEntities.NUGGET, 0xD98A3A, 0xF2C08A, props()));
+    public static final RegistryObject<Item> EGG_DANIEL = ITEMS.register("daniel_spawn_egg",
+            () -> new ForgeSpawnEggItem(ModEntities.DANIEL, 0x2F4F2F, 0xD9A57F, props()));
+    public static final RegistryObject<Item> EGG_MOM = ITEMS.register("mom_cobb_spawn_egg",
+            () -> new ForgeSpawnEggItem(ModEntities.MOM, 0x5A2A3A, 0xD9A57F, props()));
+    public static final RegistryObject<Item> EGG_PLUG = ITEMS.register("the_plug_spawn_egg",
+            () -> new ForgeSpawnEggItem(ModEntities.PLUG, 0x101010, 0x2E7D32, props()));
+    public static final RegistryObject<Item> EGG_DUHL_WOL = ITEMS.register("duhl_wol_spawn_egg",
+            () -> new ForgeSpawnEggItem(ModEntities.DUHL_WOL, 0x7A5232, 0xB0342A, props()));
+    public static final RegistryObject<Item> EGG_KRAVE_MINION = ITEMS.register("krave_minion_spawn_egg",
+            () -> new ForgeSpawnEggItem(ModEntities.KRAVE_MINION, 0x3A1E6E, 0x8B1A1A, props()));
+    public static final RegistryObject<Item> EGG_KRAVE_HEALING_BOX = ITEMS.register("krave_healing_box_spawn_egg",
+            () -> new ForgeSpawnEggItem(ModEntities.KRAVE_HEALING_BOX, 0xB060D0, 0x4CAF50, props()));
+
+    /** Cycles through the prop entities that cannot take a spawn egg. */
+    public static final RegistryObject<Item> PROP_SPAWNER = ITEMS.register("krave_prop_spawner",
+            () -> new KravePropSpawnerItem(props().stacksTo(1)));
 }

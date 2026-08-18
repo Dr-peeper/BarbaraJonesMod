@@ -129,17 +129,23 @@ public class EventHandler {
         }
         CompoundTag persist = persisted(player);
         long gameDay = player.level().getDayTime() / 24000L;
+
+        // First sighting: a fresh player has no DuhlLastDay, and an unset int
+        // reads back as 0 - the same value gameDay holds on day one. Comparing
+        // them meant he could never turn up in a brand new world, which is
+        // exactly where you would go looking for him. Seed the marker a day
+        // behind so the very first day still counts as a new one.
+        if (!persist.contains("DuhlLastDay")) {
+            persist.putInt("DuhlLastDay", (int) gameDay - 1);
+        }
         int lastDay = persist.getInt("DuhlLastDay");
 
-        // Spawn Duhl Wol on a new day if he hasn't been paid yet
-        if (gameDay > lastDay && !persist.getBoolean("DuhlPaidToday")) {
-            persist.putInt("DuhlLastDay", (int) gameDay);
-            spawnDuhlWol(player);
-        }
-
-        // Reset the "paid" flag every new day
         if (gameDay > lastDay) {
+            // Clear the debt BEFORE deciding whether he shows up - the old
+            // order let yesterday paid flag suppress today visit.
+            persist.putInt("DuhlLastDay", (int) gameDay);
             persist.putBoolean("DuhlPaidToday", false);
+            spawnDuhlWol(player);
         }
     }
 
