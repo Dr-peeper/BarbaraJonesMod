@@ -115,13 +115,17 @@ public class KraveMountainFeature extends Feature<NoneFeatureConfiguration> {
             }
             List<BlockPos> springCandidates = edges.isEmpty() ? upperSurface : edges;
 
-            // No more coin flip - waterfalls were reported missing twice in a
-            // row, so every mountain guarantees at least one; a second is a
-            // 50/50 for variety.
+            // Not every mountain should have one - the earlier "missing"
+            // reports were really a placement-reliability bug (springs
+            // landing away from any actual ledge), now fixed above; this is
+            // back to a real chance rather than a guarantee, just weighted
+            // high enough that waterfalls read as common, not universal.
             BlockState chocolate = ModBlocks.CHOCOLATE_BLOCK.get().defaultBlockState();
-            level.setBlock(springCandidates.get(random.nextInt(springCandidates.size())).above(), chocolate, 3);
-            if (springCandidates.size() > 1 && random.nextBoolean()) {
+            if (random.nextInt(10) < 7) {
                 level.setBlock(springCandidates.get(random.nextInt(springCandidates.size())).above(), chocolate, 3);
+                if (springCandidates.size() > 1 && random.nextBoolean()) {
+                    level.setBlock(springCandidates.get(random.nextInt(springCandidates.size())).above(), chocolate, 3);
+                }
             }
         }
 
