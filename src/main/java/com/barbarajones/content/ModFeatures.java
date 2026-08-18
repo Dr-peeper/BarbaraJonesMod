@@ -2,7 +2,9 @@ package com.barbarajones.content;
 
 import com.barbarajones.BarbaraJonesMod;
 import com.barbarajones.worldgen.feature.KraveCavePocketFeature;
+import com.barbarajones.worldgen.feature.KraveMountainFeature;
 import com.barbarajones.worldgen.feature.KraveRuinFeature;
+import com.barbarajones.worldgen.feature.KraveValleyFeature;
 
 import net.minecraft.world.level.levelgen.feature.Feature;
 import net.minecraft.world.level.levelgen.feature.configurations.NoneFeatureConfiguration;
@@ -23,4 +25,10 @@ public final class ModFeatures {
 
     public static final RegistryObject<Feature<NoneFeatureConfiguration>> KRAVE_CAVE_POCKET =
             FEATURES.register("krave_cave_pocket", () -> new KraveCavePocketFeature(NoneFeatureConfiguration.CODEC));
+
+    public static final RegistryObject<Feature<NoneFeatureConfiguration>> KRAVE_MOUNTAIN =
+            FEATURES.register("krave_mountain", () -> new KraveMountainFeature(NoneFeatureConfiguration.CODEC));
+
+    public static final RegistryObject<Feature<NoneFeatureConfiguration>> KRAVE_VALLEY =
+            FEATURES.register("krave_valley", () -> new KraveValleyFeature(NoneFeatureConfiguration.CODEC));
 }

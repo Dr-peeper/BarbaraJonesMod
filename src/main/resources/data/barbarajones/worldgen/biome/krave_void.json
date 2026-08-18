@@ -18,7 +18,10 @@
     [
       "barbarajones:chocolate_lake_underground"
     ],
-    [],
+    [
+      "barbarajones:krave_mountain",
+      "barbarajones:krave_valley"
+    ],
     [
       "barbarajones:krave_cave_pocket"
     ],
