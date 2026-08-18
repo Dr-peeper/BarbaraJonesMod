@@ -13,10 +13,9 @@ import net.minecraft.world.level.levelgen.feature.configurations.NoneFeatureConf
 
 /**
  * A small, common spire - the scaled-down, frequent counterpart to
- * KraveMountainFeature (which is now deliberately large and rare). Keeps
- * the islands feeling scattered with texture even between the big
- * mountains, without the cost of a full mound (no rocky outcrops, no
- * waterfall, a single mild lobe rather than several).
+ * KraveMountainFeature. Same column-major, local-ground-following
+ * construction (see KraveMountainFeature's javadoc for why) so small peaks
+ * don't float above the natural terrain either.
  */
 public class KravePeakFeature extends Feature<NoneFeatureConfiguration> {
 
@@ -24,6 +23,7 @@ public class KravePeakFeature extends Feature<NoneFeatureConfiguration> {
     private static final int HEIGHT_RANGE = 9;    // -> 8..16
     private static final int MIN_BASE_RADIUS = 2;
     private static final int BASE_RADIUS_RANGE = 3; // -> 2..4
+    private static final int GROUND_SEARCH = 6;
 
     public KravePeakFeature(Codec<NoneFeatureConfiguration> codec) {
         super(codec);
@@ -46,31 +46,33 @@ public class KravePeakFeature extends Feature<NoneFeatureConfiguration> {
         BlockState dirt = ModBlocks.KRAVE_DIRT.get().defaultBlockState();
         BlockState grass = ModBlocks.KRAVE_GRASS.get().defaultBlockState();
 
-        for (int y = 0; y < height; y++) {
-            double layerBase = Math.max(1.0, baseRadius * (1.0 - (double) y / height));
-            int scanR = (int) Math.ceil(layerBase * 1.4) + 1;
-            for (int dx = -scanR; dx <= scanR; dx++) {
-                for (int dz = -scanR; dz <= scanR; dz++) {
-                    double dist = Math.sqrt(dx * dx + dz * dz);
-                    double effectiveR = layerBase * KraveTerrainShape.lobeMultiplier(Math.atan2(dz, dx), lobes);
-                    if (dist > effectiveR) {
-                        continue;
-                    }
-                    level.setBlock(origin.offset(dx, y, dz), dirt, 3);
-                }
-            }
-        }
+        int maxRadius = (int) Math.ceil(baseRadius * 1.4) + 1;
 
-        int capScan = (int) Math.ceil(baseRadius * 1.4) + 1;
-        for (int dx = -capScan; dx <= capScan; dx++) {
-            for (int dz = -capScan; dz <= capScan; dz++) {
-                BlockPos.MutableBlockPos scan = origin.offset(dx, height, dz).mutable();
-                while (scan.getY() > origin.getY() && level.getBlockState(scan).isAir()) {
-                    scan.move(0, -1, 0);
+        for (int dx = -maxRadius; dx <= maxRadius; dx++) {
+            for (int dz = -maxRadius; dz <= maxRadius; dz++) {
+                double dist = Math.sqrt(dx * dx + dz * dz);
+                double mult = KraveTerrainShape.lobeMultiplier(Math.atan2(dz, dx), lobes);
+                double maxYf = height * (1.0 - dist / (baseRadius * mult));
+                int columnHeight = (int) Math.min(height, Math.round(maxYf));
+                if (columnHeight <= 0) {
+                    continue;
                 }
-                if (level.getBlockState(scan).is(ModBlocks.KRAVE_DIRT.get())) {
-                    level.setBlock(scan, grass, 3);
+
+                BlockPos.MutableBlockPos ground = origin.offset(dx, GROUND_SEARCH, dz).mutable();
+                int minY = origin.getY() - GROUND_SEARCH;
+                while (ground.getY() > minY && !level.getBlockState(ground).isSolid()) {
+                    ground.move(0, -1, 0);
                 }
+                if (!level.getBlockState(ground).isSolid()) {
+                    continue;
+                }
+
+                BlockPos top = null;
+                for (int y = 0; y < columnHeight; y++) {
+                    top = ground.above(1 + y);
+                    level.setBlock(top, dirt, 3);
+                }
+                level.setBlock(top, grass, 3);
             }
         }
         return true;

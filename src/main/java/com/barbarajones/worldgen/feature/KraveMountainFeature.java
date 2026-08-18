@@ -11,22 +11,25 @@ import net.minecraft.world.level.levelgen.feature.Feature;
 import net.minecraft.world.level.levelgen.feature.FeaturePlaceContext;
 import net.minecraft.world.level.levelgen.feature.configurations.NoneFeatureConfiguration;
 
+import java.util.ArrayList;
+import java.util.List;
+
 /**
- * A large, rare mound built up from the island surface - deliberately fewer
- * and bigger than the original version, with an organic (non-circular)
- * cross-section instead of a perfectly round stepped cone, which is what
- * actually read as "artificial" in practice. The irregular silhouette comes
- * from summing a few random cosine "lobes" against the angle around the
- * mountain's center - a classic way to turn a circle into a natural-looking
- * rocky outline without needing real noise infrastructure. Built as an
- * imperative block-placement pass (like KraveRuinFeature/KraveDenBuilder)
- * rather than by editing the dimension's density function - see
- * KraveValleyFeature's javadoc for why.
+ * A large, rare mound built up from the island surface. Column-major: for
+ * every (dx, dz) in the footprint, it finds THAT column's own local ground
+ * height (searching a modest range around the placement origin) and grows
+ * the mound up from there, instead of filling flat disc layers at a height
+ * shared by the whole footprint. The underlying island terrain is not flat
+ * (it's the reused vanilla End "cheese" shape), so a shared-height version
+ * left gaps under the mound's edges wherever the natural ground dipped below
+ * the origin's height - this is what actually fixes that "floating" look.
  *
- * <p>All per-placement randomness (lobe phase/frequency/amplitude) lives in
- * local variables inside {@link #place}, never on instance fields - Feature
- * instances are shared/reused across concurrent chunk decoration, so any
- * per-placement state has to stay on the call stack.
+ * <p>Cross-section is organic rather than circular via
+ * {@link KraveTerrainShape} - a few random cosine "lobes" perturbing the
+ * radius by angle. Rocky outcrops and the optional chocolate waterfall
+ * spring are anchored to actual placed surface blocks collected during the
+ * main pass, not independently recomputed coordinates - that mismatch was
+ * why waterfalls kept ending up in empty air instead of on the mound.
  */
 public class KraveMountainFeature extends Feature<NoneFeatureConfiguration> {
 
@@ -34,6 +37,7 @@ public class KraveMountainFeature extends Feature<NoneFeatureConfiguration> {
     private static final int HEIGHT_RANGE = 28;   // -> 28..55
     private static final int MIN_BASE_RADIUS = 10;
     private static final int BASE_RADIUS_RANGE = 7; // -> 10..16
+    private static final int GROUND_SEARCH = 14;
 
     public KraveMountainFeature(Codec<NoneFeatureConfiguration> codec) {
         super(codec);
@@ -57,69 +61,52 @@ public class KraveMountainFeature extends Feature<NoneFeatureConfiguration> {
         BlockState grass = ModBlocks.KRAVE_GRASS.get().defaultBlockState();
         BlockState frame = ModBlocks.KRAVE_BLOCK.get().defaultBlockState();
 
-        for (int y = 0; y < height; y++) {
-            int layerBase = radiusAt(y, height, baseRadius);
-            int scanR = (int) Math.ceil(layerBase * 1.6) + 1;
-            for (int dx = -scanR; dx <= scanR; dx++) {
-                for (int dz = -scanR; dz <= scanR; dz++) {
-                    double dist = Math.sqrt(dx * dx + dz * dz);
-                    double effectiveR = layerBase * KraveTerrainShape.lobeMultiplier(Math.atan2(dz, dx), lobes);
-                    if (dist > effectiveR) {
-                        continue;
-                    }
-                    level.setBlock(origin.offset(dx, y, dz), dirt, 3);
+        int maxRadius = (int) Math.ceil(baseRadius * 1.6) + 1;
+        List<BlockPos> upperSurface = new ArrayList<>();
+
+        for (int dx = -maxRadius; dx <= maxRadius; dx++) {
+            for (int dz = -maxRadius; dz <= maxRadius; dz++) {
+                double dist = Math.sqrt(dx * dx + dz * dz);
+                double mult = KraveTerrainShape.lobeMultiplier(Math.atan2(dz, dx), lobes);
+                double maxYf = height * (1.0 - dist / (baseRadius * mult));
+                int columnHeight = (int) Math.min(height, Math.round(maxYf));
+                if (columnHeight <= 0) {
+                    continue;
+                }
+
+                BlockPos.MutableBlockPos ground = origin.offset(dx, GROUND_SEARCH, dz).mutable();
+                int minY = origin.getY() - GROUND_SEARCH;
+                while (ground.getY() > minY && !level.getBlockState(ground).isSolid()) {
+                    ground.move(0, -1, 0);
+                }
+                if (!level.getBlockState(ground).isSolid()) {
+                    continue;   // no nearby ground under this column - leave a natural gap
+                }
+
+                BlockPos top = null;
+                for (int y = 0; y < columnHeight; y++) {
+                    top = ground.above(1 + y);
+                    level.setBlock(top, dirt, 3);
+                }
+                level.setBlock(top, grass, 3);
+                if (columnHeight >= height * 0.55) {
+                    upperSurface.add(top);
                 }
             }
         }
 
-        // Cap whatever ends up exposed on top of each column with grass -
-        // cheaper and more robust than tracking the organic surface analytically.
-        int capScan = (int) Math.ceil(baseRadius * 1.6) + 1;
-        for (int dx = -capScan; dx <= capScan; dx++) {
-            for (int dz = -capScan; dz <= capScan; dz++) {
-                BlockPos.MutableBlockPos scan = origin.offset(dx, height, dz).mutable();
-                while (scan.getY() > origin.getY() && level.getBlockState(scan).isAir()) {
-                    scan.move(0, -1, 0);
-                }
-                if (level.getBlockState(scan).is(ModBlocks.KRAVE_DIRT.get())) {
-                    level.setBlock(scan, grass, 3);
-                }
+        if (!upperSurface.isEmpty()) {
+            int outcrops = Math.min(upperSurface.size(), 5 + random.nextInt(6));
+            for (int i = 0; i < outcrops; i++) {
+                BlockPos anchor = upperSurface.get(random.nextInt(upperSurface.size()));
+                level.setBlock(anchor.above(), frame, 3);
+            }
+            if (random.nextBoolean()) {
+                BlockPos spring = upperSurface.get(random.nextInt(upperSurface.size()));
+                level.setBlock(spring.above(), ModBlocks.CHOCOLATE_BLOCK.get().defaultBlockState(), 3);
             }
         }
 
-        // A handful of rocky outcrops near the peak for texture.
-        int outcrops = 5 + random.nextInt(6);
-        for (int i = 0; i < outcrops; i++) {
-            int y = (int) (height * (0.55 + random.nextDouble() * 0.4));
-            double angle = random.nextDouble() * Math.PI * 2.0;
-            int layerBase = Math.max(1, radiusAt(y, height, baseRadius));
-            double r = layerBase * KraveTerrainShape.lobeMultiplier(angle, lobes);
-            int dx = (int) Math.round(Math.cos(angle) * r);
-            int dz = (int) Math.round(Math.sin(angle) * r);
-            level.setBlock(origin.offset(dx, y, dz), frame, 3);
-        }
-
-        if (random.nextBoolean()) {
-            placeWaterfallSpring(level, origin, random, height, baseRadius, lobes);
-        }
         return true;
-    }
-
-    /** Linear taper from baseRadius at y=0 down to 1 at the peak. */
-    private int radiusAt(int y, int height, int baseRadius) {
-        double t = (double) y / (double) height;
-        return Math.max(1, (int) Math.round(baseRadius * (1.0 - t)));
-    }
-
-    private void placeWaterfallSpring(WorldGenLevel level, BlockPos origin, RandomSource random,
-                                      int height, int baseRadius, double[][] lobes) {
-        int y = (int) (height * (0.6 + random.nextDouble() * 0.25));
-        double angle = random.nextDouble() * Math.PI * 2.0;
-        int layerBase = Math.max(2, radiusAt(y, height, baseRadius));
-        double r = layerBase * KraveTerrainShape.lobeMultiplier(angle, lobes);
-        int dx = (int) Math.round(Math.cos(angle) * r);
-        int dz = (int) Math.round(Math.sin(angle) * r);
-        BlockPos springPos = origin.offset(dx, y, dz);
-        level.setBlock(springPos, ModBlocks.CHOCOLATE_BLOCK.get().defaultBlockState(), 3);
     }
 }

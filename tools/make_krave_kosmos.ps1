@@ -23,13 +23,32 @@ function Save($b,$path){ $b.Save($path,[System.Drawing.Imaging.ImageFormat]::Png
 $script:sd = 42
 function Rnd([int]$n){ $script:sd=($script:sd*1103515245+12345) -band 0x7fffffff; return $script:sd % $n }
 
+# Radial darkening pass - gives every texture a bit of shaped depth instead of
+# reading as a flat tint, and ties the whole Krave Kosmos palette together.
+function Vignette($b,[double]$strength){
+    $w=$b.Width; $h=$b.Height; $cx=($w-1)/2.0; $cy=($h-1)/2.0; $maxD=[Math]::Sqrt($cx*$cx+$cy*$cy)
+    for($x=0;$x -lt $w;$x++){ for($y=0;$y -lt $h;$y++){
+        $dx=$x-$cx; $dy=$y-$cy; $d=[Math]::Sqrt($dx*$dx+$dy*$dy)/$maxD
+        $f=1.0-($strength*$d*$d)
+        $p=$b.GetPixel($x,$y)
+        $nr=[Math]::Max(0,[int]($p.R*$f)); $ng=[Math]::Max(0,[int]($p.G*$f)); $nb=[Math]::Max(0,[int]($p.B*$f))
+        $b.SetPixel($x,$y,[System.Drawing.Color]::FromArgb($p.A,$nr,$ng,$nb))
+    }}
+}
+
 $hide = C '15102A'; $hideL = C '241A45'; $bone = C 'E8E2D8'
 function Speckle($b,$base){
     Rct $b 0 0 $b.Width $b.Height $base
+    # a faint regular diagonal accent underneath the noise - the repeating
+    # "wallpaper" motif that pure random speckle was missing
+    for($x=0;$x -lt $b.Width;$x++){ for($y=0;$y -lt $b.Height;$y++){
+        if((($x+$y) % 4) -eq 0){ Rct $b $x $y 1 1 $hideL }
+    }}
     for($i=0;$i -lt ($b.Width*$b.Height/4);$i++){ $px=Rnd $b.Width; $py=Rnd $b.Height; $r=Rnd 7
         if($r -eq 0){ Rct $b $px $py 1 1 (C '8A5CD0') } elseif($r -eq 1){ Rct $b $px $py 1 1 (C '3A6CD8') }
         elseif($r -eq 2){ Rct $b $px $py 1 1 $hideL } }
     for($i=0;$i -lt ($b.Width*$b.Height/14);$i++){ Rct $b (Rnd $b.Width) (Rnd $b.Height) 1 1 (C 'F4F0FF') }
+    Vignette $b 0.3
 }
 
 # ---- Krave Block: the portal frame -----------------------------------------
@@ -51,30 +70,50 @@ Save $b "$bdir\krave_block.png"
 
 # ---- Krave Grass + Krave Dirt: coherent terrain pair, vanilla-style ---------
 $navy = C '150C28'; $navyL = C '241A45'
+$nebulaColors = @((C '4A2C8A'),(C '3A1C70'),(C '5A3CA0'))
 function Galaxy($b,$base){
     Rct $b 0 0 $b.Width $b.Height $base
-    # a couple of soft nebula blotches - small clusters of mid-tone pixels
-    for($n=0;$n -lt 2;$n++){
+    # several soft nebula blotches of varied color/size, not just two flat ones
+    for($n=0;$n -lt 5;$n++){
         $cx=Rnd $b.Width; $cy=Rnd $b.Height
-        for($i=0;$i -lt 10;$i++){
-            $px=$cx+(Rnd 5)-2; $py=$cy+(Rnd 5)-2
-            if($px -ge 0 -and $py -ge 0 -and $px -lt $b.Width -and $py -lt $b.Height){ Rct $b $px $py 1 1 (C '4A2C8A') }
+        $col = $nebulaColors[(Rnd $nebulaColors.Count)]
+        $blobR = 2 + (Rnd 3)
+        for($i=0;$i -lt 14;$i++){
+            $px=$cx+(Rnd (2*$blobR+1))-$blobR; $py=$cy+(Rnd (2*$blobR+1))-$blobR
+            if($px -ge 0 -and $py -ge 0 -and $px -lt $b.Width -and $py -lt $b.Height){ Rct $b $px $py 1 1 $col }
         }
     }
-    # sparse bright stars
-    for($i=0;$i -lt ($b.Width*$b.Height/10);$i++){ $r=Rnd 5
+    # three-tier star field instead of one flat brightness
+    for($i=0;$i -lt ($b.Width*$b.Height/7);$i++){ $r=Rnd 6
         if($r -eq 0){ Rct $b (Rnd $b.Width) (Rnd $b.Height) 1 1 (C 'FFFFFF') }
-        elseif($r -eq 1){ Rct $b (Rnd $b.Width) (Rnd $b.Height) 1 1 (C 'C9B8FF') } }
+        elseif($r -eq 1){ Rct $b (Rnd $b.Width) (Rnd $b.Height) 1 1 (C 'C9B8FF') }
+        elseif($r -eq 2){ Rct $b (Rnd $b.Width) (Rnd $b.Height) 1 1 (C '8878B0') } }
+    Vignette $b 0.35
 }
 $dirt = NewImg 16 16
 Galaxy $dirt $navy
 Save $dirt "$bdir\krave_dirt.png"
 
+# Blade-streak texture (short vertical strokes of varying shade/length) reads
+# as real grass instead of flat speckle, the same way vanilla's grass_block
+# top isn't just a solid tint.
+function GrassBlades($b,$base,$light,$dark){
+    Rct $b 0 0 $b.Width $b.Height $base
+    for($x=0;$x -lt $b.Width;$x++){
+        for($i=0;$i -lt 3;$i++){
+            $y0 = Rnd $b.Height
+            $len = 1 + (Rnd 3)
+            $col = if((Rnd 2) -eq 0){ $light } else { $dark }
+            for($k=0;$k -lt $len;$k++){
+                $yy = $y0 + $k
+                if($yy -lt $b.Height){ Rct $b $x $yy 1 1 $col }
+            }
+        }
+    }
+}
 function GrassTop($b){
-    Rct $b 0 0 $b.Width $b.Height (C '6A2CD0')
-    for($i=0;$i -lt ($b.Width*$b.Height/5);$i++){ $r=Rnd 4
-        if($r -eq 0){ Rct $b (Rnd $b.Width) (Rnd $b.Height) 1 1 (C '8A5CF0') }
-        elseif($r -eq 1){ Rct $b (Rnd $b.Width) (Rnd $b.Height) 1 1 (C '4A1CA0') } }
+    GrassBlades $b (C '6A2CD0') (C '8A5CF0') (C '4A1CA0')
+    Vignette $b 0.25
 }
 $grassTop = NewImg 16 16
 GrassTop $grassTop
@@ -84,7 +123,10 @@ $grassSide = NewImg 16 16
 Galaxy $grassSide $navy
 for($x=0;$x -lt 16;$x++){ $r=Rnd 4
     Rct $grassSide $x 0 1 (3+$r) (C '6A2CD0') }
-for($x=0;$x -lt 16;$x++){ Rct $grassSide $x 2 1 1 (C '8A5CF0') }
+for($x=0;$x -lt 16;$x++){
+    $col = if((Rnd 2) -eq 0){ C '8A5CF0' } else { C '9A6CFF' }
+    Rct $grassSide $x 2 1 1 $col
+}
 Save $grassSide "$bdir\krave_grass_side.png"
 
 @"
