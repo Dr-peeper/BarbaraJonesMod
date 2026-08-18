@@ -180,6 +180,7 @@ The player takes no damage during any of it.
 
 ## Recently completed
 
+- **Duhl Wol NPC**: arrives daily in a car, demands escalating tribute (dirt → stone → andesite → iron → emerald → $4 dollars). 40 HP (4× zombie), 3 damage (1.5×), pin stun ~2s. 5-minute timer to deliver or he turns hostile. Once paid, leaves 1–2 days. Daily spawn wired into `EventHandler` per-player tracking. Placeholder humanoid + car renderers. Compiles cleanly, not yet built/tested in-game, horror audio/visuals queued.
 - **Ambient horror ("Dread") + a horror sound pass.** `client/DreadClient.java` is
   a client-only director that runs during NORMAL play (stands down during the
   apocalypse via new `ApocalypseClient.isActive()`, and off when
