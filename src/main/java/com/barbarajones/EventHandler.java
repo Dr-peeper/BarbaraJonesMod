@@ -48,11 +48,19 @@ public class EventHandler {
         if (player.level().isClientSide) {
             return;
         }
-        if (Quests.findBook(player) == null) {
-            player.getInventory().add(new ItemStack(ModItems.KRAVE_MANUAL.get()));
-            player.getInventory().add(new ItemStack(ModItems.QUEST_BOOK.get()));
-            player.getInventory().add(new ItemStack(ModItems.RECIPE_BOOK.get()));
-            player.getInventory().add(new ItemStack(ModItems.HOUSING_QUERY.get()));
+        boolean firstJoin = Quests.findBook(player) == null;
+
+        // Hand out each starter item independently. This used to be one
+        // all-or-nothing block gated on "do you have a Quest Book?", which
+        // meant anyone whose world predated a newly added book never received
+        // it - and the Required Reading quest, which wants all three at once,
+        // became impossible to finish without crafting the missing one.
+        ensureHas(player, ModItems.KRAVE_MANUAL.get());
+        ensureHas(player, ModItems.QUEST_BOOK.get());
+        ensureHas(player, ModItems.RECIPE_BOOK.get());
+        ensureHas(player, ModItems.HOUSING_QUERY.get());
+
+        if (firstJoin) {
             player.sendSystemMessage(Component.literal(ChatFormatting.GOLD
                     + "Read THE KRAVE MANUAL first. Rule #1 is on page one."));
             Quests.onFirstJoin(player);
@@ -75,6 +83,19 @@ public class EventHandler {
             } catch (Throwable err) {
                 LOGGER.error("Failed to spawn Cayden on login; continuing without him", err);
             }
+        }
+    }
+
+    /**
+     * Give the player this item if they do not already have one. Replaces a
+     * lost or never-granted starter book without duplicating it every login.
+     */
+    private void ensureHas(Player player, net.minecraft.world.item.Item item) {
+        if (player.getInventory().contains(new ItemStack(item))) {
+            return;
+        }
+        if (!player.getInventory().add(new ItemStack(item))) {
+            player.drop(new ItemStack(item), false);
         }
     }
 
