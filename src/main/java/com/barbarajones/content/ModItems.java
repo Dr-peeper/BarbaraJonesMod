@@ -216,6 +216,10 @@ public final class ModItems {
             ITEMS.register("krave_door", () -> new BlockItem(ModBlocks.KRAVE_DOOR.get(), props()));
     public static final RegistryObject<Item> KRAVE_TETHER =
             ITEMS.register("krave_tether", () -> new KraveTetherItem(props().stacksTo(4)));
+    public static final RegistryObject<Item> KRAVE_GRASS_ITEM =
+            ITEMS.register("krave_grass", () -> new BlockItem(ModBlocks.KRAVE_GRASS.get(), props()));
+    public static final RegistryObject<Item> KRAVE_DIRT_ITEM =
+            ITEMS.register("krave_dirt", () -> new BlockItem(ModBlocks.KRAVE_DIRT.get(), props()));
 
     // ---- liquid chocolate ------------------------------------------------------
 

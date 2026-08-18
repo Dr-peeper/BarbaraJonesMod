@@ -1,6 +1,7 @@
 package com.barbarajones.entity;
 
 import com.barbarajones.content.ModSounds;
+import com.barbarajones.dimension.KraveKosmosData;
 
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.sounds.SoundEvent;
@@ -68,12 +69,24 @@ public class KraveHealingBox extends Monster {
         if (this.healTargetCache != null && this.healTargetCache.isAlive()) {
             return this.healTargetCache;
         }
-        if (this.healTargetId != null && level() instanceof net.minecraft.server.level.ServerLevel sl) {
+        if (!(level() instanceof net.minecraft.server.level.ServerLevel sl)) {
+            return null;
+        }
+        if (this.healTargetId != null) {
             var entity = sl.getEntity(this.healTargetId);
             if (entity instanceof KraveMonster monster) {
                 this.healTargetCache = monster;
                 return monster;
             }
+        }
+        // No explicit target was ever assigned (e.g. this box was placed by
+        // worldgen/structure code rather than KraveKosmosBattle) - fall back
+        // to whichever boss the dimension's singleton tracker knows about.
+        var bossId = KraveKosmosData.get(sl).getBossId();
+        if (bossId != null && sl.getEntity(bossId) instanceof KraveMonster monster && monster.isAlive()) {
+            this.healTargetCache = monster;
+            this.healTargetId = bossId;
+            return monster;
         }
         return null;
     }

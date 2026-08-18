@@ -18,6 +18,8 @@
   "krave_roar": { "subtitle": "subtitles.barbarajones.krave", "sounds": [ "barbarajones:krave_roar" ] },
   "krave_hurt": { "subtitle": "subtitles.barbarajones.krave", "sounds": [ "barbarajones:krave_hurt" ] },
   "krave_death": { "subtitle": "subtitles.barbarajones.krave", "sounds": [ "barbarajones:krave_death" ] },
+  "krave_beam_fire": { "subtitle": "subtitles.barbarajones.krave_beam", "sounds": [ "barbarajones:krave_beam_fire" ] },
+  "krave_beam_hit": { "subtitle": "subtitles.barbarajones.krave_beam", "sounds": [ "barbarajones:krave_beam_hit" ] },
   "evt_bits": { "subtitle": "subtitles.barbarajones.barbara", "sounds": [ "barbarajones:va_bits" ] },
   "evt_chepina": { "subtitle": "subtitles.barbarajones.barbara", "sounds": [ "barbarajones:va_chepina" ] },
   "evt_democrat": { "subtitle": "subtitles.barbarajones.barbara", "sounds": [ "barbarajones:va_democrat" ] },

@@ -9,8 +9,11 @@ import net.minecraft.network.syncher.EntityDataAccessor;
 import net.minecraft.network.syncher.EntityDataSerializers;
 import net.minecraft.network.syncher.SynchedEntityData;
 import net.minecraft.server.level.ServerBossEvent;
+import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.sounds.SoundEvent;
+import net.minecraft.sounds.SoundEvents;
+import net.minecraft.sounds.SoundSource;
 import net.minecraft.util.Mth;
 import net.minecraft.world.BossEvent;
 import net.minecraft.world.damagesource.DamageSource;
@@ -19,6 +22,7 @@ import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.entity.ai.attributes.AttributeSupplier;
 import net.minecraft.world.entity.ai.attributes.Attributes;
 import net.minecraft.world.entity.ai.goal.FloatGoal;
+import net.minecraft.world.entity.ai.goal.Goal;
 import net.minecraft.world.entity.ai.goal.LookAtPlayerGoal;
 import net.minecraft.world.entity.ai.goal.MeleeAttackGoal;
 import net.minecraft.world.entity.ai.goal.RandomLookAroundGoal;
@@ -31,6 +35,8 @@ import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.Items;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.phys.Vec3;
+
+import java.util.EnumSet;
 
 /**
  * THE KRAVE MONSTER - an overweight kid in a purple galaxy hoodie, and the
@@ -83,8 +89,10 @@ public class KraveMonster extends Monster {
 
     private void updateStance() {
         LivingEntity target = getTarget();
+        // Widened from 9x9 so he spends more time reared-up (taller silhouette)
+        // near a player - reinforces the bigger-scale fix behaviorally too.
         boolean shouldRear = target != null
-                && (distanceToSqr(target) < 9.0D * 9.0D || this.getDeltaMovement().y > 0.5D);
+                && (distanceToSqr(target) < 14.0D * 14.0D || this.getDeltaMovement().y > 0.5D);
         float current = this.entityData.get(DATA_REAR);
         float next = Mth.clamp(current + (shouldRear ? 0.05F : -0.04F), 0.0F, 1.0F);
         if (next != current) {
@@ -106,6 +114,7 @@ public class KraveMonster extends Monster {
     protected void registerGoals() {
         this.goalSelector.addGoal(0, new FloatGoal(this));
         this.goalSelector.addGoal(1, new MeleeAttackGoal(this, 0.5D, true));
+        this.goalSelector.addGoal(1, new MouthBeamGoal(this));
         this.goalSelector.addGoal(2, new WaterAvoidingRandomStrollGoal(this, 0.9D));
         this.goalSelector.addGoal(7, new LookAtPlayerGoal(this, Player.class, 12.0F));
         this.goalSelector.addGoal(8, new RandomLookAroundGoal(this));
@@ -265,5 +274,69 @@ public class KraveMonster extends Monster {
     @Override
     public boolean removeWhenFarAway(double dist) {
         return false;
+    }
+
+    /**
+     * The mouth beam: a blue "kamehameha"-style bolt fired at players beyond
+     * melee range. LOOK-only flag (no MOVE) so it runs alongside the existing
+     * stroll/melee goals without a goal-selector conflict.
+     */
+    static class MouthBeamGoal extends Goal {
+        private static final double MIN_RANGE = 5.0D;
+        private static final double MAX_RANGE_SQR = 24.0D * 24.0D;
+
+        private final KraveMonster monster;
+        private int cooldown;
+
+        MouthBeamGoal(KraveMonster monster) {
+            this.monster = monster;
+            setFlags(EnumSet.of(Flag.LOOK));
+        }
+
+        @Override
+        public boolean canUse() {
+            LivingEntity target = this.monster.getTarget();
+            return target instanceof Player
+                    && target.isAlive()
+                    && this.monster.distanceToSqr(target) > MIN_RANGE * MIN_RANGE
+                    && this.monster.distanceToSqr(target) < MAX_RANGE_SQR
+                    && this.monster.getSensing().hasLineOfSight(target);
+        }
+
+        @Override
+        public boolean canContinueToUse() {
+            return canUse();
+        }
+
+        @Override
+        public void tick() {
+            LivingEntity target = this.monster.getTarget();
+            if (target == null) {
+                return;
+            }
+            this.monster.getLookControl().setLookAt(target, 30.0F, 30.0F);
+            if (--this.cooldown <= 0) {
+                this.cooldown = 60 + this.monster.random.nextInt(40);
+                fireBeam(target);
+            }
+        }
+
+        private void fireBeam(LivingEntity target) {
+            if (!(this.monster.level() instanceof ServerLevel)) {
+                return;
+            }
+            // Mouth origin computed purely from server-visible entity state -
+            // deliberately not from KraveMonsterModel/KraveMonsterRenderer,
+            // which are client-only classes a server-executed Goal must not
+            // touch (risks a dedicated-server classloading crash).
+            Vec3 from = this.monster.position()
+                    .add(0.0D, this.monster.getBbHeight() * 0.75D, 0.0D)
+                    .add(this.monster.getViewVector(1.0F).scale(this.monster.getBbWidth() * 0.6D));
+            Vec3 aim = target.position().add(0.0D, target.getBbHeight() * 0.5D, 0.0D);
+            KraveMouthBeam beam = new KraveMouthBeam(this.monster.level(), this.monster, from, aim);
+            this.monster.level().addFreshEntity(beam);
+            this.monster.level().playSound(null, this.monster.blockPosition(),
+                    ModSounds.KRAVE_BEAM_FIRE.get(), SoundSource.HOSTILE, 1.2F, 1.0F);
+        }
     }
 }

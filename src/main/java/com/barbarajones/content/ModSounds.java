@@ -44,6 +44,11 @@ public final class ModSounds {
     public static final RegistryObject<SoundEvent> KRAVE_HURT    = reg("krave_hurt");
     public static final RegistryObject<SoundEvent> KRAVE_DEATH   = reg("krave_death");
 
+    // original synthesized cues, not part of the reused horror set above -
+    // see tools/make_krave_audio.ps1
+    public static final RegistryObject<SoundEvent> KRAVE_BEAM_FIRE = reg("krave_beam_fire");
+    public static final RegistryObject<SoundEvent> KRAVE_BEAM_HIT  = reg("krave_beam_hit");
+
     // per-stage canon lines
     public static final RegistryObject<SoundEvent> EVT_OG       = reg("evt_og");
     public static final RegistryObject<SoundEvent> EVT_CHEPINA  = reg("evt_chepina");

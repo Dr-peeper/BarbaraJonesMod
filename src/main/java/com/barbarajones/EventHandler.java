@@ -1,6 +1,7 @@
 package com.barbarajones;
 
 import com.barbarajones.apocalypse.KraveApocalypse;
+import com.barbarajones.apocalypse.KraveKosmosAmbience;
 import com.barbarajones.apocalypse.KraveKosmosBattle;
 import com.barbarajones.content.ModEntities;
 import com.barbarajones.content.ModFluids;
@@ -78,6 +79,7 @@ public class EventHandler {
         if (event.phase == TickEvent.Phase.END) {
             KraveApocalypse.tickAll();
             KraveKosmosBattle.tickAll();
+            KraveKosmosAmbience.tick();
         }
     }
 

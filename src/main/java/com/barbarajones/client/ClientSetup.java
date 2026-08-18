@@ -9,6 +9,7 @@ import com.barbarajones.client.render.GiantKraveBoxRenderer;
 import com.barbarajones.client.render.HumanoidLikeRenderer;
 import com.barbarajones.client.render.KraveHealingBoxRenderer;
 import com.barbarajones.client.render.KraveLaserRenderer;
+import com.barbarajones.client.render.KraveMouthBeamRenderer;
 import com.barbarajones.client.render.KraveMeteorRenderer;
 import com.barbarajones.client.render.KraveMonsterModel;
 import com.barbarajones.client.render.KraveMonsterRenderer;
@@ -50,6 +51,7 @@ public final class ClientSetup {
 
         event.registerEntityRenderer(ModEntities.METEOR.get(), KraveMeteorRenderer::new);
         event.registerEntityRenderer(ModEntities.KRAVE_LASER.get(), KraveLaserRenderer::new);
+        event.registerEntityRenderer(ModEntities.KRAVE_MOUTH_BEAM.get(), KraveMouthBeamRenderer::new);
         event.registerEntityRenderer(ModEntities.GIANT_BOX.get(), GiantKraveBoxRenderer::new);
         event.registerEntityRenderer(ModEntities.TORNADO.get(), KraveTornadoRenderer::new);
         event.registerEntityRenderer(ModEntities.SKY_CINEMATIC.get(), SkyCinematicRenderer::new);

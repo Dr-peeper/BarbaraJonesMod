@@ -2,6 +2,7 @@ package com.barbarajones;
 
 import com.barbarajones.content.ModBlocks;
 import com.barbarajones.content.ModEntities;
+import com.barbarajones.content.ModFeatures;
 import com.barbarajones.content.ModFluids;
 import com.barbarajones.content.ModItems;
 import com.barbarajones.content.ModSounds;
@@ -30,6 +31,7 @@ public class BarbaraJonesMod {
         ModItems.ITEMS.register(bus);
         ModSounds.SOUNDS.register(bus);
         ModEntities.ENTITIES.register(bus);
+        ModFeatures.FEATURES.register(bus);
         ModTabs.TABS.register(bus);
 
         ModLoadingContext.get().registerConfig(ModConfig.Type.COMMON, Config.SPEC);

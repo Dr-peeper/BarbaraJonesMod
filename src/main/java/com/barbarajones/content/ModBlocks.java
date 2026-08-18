@@ -44,4 +44,19 @@ public final class ModBlocks {
                             .strength(100.0F)
                             .lightLevel(state -> 6)
                             .sound(SoundType.HONEY_BLOCK)));
+
+    // ---- Krave Kosmos terrain: coherent grass/dirt pair, vanilla-style ------
+
+    public static final RegistryObject<Block> KRAVE_GRASS = BLOCKS.register("krave_grass",
+            () -> new Block(BlockBehaviour.Properties.of()
+                    .mapColor(MapColor.COLOR_PURPLE)
+                    .strength(1.0F)
+                    .sound(SoundType.STONE)
+                    .requiresCorrectToolForDrops()));
+
+    public static final RegistryObject<Block> KRAVE_DIRT = BLOCKS.register("krave_dirt",
+            () -> new Block(BlockBehaviour.Properties.of()
+                    .mapColor(MapColor.COLOR_PURPLE)
+                    .strength(0.6F)
+                    .sound(SoundType.NETHERRACK)));
 }

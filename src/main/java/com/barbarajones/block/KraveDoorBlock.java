@@ -5,6 +5,7 @@ import com.barbarajones.content.ModEntities;
 import com.barbarajones.content.ModItems;
 import com.barbarajones.dimension.KraveDimensions;
 import com.barbarajones.dimension.KraveKosmosData;
+import com.barbarajones.dimension.KraveLanding;
 import com.barbarajones.entity.KraveMonster;
 
 import net.minecraft.core.BlockPos;
@@ -97,18 +98,23 @@ public class KraveDoorBlock extends DoorBlock {
             }
         }
 
+        // Actually search for solid ground near the seed point instead of
+        // trusting a fixed coordinate to have terrain under it - this is what
+        // used to drop players straight into the void.
+        Vec3 landing = KraveLanding.findLanding(dest, KraveDimensions.PORTAL_LANDING, 6)
+                .orElse(KraveDimensions.PORTAL_LANDING);
+
         player.changeDimension(dest, new ITeleporter() {
             @Override
             public PortalInfo getPortalInfo(Entity entity, ServerLevel destLevel,
                                             java.util.function.Function<ServerLevel, PortalInfo> defaultPortalInfo) {
-                Vec3 landing = KraveDimensions.PORTAL_LANDING;
                 return new PortalInfo(landing, Vec3.ZERO, entity.getYRot(), entity.getXRot());
             }
         });
-        // The landing point is high above the void islands with no guaranteed
-        // ground directly below - a short Slow Falling window means arriving
-        // players drift down safely onto whatever terrain is beneath them
-        // instead of taking fall damage or free-falling past it.
+        // Defense-in-depth: if the bounded search above somehow failed (should
+        // be effectively unreachable given the guaranteed-landmass assumption
+        // near the dimension origin), Slow Falling still keeps a fallback
+        // fixed-point landing non-fatal instead of a hard crash-into-void.
         player.fallDistance = 0.0F;
         player.addEffect(new MobEffectInstance(MobEffects.SLOW_FALLING, 400, 0));
     }
@@ -123,14 +129,24 @@ public class KraveDoorBlock extends DoorBlock {
                 return;
             }
         }
+        Vec3 pos = KraveDimensions.BOSS_ISLAND;
+        BlockPos denCenter = net.minecraft.core.BlockPos.containing(pos.x, pos.y, pos.z);
+        // Build the den (and its guaranteed-solid platform) before the boss
+        // spawns, so he lands on authored ground rather than whatever the
+        // procedural terrain happened to generate at the origin.
+        com.barbarajones.dimension.KraveDenBuilder.buildDen(kosmos, denCenter);
+
         KraveMonster monster = ModEntities.KRAVE_MONSTER.get().create(kosmos);
         if (monster == null) {
             return;
         }
-        Vec3 pos = KraveDimensions.BOSS_ISLAND;
         monster.setPos(pos.x, pos.y, pos.z);
         kosmos.addFreshEntity(monster);
         data.setBossId(monster.getUUID());
+        // The den's healing boxes were built before the boss existed, so they
+        // had no target to latch onto yet - KraveHealingBox.resolveTarget()'s
+        // KraveKosmosData fallback picks him up automatically on their next
+        // heal tick now that setBossId() above has run, no extra wiring needed.
     }
 
     private CompoundTag persisted(ServerPlayer player) {

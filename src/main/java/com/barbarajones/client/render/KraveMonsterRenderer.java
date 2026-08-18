@@ -24,12 +24,15 @@ public class KraveMonsterRenderer extends MobRenderer<KraveMonster, KraveMonster
             new ResourceLocation(BarbaraJonesMod.MODID, "textures/entity/krave_monster.png");
 
     public KraveMonsterRenderer(EntityRendererProvider.Context ctx) {
-        super(ctx, new KraveMonsterModel(ctx.bakeLayer(KraveMonsterModel.LAYER_LOCATION)), 0.9F);
+        super(ctx, new KraveMonsterModel(ctx.bakeLayer(KraveMonsterModel.LAYER_LOCATION)), 1.6F);
     }
 
+    // Bumped from 1.15 to read as clearly bigger than the player (roughly
+    // 3-3.5 blocks reared / 2.2-2.6 at the shoulder on all fours) - a first
+    // draft to hand-tune once actually visible in-game, not a final number.
     @Override
     protected void scale(KraveMonster entity, PoseStack pose, float partialTicks) {
-        pose.scale(1.15F, 1.15F, 1.15F);
+        pose.scale(1.8F, 1.8F, 1.8F);
     }
 
     @Override

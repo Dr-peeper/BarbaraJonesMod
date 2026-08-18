@@ -1,0 +1,8 @@
+﻿{
+  "parent": "minecraft:block/cube_bottom_top",
+  "textures": {
+    "bottom": "barbarajones:block/krave_dirt",
+    "top": "barbarajones:block/krave_grass_top",
+    "side": "barbarajones:block/krave_grass_side"
+  }
+}

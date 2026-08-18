@@ -9,6 +9,7 @@ import com.barbarajones.entity.DuhlWolCar;
 import com.barbarajones.entity.GiantKraveBox;
 import com.barbarajones.entity.KraveHealingBox;
 import com.barbarajones.entity.KraveLaser;
+import com.barbarajones.entity.KraveMouthBeam;
 import com.barbarajones.entity.KraveMeteor;
 import com.barbarajones.entity.KraveMinion;
 import com.barbarajones.entity.KraveMonster;
@@ -46,7 +47,9 @@ public final class ModEntities {
     public static final RegistryObject<EntityType<KraveMonster>> KRAVE_MONSTER =
             ENTITIES.register("krave_monster", () -> EntityType.Builder
                     .of(KraveMonster::new, MobCategory.MONSTER)
-                    .sized(0.9F, 1.95F).clientTrackingRange(16).fireImmune()
+                    // grown in step with the renderer's bigger scale so the
+                    // hitbox doesn't look absurdly undersized against the model
+                    .sized(1.5F, 3.0F).clientTrackingRange(16).fireImmune()
                     .build("krave_monster"));
 
     public static final RegistryObject<EntityType<Nugget>> NUGGET =
@@ -122,6 +125,12 @@ public final class ModEntities {
                     .<KraveLaser>of(KraveLaser::new, MobCategory.MISC)
                     .sized(0.3F, 0.3F).clientTrackingRange(16).updateInterval(1)
                     .build("krave_laser"));
+
+    public static final RegistryObject<EntityType<KraveMouthBeam>> KRAVE_MOUTH_BEAM =
+            ENTITIES.register("krave_mouth_beam", () -> EntityType.Builder
+                    .<KraveMouthBeam>of(KraveMouthBeam::new, MobCategory.MISC)
+                    .sized(0.3F, 0.3F).clientTrackingRange(16).updateInterval(1)
+                    .build("krave_mouth_beam"));
 
     public static final RegistryObject<EntityType<SkyCinematic>> SKY_CINEMATIC =
             ENTITIES.register("sky_cinematic", () -> EntityType.Builder

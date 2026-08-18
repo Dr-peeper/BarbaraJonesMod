@@ -134,9 +134,40 @@
   "sea_level": 0,
   "spawn_target": [],
   "surface_rule": {
-    "type": "minecraft:block",
-    "result_state": {
-      "Name": "minecraft:blackstone"
-    }
+    "type": "minecraft:sequence",
+    "sequence": [
+      {
+        "type": "minecraft:condition",
+        "if_condition": {
+          "type": "minecraft:stone_depth",
+          "offset": 0,
+          "surface_type": "floor",
+          "add_surface_depth": false,
+          "secondary_depth_range": 0
+        },
+        "then_run": {
+          "type": "minecraft:block",
+          "result_state": { "Name": "barbarajones:krave_grass" }
+        }
+      },
+      {
+        "type": "minecraft:condition",
+        "if_condition": {
+          "type": "minecraft:stone_depth",
+          "offset": 6,
+          "surface_type": "floor",
+          "add_surface_depth": true,
+          "secondary_depth_range": 0
+        },
+        "then_run": {
+          "type": "minecraft:block",
+          "result_state": { "Name": "barbarajones:krave_dirt" }
+        }
+      },
+      {
+        "type": "minecraft:block",
+        "result_state": { "Name": "minecraft:blackstone" }
+      }
+    ]
   }
 }
