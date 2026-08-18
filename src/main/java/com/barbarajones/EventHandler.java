@@ -137,8 +137,7 @@ public class EventHandler {
     }
 
     private void spawnDuhlWol(Player player) {
-        ServerLevel level = player.serverLevel();
-        if (level == null) {
+        if (!(player.level() instanceof ServerLevel level)) {
             return;
         }
         try {

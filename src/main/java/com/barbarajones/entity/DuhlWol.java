@@ -6,15 +6,17 @@ import com.barbarajones.content.ModSounds;
 import net.minecraft.ChatFormatting;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.network.chat.Component;
-import net.minecraft.network.synced.EntityDataAccessor;
-import net.minecraft.network.synced.SynchedEntityData;
+import net.minecraft.network.syncher.EntityDataAccessor;
+import net.minecraft.network.syncher.EntityDataSerializers;
+import net.minecraft.network.syncher.SynchedEntityData;
+import net.minecraft.server.level.ServerLevel;
 import net.minecraft.sounds.SoundEvents;
 import net.minecraft.sounds.SoundSource;
 import net.minecraft.world.InteractionHand;
 import net.minecraft.world.InteractionResult;
 import net.minecraft.world.damagesource.DamageSource;
 import net.minecraft.world.entity.EntityType;
-import net.minecraft.world.entity.Mob;
+import net.minecraft.world.entity.PathfinderMob;
 import net.minecraft.world.entity.ai.attributes.AttributeSupplier;
 import net.minecraft.world.entity.ai.attributes.Attributes;
 import net.minecraft.world.entity.ai.goal.LookAtPlayerGoal;
@@ -30,11 +32,11 @@ import net.minecraft.world.level.Level;
  * fail to deliver in 5 minutes and he turns hostile - 4x zombie HP, 1.5x damage,
  * and a nasty pin attack.
  */
-public class DuhlWol extends Mob {
+public class DuhlWol extends PathfinderMob {
 
-    private static final EntityDataAccessor<Integer> OWED = SynchedEntityData.defineId(DuhlWol.class, net.minecraft.network.synced.EntityDataSerializers.INT);
-    private static final EntityDataAccessor<Integer> TIMER = SynchedEntityData.defineId(DuhlWol.class, net.minecraft.network.synced.EntityDataSerializers.INT);
-    private static final EntityDataAccessor<Boolean> HOSTILE = SynchedEntityData.defineId(DuhlWol.class, net.minecraft.network.synced.EntityDataSerializers.BOOLEAN);
+    private static final EntityDataAccessor<Integer> OWED = SynchedEntityData.defineId(DuhlWol.class, EntityDataSerializers.INT);
+    private static final EntityDataAccessor<Integer> TIMER = SynchedEntityData.defineId(DuhlWol.class, EntityDataSerializers.INT);
+    private static final EntityDataAccessor<Boolean> HOSTILE = SynchedEntityData.defineId(DuhlWol.class, EntityDataSerializers.BOOLEAN);
 
     // what Duhl wants today: 0=dirt, 1=stone, 2=andesite, 3=iron, 4=emerald, 5=dollars
     private static final int[] WANT = { 0, 1, 2, 3, 4, 5 };
@@ -49,7 +51,7 @@ public class DuhlWol extends Mob {
 
     private int pinCooldown = 0;
 
-    public DuhlWol(EntityType<? extends Mob> type, Level level) {
+    public DuhlWol(EntityType<? extends PathfinderMob> type, Level level) {
         super(type, level);
     }
 
@@ -62,7 +64,7 @@ public class DuhlWol extends Mob {
     }
 
     public static AttributeSupplier.Builder createAttributes() {
-        return Mob.createMobAttributes()
+        return PathfinderMob.createMobAttributes()
                 .add(Attributes.MAX_HEALTH, 40.0D)              // 4x zombie (10)
                 .add(Attributes.MOVEMENT_SPEED, 0.25D)
                 .add(Attributes.ATTACK_DAMAGE, 3.0D)            // 1.5x zombie (2)
@@ -148,8 +150,10 @@ public class DuhlWol extends Mob {
                     if (this.tickCount % 60 == 0) {
                         Player p = (Player) this.getTarget();
                         p.setDeltaMovement(0, 0, 0);
-                        for (int i = 0; i < 20; i++) {
-                            p.serverLevel().sendParticles(net.minecraft.core.particles.ParticleTypes.CRIT, p.getX(), p.getY() + 1, p.getZ(), 3, 0.3, 0.3, 0.3, 0.1);
+                        if (this.level() instanceof ServerLevel serverLevel) {
+                            for (int i = 0; i < 20; i++) {
+                                serverLevel.sendParticles(net.minecraft.core.particles.ParticleTypes.CRIT, p.getX(), p.getY() + 1, p.getZ(), 3, 0.3, 0.3, 0.3, 0.1);
+                            }
                         }
                         pinCooldown = 40;   // ~2 seconds of pin
                         playSound(SoundEvents.GENERIC_EXPLODE, 0.8F, 1.1F);

@@ -1,8 +1,9 @@
 package com.barbarajones.entity;
 
 import net.minecraft.nbt.CompoundTag;
-import net.minecraft.network.synced.EntityDataAccessor;
-import net.minecraft.network.synced.SynchedEntityData;
+import net.minecraft.network.syncher.EntityDataAccessor;
+import net.minecraft.network.syncher.EntityDataSerializers;
+import net.minecraft.network.syncher.SynchedEntityData;
 import net.minecraft.sounds.SoundEvents;
 import net.minecraft.sounds.SoundSource;
 import net.minecraft.world.entity.Entity;
@@ -16,13 +17,15 @@ import net.minecraft.world.level.Level;
 public class DuhlWolCar extends Entity {
 
     private static final EntityDataAccessor<Integer> STATE = SynchedEntityData.defineId(
-            DuhlWolCar.class, net.minecraft.network.synced.EntityDataSerializers.INT);
+            DuhlWolCar.class, EntityDataSerializers.INT);
     // state: 0=arriving (moving toward target), 1=parked (idle), 2=leaving (moving away)
 
-    private static final EntityDataAccessor<Double> TARGET_X = SynchedEntityData.defineId(
-            DuhlWolCar.class, net.minecraft.network.synced.EntityDataSerializers.DOUBLE);
-    private static final EntityDataAccessor<Double> TARGET_Z = SynchedEntityData.defineId(
-            DuhlWolCar.class, net.minecraft.network.synced.EntityDataSerializers.DOUBLE);
+    // Minecraft's SynchedEntityData has no double serializer - float is plenty
+    // of precision for a car's target coordinates.
+    private static final EntityDataAccessor<Float> TARGET_X = SynchedEntityData.defineId(
+            DuhlWolCar.class, EntityDataSerializers.FLOAT);
+    private static final EntityDataAccessor<Float> TARGET_Z = SynchedEntityData.defineId(
+            DuhlWolCar.class, EntityDataSerializers.FLOAT);
 
     public DuhlWolCar(EntityType<?> type, Level level) {
         super(type, level);
@@ -32,8 +35,8 @@ public class DuhlWolCar extends Entity {
     @Override
     protected void defineSynchedData() {
         this.entityData.define(STATE, 0);
-        this.entityData.define(TARGET_X, 0.0D);
-        this.entityData.define(TARGET_Z, 0.0D);
+        this.entityData.define(TARGET_X, 0.0F);
+        this.entityData.define(TARGET_Z, 0.0F);
     }
 
     public void setState(int s) {
@@ -45,8 +48,8 @@ public class DuhlWolCar extends Entity {
     }
 
     public void setTarget(double x, double z) {
-        this.entityData.set(TARGET_X, x);
-        this.entityData.set(TARGET_Z, z);
+        this.entityData.set(TARGET_X, (float) x);
+        this.entityData.set(TARGET_Z, (float) z);
     }
 
     public double getTargetX() {
