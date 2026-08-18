@@ -1,0 +1,20 @@
+{
+  "variants": {
+    "level=0": { "model": "barbarajones:block/chocolate" },
+    "level=1": { "model": "barbarajones:block/chocolate" },
+    "level=2": { "model": "barbarajones:block/chocolate" },
+    "level=3": { "model": "barbarajones:block/chocolate" },
+    "level=4": { "model": "barbarajones:block/chocolate" },
+    "level=5": { "model": "barbarajones:block/chocolate" },
+    "level=6": { "model": "barbarajones:block/chocolate" },
+    "level=7": { "model": "barbarajones:block/chocolate" },
+    "level=8": { "model": "barbarajones:block/chocolate" },
+    "level=9": { "model": "barbarajones:block/chocolate" },
+    "level=10": { "model": "barbarajones:block/chocolate" },
+    "level=11": { "model": "barbarajones:block/chocolate" },
+    "level=12": { "model": "barbarajones:block/chocolate" },
+    "level=13": { "model": "barbarajones:block/chocolate" },
+    "level=14": { "model": "barbarajones:block/chocolate" },
+    "level=15": { "model": "barbarajones:block/chocolate" }
+  }
+}

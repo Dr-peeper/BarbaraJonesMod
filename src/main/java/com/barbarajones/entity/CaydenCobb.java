@@ -84,6 +84,8 @@ public class CaydenCobb extends TamableAnimal {
     private String homeDim = "";
     private int homeCheckTimer = 100;
     private int graceTicks;
+    /** Client-only: ticks since the ascension became visible, or -1. */
+    private int ssjClientAge = -1;
     private int ssjTicks;
     /** While true the transformation has no timer: it ends when the boss does. */
     private boolean ssjUntilBossDies;
@@ -177,6 +179,11 @@ public class CaydenCobb extends TamableAnimal {
 
     public boolean isSuperSaiyan() {
         return this.entityData.get(SSJ);
+    }
+
+    /** Client-side ticks since he ascended; -1 when not ascended. */
+    public int ticksSinceAscension() {
+        return this.ssjClientAge;
     }
 
     /** Arriving in the Kosmos. He ascends, shouts, and stays ascended until the boss falls. */
@@ -296,6 +303,14 @@ public class CaydenCobb extends TamableAnimal {
     public void tick() {
         super.tick();
         if (level().isClientSide) {
+            // Client-side age of the transformation, used by SsjAuraLayer for the
+            // one-second ground shockwave. Derived from the synced SSJ flag rather
+            // than networked separately - there is nothing here worth a packet.
+            if (isSuperSaiyan()) {
+                this.ssjClientAge = this.ssjClientAge < 0 ? 0 : this.ssjClientAge + 1;
+            } else {
+                this.ssjClientAge = -1;
+            }
             return;
         }
 
