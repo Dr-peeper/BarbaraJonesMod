@@ -42,43 +42,65 @@ function Upgrade($name){
 "upgrading legacy skins:"
 foreach($n in 'cayden','daniel','mom','plug','manager'){ Upgrade $n }
 
-# ---- Krave Monster: rebuild as a 64x64 humanoid galaxy-hoodie skin ----------
-$b = New-Object System.Drawing.Bitmap 64,64,([System.Drawing.Imaging.PixelFormat]::Format32bppArgb)
-Rct $b 0 0 64 64 (C '000000' 0)
-$skin=C 'D9A57F'; $skinD=C 'B98A66'; $purp=C '3A1E6E'; $purpD=C '281046'; $purpL=C '5A3A9A'; $pants=C '1E1630'
-$script:sd=7
+# ---- Krave Monster: custom beast model, 128x128 ------------------------------
+# Matches the UV layout baked into KraveMonsterModel.java exactly - a
+# four-legged, spine-spiked, tailed creature, not the shared humanoid rig.
+# Box(u,v,w,h,d) fills a part's whole UV footprint (Minecraft's standard cube
+# unwrap: width 2*(w+d), height d+h), same footprint math the model uses.
+$b = New-Object System.Drawing.Bitmap 128,128,([System.Drawing.Imaging.PixelFormat]::Format32bppArgb)
+Rct $b 0 0 128 128 (C '000000' 0)
+function Box($bmp,$u,$v,$w,$h,$d,$c){ Rct $bmp $u $v (2*($w+$d)) ($d+$h) $c }
+
+$hide=C '15102A'; $hideL=C '241A45'; $bone=C 'E8E2D8'; $boneD=C 'B8AE9C'
+$glowEye=C '9CF0FF'; $claw=C '2A2436'
+$script:sd=11
 function Rnd([int]$n){ $script:sd=($script:sd*1103515245+12345) -band 0x7fffffff; return $script:sd % $n }
-function Galaxy($x,$y,$w,$h){
-    Rct $b $x $y $w $h $purp
-    for($i=0;$i -lt ($w*$h/3);$i++){ $px=$x+(Rnd $w); $py=$y+(Rnd $h); $r=Rnd 6
-        if($r -eq 0){ Rct $b $px $py 1 1 (C 'B060D0') } elseif($r -eq 1){ Rct $b $px $py 1 1 (C '4060C0') }
-        elseif($r -eq 2){ Rct $b $px $py 1 1 $purpD } elseif($r -eq 3){ Rct $b $px $py 1 1 $purpL } }
-    for($i=0;$i -lt ($w*$h/9);$i++){ Rct $b ($x+(Rnd $w)) ($y+(Rnd $h)) 1 1 (C 'FFFFFF') }
+function Galaxy($bmp,$u,$v,$w,$h,$d,$base){
+    Box $bmp $u $v $w $h $d $base
+    $fw=2*($w+$d); $fh=$d+$h
+    for($i=0;$i -lt ($fw*$fh/4);$i++){ $px=$u+(Rnd $fw); $py=$v+(Rnd $fh); $r=Rnd 7
+        if($r -eq 0){ Rct $bmp $px $py 1 1 (C '8A5CD0') } elseif($r -eq 1){ Rct $bmp $px $py 1 1 (C '3A6CD8') }
+        elseif($r -eq 2){ Rct $bmp $px $py 1 1 $hideL } }
+    for($i=0;$i -lt ($fw*$fh/14);$i++){ Rct $bmp ($u+(Rnd $fw)) ($v+(Rnd $fh)) 1 1 (C 'F4F0FF') }
 }
-# head (chubby face) - standard humanoid UV
-Rct $b 8 0 8 8 $skinD; Rct $b 16 0 8 8 $skinD
-Rct $b 0 8 8 8 $skin; Rct $b 8 8 8 8 $skin; Rct $b 16 8 8 8 $skin; Rct $b 24 8 8 8 $skinD
-Rct $b 10 11 1 1 (C 'FFFFFF'); Rct $b 11 11 1 1 (C '2A2018')
-Rct $b 13 11 1 1 (C '2A2018'); Rct $b 14 11 1 1 (C 'FFFFFF')
-Rct $b 11 13 2 1 $skinD
-Rct $b 10 15 4 1 (C '7A4A44')
-Rct $b 8 14 2 2 (C 'E0B48A'); Rct $b 14 14 2 2 (C 'E0B48A')
-# hood on the hat layer
-Galaxy 40 0 8 8; Galaxy 32 8 8 8; Galaxy 48 8 8 8; Galaxy 56 8 8 8
-Rct $b 40 8 8 2 $purpD
-# body (galaxy hoodie)
-Galaxy 16 16 24 16
-Rct $b 20 28 8 4 (C 'B060D0')
-# right arm (40,16) + left arm (32,48)
-Galaxy 40 16 16 16
-Rct $b 44 28 4 4 $skin; Rct $b 40 28 4 4 $skin; Rct $b 48 28 4 4 $skin; Rct $b 52 28 4 4 $skin
-Galaxy 32 48 16 16
-Rct $b 36 60 4 4 $skin; Rct $b 32 60 4 4 $skin; Rct $b 40 60 4 4 $skin; Rct $b 44 60 4 4 $skin
-# right leg (0,16) + left leg (16,48)
-Rct $b 0 16 16 16 $pants; Rct $b 0 30 16 2 (C '101018')
-Rct $b 16 48 16 16 $pants; Rct $b 16 62 16 2 (C '101018')
+
+# spine: hips -> chest -> neck
+Galaxy $b 0  0 10 8 10 $hide
+Galaxy $b 40 0  9 8 9  $hide
+Galaxy $b 76 0  5 5 5  $hide
+
+# head: skull, jaw, horns (bone-colored, no galaxy speckle - keeps the face readable)
+Box $b 0  26 7 6 7 $hide
+Box $b 28 26 4 3 6 $hideL
+Box $b 64 26 2 4 2 $bone
+Box $b 72 26 2 4 2 $bone
+# glowing eyes + claws/horn tips painted after the base fill
+Rct $b 3  28 1 1 $glowEye
+Rct $b 10 28 1 1 $glowEye
+Rct $b 65 26 2 1 $boneD
+Rct $b 73 26 2 1 $boneD
+
+# front legs (paint once; model mirrors this UV for the opposite side)
+Galaxy $b 0  46 4 7 4 $hide
+Galaxy $b 16 46 3 6 3 $hide
+Box    $b 28 46 4 3 5 $claw
+
+# back legs
+Galaxy $b 46 46 5 8 5 $hide
+Galaxy $b 66 46 4 7 4 $hide
+Box    $b 82 46 4 3 6 $claw
+
+# tail, tapering
+Galaxy $b 0  64 4 4 5 $hide
+Galaxy $b 18 64 3 3 4 $hideL
+Galaxy $b 32 64 2 2 3 $hideL
+
+# spine spikes: bone-colored, sharp accent against the dark hide
+Box $b 42 64 2 4 2 $bone
+Box $b 50 64 2 6 2 $bone
+
 $b.Save("$edir\krave_monster.png",[System.Drawing.Imaging.ImageFormat]::Png); $b.Dispose()
-"  krave_monster rebuilt as 64x64 humanoid"
+"  krave_monster rebuilt as a custom 128x128 dark galaxy beast"
 
 # ---- the missing housing_query icon + model --------------------------------
 $q = New-Object System.Drawing.Bitmap 16,16,([System.Drawing.Imaging.PixelFormat]::Format32bppArgb)
@@ -159,6 +181,11 @@ function RedesignPlug($bmp){
     Rct $bmp 16 20 4 12 $hoodieDark; Rct $bmp 28 20 4 12 $hoodieDark; Rct $bmp 32 20 8 12 $hoodieDark
     Rct $bmp 20 20 8 12 $hoodieDark
     Rct $bmp 22 20 1 5 $stringW; Rct $bmp 25 20 1 5 $stringW
+    # sleeves: right arm (40,16) + left arm (32,48) - same hoodie black as the body.
+    # Explicitly repainted (not just left as whatever was already there) so this
+    # function fully resets every pixel it's responsible for on every run.
+    Rct $bmp 40 16 16 16 $hoodieDark
+    Rct $bmp 32 48 16 16 $hoodieDark
 
     # legs: jeans + sneakers, applied to right leg (0,16) and left leg (16,48)
     foreach($base in @(@(0,16),@(16,48))){
@@ -235,6 +262,15 @@ function Shade($bmp,[double]$gradStrength=0.28,[double]$edgeDark=0.22,[int]$grai
     }
 }
 
+
+# CAVEAT: Shade is not fully idempotent on already-shaded, very dark pixels.
+# Its edge-darkening can clamp several neighboring pixels to the same floor
+# value, which still reads as one flat region to the next run's flood-fill,
+# so re-running this script on already-shaded art can darken those spots
+# further each time. plug/barbara/cayden/daniel/mom/manager/krave_monster
+# should only need shading once after a real change; if you need to re-shade
+# from scratch, restore the pre-shading PNGs from git history first rather
+# than repeatedly re-running this on top of already-shaded output.
 "applying Plug redesign + shading pass to all humanoid-rig skins:"
 $plugPath = "$edir\plug.png"
 $orig = [System.Drawing.Bitmap]::FromFile($plugPath)

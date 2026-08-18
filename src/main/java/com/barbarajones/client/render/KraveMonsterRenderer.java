@@ -4,8 +4,6 @@ import com.barbarajones.BarbaraJonesMod;
 import com.barbarajones.entity.KraveMonster;
 
 import com.mojang.blaze3d.vertex.PoseStack;
-import net.minecraft.client.model.HumanoidModel;
-import net.minecraft.client.model.geom.ModelLayers;
 import net.minecraft.client.renderer.MultiBufferSource;
 import net.minecraft.client.renderer.RenderType;
 import net.minecraft.client.renderer.entity.EntityRendererProvider;
@@ -15,22 +13,23 @@ import net.minecraft.util.Mth;
 import net.minecraft.world.phys.Vec3;
 
 /**
- * The Krave Monster: a chunky biped in a purple galaxy hoodie. Before the solid
- * model we draw the after-image trail - a translucent copy at each of his last
- * positions, so a teleport smears ten ghosts across the room.
+ * The Krave Monster: a custom four-legged/rearing beast (see KraveMonsterModel),
+ * not the shared humanoid rig. Before the solid model we draw the after-image
+ * trail - a translucent copy at each of his last positions, so a teleport
+ * smears ten ghosts across the room.
  */
-public class KraveMonsterRenderer extends MobRenderer<KraveMonster, HumanoidModel<KraveMonster>> {
+public class KraveMonsterRenderer extends MobRenderer<KraveMonster, KraveMonsterModel> {
 
     private static final ResourceLocation TEXTURE =
             new ResourceLocation(BarbaraJonesMod.MODID, "textures/entity/krave_monster.png");
 
     public KraveMonsterRenderer(EntityRendererProvider.Context ctx) {
-        super(ctx, new HumanoidModel<>(ctx.bakeLayer(ModelLayers.PLAYER)), 0.7F);
+        super(ctx, new KraveMonsterModel(ctx.bakeLayer(KraveMonsterModel.LAYER_LOCATION)), 0.9F);
     }
 
     @Override
     protected void scale(KraveMonster entity, PoseStack pose, float partialTicks) {
-        pose.scale(1.3F, 1.25F, 1.3F);
+        pose.scale(1.15F, 1.15F, 1.15F);
     }
 
     @Override
@@ -63,7 +62,7 @@ public class KraveMonsterRenderer extends MobRenderer<KraveMonster, HumanoidMode
             pose.pushPose();
             pose.translate(g.x - now.x, g.y - now.y, g.z - now.z);
             pose.mulPose(com.mojang.math.Axis.YP.rotationDegrees(180.0F - e.ghostYaw[idx]));
-            pose.scale(-1.3F, -1.25F, 1.3F);
+            pose.scale(-1.15F, -1.15F, 1.15F);
             pose.translate(0.0D, -1.501D, 0.0D);
 
             this.model.setupAnim(e, 0.0F, 0.0F, e.tickCount + partial, 0.0F, 0.0F);

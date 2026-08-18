@@ -5,9 +5,13 @@ import com.barbarajones.content.ModSounds;
 
 import net.minecraft.core.BlockPos;
 import net.minecraft.network.chat.Component;
+import net.minecraft.network.syncher.EntityDataAccessor;
+import net.minecraft.network.syncher.EntityDataSerializers;
+import net.minecraft.network.syncher.SynchedEntityData;
 import net.minecraft.server.level.ServerBossEvent;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.sounds.SoundEvent;
+import net.minecraft.util.Mth;
 import net.minecraft.world.BossEvent;
 import net.minecraft.world.damagesource.DamageSource;
 import net.minecraft.world.entity.EntityType;
@@ -43,6 +47,15 @@ public class KraveMonster extends Monster {
     public int ghostHead = 0;
     public boolean ghostFilled = false;
 
+    /**
+     * 0 = all fours, 1 = reared up on its hind legs. Eased server-side toward a
+     * target each tick (see updateStance) and synced to the client, where
+     * KraveMonsterModel blends the whole pose - spine angle, leg swing, the lot -
+     * between the two stances by this amount.
+     */
+    private static final EntityDataAccessor<Float> DATA_REAR =
+            SynchedEntityData.defineId(KraveMonster.class, EntityDataSerializers.FLOAT);
+
     private final ServerBossEvent bossEvent =
             new ServerBossEvent(Component.literal("The Krave Monster"),
                     BossEvent.BossBarColor.PURPLE, BossEvent.BossBarOverlay.PROGRESS);
@@ -54,6 +67,28 @@ public class KraveMonster extends Monster {
         this.xpReward = 50;
         for (int i = 0; i < GHOSTS; i++) {
             this.ghostPos[i] = Vec3.ZERO;
+        }
+    }
+
+    @Override
+    protected void defineSynchedData() {
+        super.defineSynchedData();
+        this.entityData.define(DATA_REAR, 0.0F);
+    }
+
+    /** Client-side, partial-tick-safe: use in setupAnim. */
+    public float getRearAmount(float partialTick) {
+        return this.entityData.get(DATA_REAR);
+    }
+
+    private void updateStance() {
+        LivingEntity target = getTarget();
+        boolean shouldRear = target != null
+                && (distanceToSqr(target) < 9.0D * 9.0D || this.getDeltaMovement().y > 0.5D);
+        float current = this.entityData.get(DATA_REAR);
+        float next = Mth.clamp(current + (shouldRear ? 0.05F : -0.04F), 0.0F, 1.0F);
+        if (next != current) {
+            this.entityData.set(DATA_REAR, next);
         }
     }
 
@@ -103,6 +138,7 @@ public class KraveMonster extends Monster {
             return;
         }
         this.bossEvent.setProgress(getHealth() / getMaxHealth());
+        updateStance();
 
         LivingEntity target = getTarget();
 

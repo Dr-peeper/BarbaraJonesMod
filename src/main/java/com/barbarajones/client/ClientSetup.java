@@ -6,6 +6,7 @@ import com.barbarajones.client.render.CaydenRenderer;
 import com.barbarajones.client.render.GiantKraveBoxRenderer;
 import com.barbarajones.client.render.HumanoidLikeRenderer;
 import com.barbarajones.client.render.KraveMeteorRenderer;
+import com.barbarajones.client.render.KraveMonsterModel;
 import com.barbarajones.client.render.KraveMonsterRenderer;
 import com.barbarajones.client.render.KraveTornadoRenderer;
 import com.barbarajones.client.render.NuggetRenderer;
@@ -42,5 +43,10 @@ public final class ClientSetup {
         event.registerEntityRenderer(ModEntities.GIANT_BOX.get(), GiantKraveBoxRenderer::new);
         event.registerEntityRenderer(ModEntities.TORNADO.get(), KraveTornadoRenderer::new);
         event.registerEntityRenderer(ModEntities.SKY_CINEMATIC.get(), SkyCinematicRenderer::new);
+    }
+
+    @SubscribeEvent
+    public static void registerLayers(EntityRenderersEvent.RegisterLayerDefinitions event) {
+        event.registerLayerDefinition(KraveMonsterModel.LAYER_LOCATION, KraveMonsterModel::createBodyLayer);
     }
 }
