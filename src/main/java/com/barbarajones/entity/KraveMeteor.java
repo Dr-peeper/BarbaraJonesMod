@@ -28,6 +28,11 @@ public class KraveMeteor extends Entity {
     public static final byte TYPE_GATORADE = 5;
     public static final byte TYPE_MOUSE    = 6;
 
+    /** True when this was thrown by Super Saiyan Cayden - see saiyanStrike(). */
+    private boolean saiyan;
+    /** Who threw it. The boss only takes full damage from an ascended Cayden. */
+    private com.barbarajones.entity.CaydenCobb saiyanOwner;
+
     private static final EntityDataAccessor<Byte> KIND =
             SynchedEntityData.defineId(KraveMeteor.class, EntityDataSerializers.BYTE);
 
@@ -37,6 +42,18 @@ public class KraveMeteor extends Entity {
 
     public byte getKind() {
         return this.entityData.get(KIND);
+    }
+
+    /**
+     * Fired by an ascended Cayden during the Kosmos boss fight. These land as
+     * strikes rather than bombs: the Krave Monster and his minions take the
+     * damage, while Cayden, the player and the pets standing in the blast are
+     * untouched, and nothing is dug out of the island.
+     */
+    public KraveMeteor saiyanStrike(com.barbarajones.entity.CaydenCobb owner) {
+        this.saiyan = true;
+        this.saiyanOwner = owner;
+        return this;
     }
 
     public KraveMeteor kind(byte k) {
@@ -89,6 +106,11 @@ public class KraveMeteor extends Entity {
     }
 
     private void impact() {
+        if (this.saiyan) {
+            saiyanImpact();
+            discard();
+            return;
+        }
         switch (getKind()) {
             case TYPE_GATORADE -> level().playSound(null, blockPosition(),
                     net.minecraft.sounds.SoundEvents.BREWING_STAND_BREW, getSoundSource(), 1.5F, 0.5F);
@@ -120,6 +142,34 @@ public class KraveMeteor extends Entity {
         discard();
     }
 
+    /**
+     * A strike, not a bomb. Hostiles in the crater take real damage; the crew
+     * standing next to them take none, and the island keeps its blocks.
+     */
+    private void saiyanImpact() {
+        level().playSound(null, blockPosition(), ModSounds.KRAVE_BOOM.get(), getSoundSource(), 3.0F, 0.7F);
+        if (!(level() instanceof net.minecraft.server.level.ServerLevel sl)) {
+            return;
+        }
+        sl.sendParticles(net.minecraft.core.particles.ParticleTypes.EXPLOSION_EMITTER,
+                getX(), getY() + 1.0D, getZ(), 2, 1.5D, 1.0D, 1.5D, 0.0D);
+        sl.sendParticles(net.minecraft.core.particles.ParticleTypes.FLAME,
+                getX(), getY() + 1.0D, getZ(), 60, 3.0D, 1.5D, 3.0D, 0.15D);
+
+        var box = getBoundingBox().inflate(6.0D);
+        for (var victim : sl.getEntitiesOfClass(net.minecraft.world.entity.LivingEntity.class, box)) {
+            if (victim instanceof com.barbarajones.entity.CaydenCobb
+                    || victim instanceof com.barbarajones.entity.BarbaraJones
+                    || victim instanceof net.minecraft.world.entity.player.Player) {
+                continue;   // his own side never eats a meteor
+            }
+            // Attributed to Cayden: KraveMonster.hurt() cuts anything else to 5%.
+            victim.hurt(this.saiyanOwner != null
+                    ? sl.damageSources().indirectMagic(this, this.saiyanOwner)
+                    : sl.damageSources().magic(), 14.0F);
+        }
+    }
+
     private void igniteAround() {
         BlockPos base = blockPosition();
         for (int dx = -2; dx <= 2; dx++) {
@@ -142,11 +192,13 @@ public class KraveMeteor extends Entity {
     @Override
     protected void readAdditionalSaveData(CompoundTag tag) {
         kind(tag.getByte("Kind"));
+        this.saiyan = tag.getBoolean("Saiyan");
     }
 
     @Override
     protected void addAdditionalSaveData(CompoundTag tag) {
         tag.putByte("Kind", getKind());
+        tag.putBoolean("Saiyan", this.saiyan);
     }
 
     @Override

@@ -28,6 +28,8 @@ public final class KraveKosmosBattle {
 
     private static final List<KraveKosmosBattle> ACTIVE = new ArrayList<>();
 
+    /** Ticks between Cayden's meteor barrages. */
+    private static final int METEOR_INTERVAL = 90;
     private static final int MINION_INTERVAL = 200;
     private static final int BOX_INTERVAL = 500;
     private static final int MAX_MINIONS = 6;
@@ -40,6 +42,7 @@ public final class KraveKosmosBattle {
     private int t;
     private int minionTimer = 100;
     private int boxTimer = 200;
+    private int meteorTimer = 60;
 
     private KraveKosmosBattle(ServerLevel level, KraveMonster boss, CaydenCobb cayden) {
         this.level = level;
@@ -89,12 +92,23 @@ public final class KraveKosmosBattle {
 
         if (!this.boss.isAlive()) {
             announce(ChatFormatting.GREEN, "" + ChatFormatting.BOLD, "IT STOPS NOW.");
+            // The whole point of the ascension was this fight. It is over.
+            if (this.cayden.isAlive()) {
+                this.cayden.powerDown();
+            }
             return true;
         }
         if (!this.cayden.isAlive() || !this.cayden.isSuperSaiyan()) {
             this.boss.setBossFightActive(false);
             announce(ChatFormatting.RED, "", "Cayden powers down. The fight is over - for now.");
             return true;
+        }
+
+        // The apocalypse arsenal, pointed at someone who deserves it. This is
+        // the one place he can throw it without dying for it.
+        if (--this.meteorTimer <= 0) {
+            this.meteorTimer = METEOR_INTERVAL;
+            meteorBarrage();
         }
 
         if (--this.minionTimer <= 0) {
@@ -114,6 +128,25 @@ public final class KraveKosmosBattle {
 
     private int countNearby(Class<? extends net.minecraft.world.entity.Entity> type) {
         return this.level.getEntitiesOfClass(type, this.boss.getBoundingBox().inflate(80.0D)).size();
+    }
+
+    /** Rains Cayden's meteors down on the boss - and only on the boss' side. */
+    private void meteorBarrage() {
+        Vec3 at = this.boss.position();
+        int count = 3 + this.level.random.nextInt(3);
+        for (int i = 0; i < count; i++) {
+            com.barbarajones.entity.KraveMeteor m = ModEntities.METEOR.get().create(this.level);
+            if (m == null) {
+                continue;
+            }
+            double ox = (this.level.random.nextDouble() - 0.5D) * 10.0D;
+            double oz = (this.level.random.nextDouble() - 0.5D) * 10.0D;
+            m.saiyanStrike(this.cayden);
+            m.setPos(at.x + ox, at.y + 42.0D + i * 3.0D, at.z + oz);
+            m.aim(-ox * 0.05D, -oz * 0.05D);
+            this.level.addFreshEntity(m);
+        }
+        this.cayden.playSound(com.barbarajones.content.ModSounds.KRAVE_ROAR.get(), 1.4F, 1.2F);
     }
 
     private void spawnMinion() {

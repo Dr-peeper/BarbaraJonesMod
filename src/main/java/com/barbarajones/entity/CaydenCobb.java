@@ -80,9 +80,13 @@ public class CaydenCobb extends TamableAnimal {
     public static final int GRACE_TICKS = 600;
 
     private BlockPos home;
+    /** Dimension the home was claimed in - a house in the Overworld is not a house in the Kosmos. */
+    private String homeDim = "";
     private int homeCheckTimer = 100;
     private int graceTicks;
     private int ssjTicks;
+    /** While true the transformation has no timer: it ends when the boss does. */
+    private boolean ssjUntilBossDies;
 
     public CaydenCobb(EntityType<? extends TamableAnimal> type, Level level) {
         super(type, level);
@@ -175,7 +179,18 @@ public class CaydenCobb extends TamableAnimal {
         return this.entityData.get(SSJ);
     }
 
-    /** Liquid chocolate does this instead of burning him - see EventHandler.onLivingTick. */
+    /** Arriving in the Kosmos. He ascends, shouts, and stays ascended until the boss falls. */
+    public void onEnterKosmos() {
+        if (level().isClientSide) {
+            return;
+        }
+        this.ssjUntilBossDies = true;
+        becomeSuperSaiyan();
+        level().playSound(null, blockPosition(), ModSounds.CAYDEN_SHOUT.get(),
+                getSoundSource(), 1.6F, 1.0F);
+    }
+
+    /** Liquid chocolate does this too - see EventHandler.onLivingTick. */
     public void becomeSuperSaiyan() {
         if (isSuperSaiyan() || level().isClientSide) {
             return;
@@ -197,11 +212,20 @@ public class CaydenCobb extends TamableAnimal {
         }
     }
 
-    private void powerDown() {
+    /** Back to being a kid who eats too much cereal. */
+    public void powerDown() {
+        boolean was = isSuperSaiyan();
         this.entityData.set(SSJ, false);
         this.ssjTicks = 0;
+        this.ssjUntilBossDies = false;
         setNoGravity(false);
         applyKraveStats();
+        if (was && !level().isClientSide) {
+            for (Player p : level().getEntitiesOfClass(Player.class, getBoundingBox().inflate(48.0D))) {
+                p.sendSystemMessage(Component.literal(ChatFormatting.GOLD
+                        + "Cayden powers down. He is just a kid again."));
+            }
+        }
     }
 
     // ---- housing -----------------------------------------------------------
@@ -217,6 +241,7 @@ public class CaydenCobb extends TamableAnimal {
         if (result.valid) {
             this.home = result.anchor;
             this.entityData.set(HOUSED, true);
+            this.homeDim = level().dimension().location().toString();
             player.sendSystemMessage(Component.literal(ChatFormatting.GREEN
                     + "Cayden moves in. (" + result.volume + " blocks of space)"));
             playSound(SoundEvents.VILLAGER_YES, 1.0F, 1.4F);
@@ -232,8 +257,19 @@ public class CaydenCobb extends TamableAnimal {
         }
     }
 
+    /** True only when he is standing in the dimension his house is actually in. */
+    public boolean homeIsInThisDimension() {
+        return this.home != null
+                && level().dimension().location().toString().equals(this.homeDim);
+    }
+
     /** Periodically re-check the claimed home; he moves out if you ruin it. */
     private void recheckHome() {
+        // His house is in the Overworld. Validating those coordinates against
+        // Kosmos terrain would evict him for a room that is not even here.
+        if (!homeIsInThisDimension()) {
+            return;
+        }
         if (this.home == null || !(level() instanceof ServerLevel)) {
             return;
         }
@@ -282,8 +318,24 @@ public class CaydenCobb extends TamableAnimal {
         if (!isSuperSaiyan() && getFluidTypeHeight(ModFluids.CHOCOLATE_TYPE.get()) > 0.0D) {
             becomeSuperSaiyan();
         }
+        if (isSuperSaiyan() && this.ssjUntilBossDies && this.tickCount % 20 == 0
+                && level() instanceof ServerLevel sl) {
+            // Go and find him. The Kosmos is far too big to rely on follow range.
+            if (!(getTarget() instanceof KraveMonster boss) || !boss.isAlive()) {
+                for (KraveMonster candidate : sl.getEntitiesOfClass(KraveMonster.class,
+                        getBoundingBox().inflate(512.0D, 256.0D, 512.0D))) {
+                    if (candidate.isAlive()) {
+                        setTarget(candidate);
+                        break;
+                    }
+                }
+            }
+        }
+
         if (isSuperSaiyan()) {
-            if (--this.ssjTicks <= 0) {
+            // Linked to the boss fight, the transformation has no clock on it -
+            // it lasts exactly as long as the Krave Monster does.
+            if (!this.ssjUntilBossDies && --this.ssjTicks <= 0) {
                 powerDown();
             } else if (this.tickCount % 5 == 0 && level() instanceof ServerLevel sl) {
                 sl.sendParticles(ParticleTypes.END_ROD, getX(), getY() + getBbHeight() * 0.5D, getZ(),
@@ -358,6 +410,9 @@ public class CaydenCobb extends TamableAnimal {
         heal(4.0F);
         applyKraveStats();
         playSound(SoundEvents.GENERIC_EAT, 1.0F, 1.2F);
+        // he announces it. every single time.
+        level().playSound(null, blockPosition(), ModSounds.CAYDEN_SHOUT.get(),
+                getSoundSource(), 1.0F, 1.0F);
 
         if (fed % 5 == 0) {
             player.sendSystemMessage(Component.literal(ChatFormatting.GOLD
@@ -381,6 +436,12 @@ public class CaydenCobb extends TamableAnimal {
 
     @Override
     public boolean hurt(DamageSource source, float amount) {
+        // Ascended for the Kosmos showdown he simply cannot be killed. That is
+        // the deal the user asked for: this is the one fight where he gets the
+        // full apocalypse arsenal and does not die for using it.
+        if (isSuperSaiyan() && this.ssjUntilBossDies) {
+            return false;
+        }
         // 30 seconds of total immunity after he claws his way back out. He respawns
         // mid-apocalypse - in the air, next to fire, inside the tornado - and used to
         // immediately splatter on landing and trigger the whole thing over again.
@@ -408,13 +469,18 @@ public class CaydenCobb extends TamableAnimal {
     }
 
     @Override
+    protected SoundEvent getAmbientSound() {
+        return ModSounds.CAYDEN_IDLE.get();
+    }
+
+    @Override
     protected SoundEvent getHurtSound(DamageSource source) {
-        return SoundEvents.VILLAGER_HURT;
+        return ModSounds.CAYDEN_HURT.get();
     }
 
     @Override
     protected SoundEvent getDeathSound() {
-        return SoundEvents.VILLAGER_DEATH;
+        return ModSounds.CAYDEN_DEATH.get();
     }
 
     @Override
@@ -424,10 +490,12 @@ public class CaydenCobb extends TamableAnimal {
         tag.putBoolean("KraveRage", isRageUnlocked());
         tag.putBoolean("Ssj", isSuperSaiyan());
         tag.putInt("SsjTicks", this.ssjTicks);
+        tag.putBoolean("SsjBossLinked", this.ssjUntilBossDies);
         if (this.home != null) {
             tag.putInt("HomeX", this.home.getX());
             tag.putInt("HomeY", this.home.getY());
             tag.putInt("HomeZ", this.home.getZ());
+            tag.putString("HomeDim", this.homeDim);
         }
     }
 
@@ -439,10 +507,15 @@ public class CaydenCobb extends TamableAnimal {
         if (tag.getBoolean("Ssj")) {
             this.entityData.set(SSJ, true);
             this.ssjTicks = Math.max(1, tag.getInt("SsjTicks"));
+            this.ssjUntilBossDies = tag.getBoolean("SsjBossLinked");
             setNoGravity(true);
         }
         if (tag.contains("HomeX")) {
             this.home = new BlockPos(tag.getInt("HomeX"), tag.getInt("HomeY"), tag.getInt("HomeZ"));
+            this.homeDim = tag.getString("HomeDim");
+            if (this.homeDim.isEmpty()) {
+                this.homeDim = level().dimension().location().toString();
+            }
             this.entityData.set(HOUSED, true);
         }
         applyKraveStats();
@@ -542,7 +615,7 @@ public class CaydenCobb extends TamableAnimal {
         @Override
         public void tick() {
             BlockPos home = this.cayden.getHome();
-            if (home != null) {
+            if (home != null && this.cayden.homeIsInThisDimension()) {
                 if (this.cayden.blockPosition().distSqr(home) > HOME_LEASH * HOME_LEASH) {
                     this.cayden.getNavigation().moveTo(home.getX() + 0.5D, home.getY(), home.getZ() + 0.5D, 1.0D);
                 }

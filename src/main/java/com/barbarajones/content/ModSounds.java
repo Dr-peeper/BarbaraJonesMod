@@ -28,6 +28,7 @@ public final class ModSounds {
     public static final RegistryObject<SoundEvent> BARBARA_RAGE  = reg("barbara_rage");
     public static final RegistryObject<SoundEvent> CAYDEN_ALARM  = reg("cayden_alarm");
     public static final RegistryObject<SoundEvent> CAYDEN_IDLE   = reg("cayden_idle");
+    public static final RegistryObject<SoundEvent> CAYDEN_SHOUT  = reg("cayden_krave_shout");
     public static final RegistryObject<SoundEvent> CAYDEN_HURT   = reg("cayden_hurt");
     public static final RegistryObject<SoundEvent> CAYDEN_DEATH  = reg("cayden_death");
 

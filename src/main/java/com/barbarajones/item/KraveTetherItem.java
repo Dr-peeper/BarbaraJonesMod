@@ -50,7 +50,15 @@ public class KraveTetherItem extends Item {
         double x = persist.getDouble("KraveReturnX");
         double y = persist.getDouble("KraveReturnY");
         double z = persist.getDouble("KraveReturnZ");
+        // Take the companions home as well - stranding Cayden in the Kosmos is
+        // a death sentence, and he would trigger the apocalypse from another
+        // dimension entirely.
+        java.util.List<net.minecraft.world.entity.Entity> escort =
+                com.barbarajones.dimension.PetEscort.gather(serverPlayer);
+
         serverPlayer.teleportTo(dest, x, y, z, serverPlayer.getYRot(), serverPlayer.getXRot());
+        com.barbarajones.dimension.PetEscort.deliver(escort, dest,
+                new net.minecraft.world.phys.Vec3(x, y, z));
 
         if (!player.getAbilities().instabuild) {
             stack.shrink(1);

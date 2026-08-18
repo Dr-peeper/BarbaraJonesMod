@@ -104,6 +104,10 @@ public class KraveDoorBlock extends DoorBlock {
         Vec3 landing = KraveLanding.findLanding(dest, KraveDimensions.PORTAL_LANDING, 6)
                 .orElse(KraveDimensions.PORTAL_LANDING);
 
+        // Gather the companions BEFORE the player leaves - afterwards they are
+        // no longer "near the player" in any level we can search.
+        java.util.List<Entity> escort = com.barbarajones.dimension.PetEscort.gather(player);
+
         player.changeDimension(dest, new ITeleporter() {
             @Override
             public PortalInfo getPortalInfo(Entity entity, ServerLevel destLevel,
@@ -117,6 +121,13 @@ public class KraveDoorBlock extends DoorBlock {
         // fixed-point landing non-fatal instead of a hard crash-into-void.
         player.fallDistance = 0.0F;
         player.addEffect(new MobEffectInstance(MobEffects.SLOW_FALLING, 400, 0));
+
+        // Cayden comes too. He is the reason to be here at all.
+        for (Entity arrived : com.barbarajones.dimension.PetEscort.deliver(escort, dest, landing)) {
+            if (arrived instanceof com.barbarajones.entity.CaydenCobb cayden) {
+                cayden.onEnterKosmos();
+            }
+        }
     }
 
     /** The Kosmos always has exactly one Krave Monster - spawn him near the boss island the first time. */
