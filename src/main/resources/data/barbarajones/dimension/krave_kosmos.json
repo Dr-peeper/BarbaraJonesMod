@@ -1,0 +1,12 @@
+{
+  "type": "barbarajones:krave_kosmos",
+  "generator": {
+    "type": "minecraft:noise",
+    "seed": 6274309,
+    "settings": "barbarajones:krave_kosmos",
+    "biome_source": {
+      "type": "minecraft:fixed",
+      "biome": "barbarajones:krave_void"
+    }
+  }
+}

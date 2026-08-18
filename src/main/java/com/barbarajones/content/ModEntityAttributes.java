@@ -4,6 +4,8 @@ import com.barbarajones.BarbaraJonesMod;
 import com.barbarajones.entity.BarbaraJones;
 import com.barbarajones.entity.CaydenCobb;
 import com.barbarajones.entity.Daniel;
+import com.barbarajones.entity.KraveHealingBox;
+import com.barbarajones.entity.KraveMinion;
 import com.barbarajones.entity.KraveMonster;
 import com.barbarajones.entity.MomCobb;
 import com.barbarajones.entity.Nugget;
@@ -33,5 +35,7 @@ public final class ModEntityAttributes {
         event.put(ModEntities.DANIEL.get(),        Daniel.createAttributes().build());
         event.put(ModEntities.MOM.get(),           MomCobb.createAttributes().build());
         event.put(ModEntities.PLUG.get(),          ThePlug.createAttributes().build());
+        event.put(ModEntities.KRAVE_MINION.get(),      KraveMinion.createAttributes().build());
+        event.put(ModEntities.KRAVE_HEALING_BOX.get(), KraveHealingBox.createAttributes().build());
     }
 }

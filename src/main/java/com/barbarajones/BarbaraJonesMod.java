@@ -1,6 +1,8 @@
 package com.barbarajones;
 
+import com.barbarajones.content.ModBlocks;
 import com.barbarajones.content.ModEntities;
+import com.barbarajones.content.ModFluids;
 import com.barbarajones.content.ModItems;
 import com.barbarajones.content.ModSounds;
 import com.barbarajones.content.ModTabs;
@@ -22,6 +24,9 @@ public class BarbaraJonesMod {
     public BarbaraJonesMod() {
         IEventBus bus = FMLJavaModLoadingContext.get().getModEventBus();
 
+        ModBlocks.BLOCKS.register(bus);
+        ModFluids.FLUID_TYPES.register(bus);
+        ModFluids.FLUIDS.register(bus);
         ModItems.ITEMS.register(bus);
         ModSounds.SOUNDS.register(bus);
         ModEntities.ENTITIES.register(bus);

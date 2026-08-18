@@ -1,5 +1,8 @@
 package com.barbarajones.entity;
 
+import com.barbarajones.content.ModEntities;
+import com.barbarajones.content.ModFluids;
+import com.barbarajones.content.ModSounds;
 import com.barbarajones.housing.HousingResult;
 import com.barbarajones.housing.HousingValidator;
 
@@ -14,6 +17,7 @@ import net.minecraft.network.syncher.SynchedEntityData;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.sounds.SoundEvent;
 import net.minecraft.sounds.SoundEvents;
+import net.minecraft.sounds.SoundSource;
 import net.minecraft.world.damagesource.DamageSource;
 import net.minecraft.world.entity.AgeableMob;
 import net.minecraft.world.entity.EntityType;
@@ -21,6 +25,7 @@ import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.entity.ai.attributes.AttributeSupplier;
 import net.minecraft.world.entity.ai.attributes.Attributes;
 import net.minecraft.world.entity.ai.goal.FloatGoal;
+import net.minecraft.world.entity.ai.goal.Goal;
 import net.minecraft.world.entity.ai.goal.LeapAtTargetGoal;
 import net.minecraft.world.entity.ai.goal.LookAtPlayerGoal;
 import net.minecraft.world.entity.ai.goal.MeleeAttackGoal;
@@ -35,8 +40,10 @@ import net.minecraft.world.entity.monster.Monster;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.phys.AABB;
+import net.minecraft.world.phys.Vec3;
 
 import javax.annotation.Nullable;
+import java.util.EnumSet;
 import java.util.List;
 
 /**
@@ -57,8 +64,12 @@ public class CaydenCobb extends TamableAnimal {
             SynchedEntityData.defineId(CaydenCobb.class, EntityDataSerializers.BOOLEAN);
     private static final EntityDataAccessor<Boolean> HOUSED =
             SynchedEntityData.defineId(CaydenCobb.class, EntityDataSerializers.BOOLEAN);
+    private static final EntityDataAccessor<Boolean> SSJ =
+            SynchedEntityData.defineId(CaydenCobb.class, EntityDataSerializers.BOOLEAN);
 
     public static final int RAGE_THRESHOLD = 25;
+    /** How long a transformation lasts before powering down on its own. */
+    private static final int SSJ_DURATION_TICKS = 6000;
     private static final double BASE_SPEED = 0.5D;
     private static final double BASE_DAMAGE = 3.0D;
     /** How far he'll wander from a claimed home before heading back. */
@@ -71,6 +82,7 @@ public class CaydenCobb extends TamableAnimal {
     private BlockPos home;
     private int homeCheckTimer = 100;
     private int graceTicks;
+    private int ssjTicks;
 
     public CaydenCobb(EntityType<? extends TamableAnimal> type, Level level) {
         super(type, level);
@@ -87,6 +99,7 @@ public class CaydenCobb extends TamableAnimal {
 
     @Override
     protected void registerGoals() {
+        this.goalSelector.addGoal(0, new SsjFlyAttackGoal(this));
         this.goalSelector.addGoal(1, new FloatGoal(this));
         this.goalSelector.addGoal(3, new LeapAtTargetGoal(this, 0.4F));
         this.goalSelector.addGoal(4, new MeleeAttackGoal(this, 1.0D, true));
@@ -98,8 +111,10 @@ public class CaydenCobb extends TamableAnimal {
         this.targetSelector.addGoal(1, new OwnerHurtByTargetGoal(this));
         this.targetSelector.addGoal(2, new OwnerHurtTargetGoal(this));
         this.targetSelector.addGoal(3, new HurtByTargetGoal(this));
-        // always hostile toward hostiles
-        this.targetSelector.addGoal(4, new NearestAttackableTargetGoal<>(this, Monster.class, true));
+        // always hostile toward hostiles - except the fight-support mobs, which
+        // ignore him and he ignores them; the player handles those, not Cayden
+        this.targetSelector.addGoal(4, new NearestAttackableTargetGoal<>(this, Monster.class, true,
+                e -> !(e instanceof KraveMinion) && !(e instanceof KraveHealingBox)));
     }
 
     @Override
@@ -108,6 +123,7 @@ public class CaydenCobb extends TamableAnimal {
         this.entityData.define(FED, 0);
         this.entityData.define(RAGE, false);
         this.entityData.define(HOUSED, false);
+        this.entityData.define(SSJ, false);
     }
 
     // ---- krave state -------------------------------------------------------
@@ -137,14 +153,55 @@ public class CaydenCobb extends TamableAnimal {
 
     private void applyKraveStats() {
         int fed = getKraveFed();
+        double atkBase = BASE_DAMAGE + fed / 5;
+        double spdBase = Math.max(0.12D, BASE_SPEED - fed * 0.012D);
+        if (isSuperSaiyan()) {
+            atkBase *= 4.0D;
+            spdBase = BASE_SPEED * 1.6D;
+        }
         var atk = getAttribute(Attributes.ATTACK_DAMAGE);
         var spd = getAttribute(Attributes.MOVEMENT_SPEED);
         if (atk != null) {
-            atk.setBaseValue(BASE_DAMAGE + fed / 5);
+            atk.setBaseValue(atkBase);
         }
         if (spd != null) {
-            spd.setBaseValue(Math.max(0.12D, BASE_SPEED - fed * 0.012D));
+            spd.setBaseValue(spdBase);
         }
+    }
+
+    // ---- super saiyan --------------------------------------------------------
+
+    public boolean isSuperSaiyan() {
+        return this.entityData.get(SSJ);
+    }
+
+    /** Liquid chocolate does this instead of burning him - see EventHandler.onLivingTick. */
+    public void becomeSuperSaiyan() {
+        if (isSuperSaiyan() || level().isClientSide) {
+            return;
+        }
+        this.entityData.set(SSJ, true);
+        this.ssjTicks = SSJ_DURATION_TICKS;
+        setNoGravity(true);
+        applyKraveStats();
+        heal(getMaxHealth());
+        playSound(ModSounds.KRAVE_BOOM.get(), 1.4F, 0.7F);
+        if (level() instanceof ServerLevel sl) {
+            sl.sendParticles(ParticleTypes.FLASH, getX(), getY() + getBbHeight() * 0.5D, getZ(), 1, 0.0D, 0.0D, 0.0D, 0.0D);
+            sl.sendParticles(ParticleTypes.END_ROD, getX(), getY() + getBbHeight() * 0.5D, getZ(),
+                    80, 0.6D, 0.9D, 0.6D, 0.08D);
+        }
+        for (Player p : level().getEntitiesOfClass(Player.class, getBoundingBox().inflate(48.0D))) {
+            p.sendSystemMessage(Component.literal(ChatFormatting.GOLD + "" + ChatFormatting.BOLD
+                    + "CAYDEN COBB HAS ASCENDED."));
+        }
+    }
+
+    private void powerDown() {
+        this.entityData.set(SSJ, false);
+        this.ssjTicks = 0;
+        setNoGravity(false);
+        applyKraveStats();
     }
 
     // ---- housing -----------------------------------------------------------
@@ -219,6 +276,18 @@ public class CaydenCobb extends TamableAnimal {
             }
             if (this.graceTicks == 0) {
                 setInvulnerable(false);
+            }
+        }
+
+        if (!isSuperSaiyan() && getFluidTypeHeight(ModFluids.CHOCOLATE_TYPE.get()) > 0.0D) {
+            becomeSuperSaiyan();
+        }
+        if (isSuperSaiyan()) {
+            if (--this.ssjTicks <= 0) {
+                powerDown();
+            } else if (this.tickCount % 5 == 0 && level() instanceof ServerLevel sl) {
+                sl.sendParticles(ParticleTypes.END_ROD, getX(), getY() + getBbHeight() * 0.5D, getZ(),
+                        3, 0.35D, 0.6D, 0.35D, 0.03D);
             }
         }
 
@@ -353,6 +422,8 @@ public class CaydenCobb extends TamableAnimal {
         super.addAdditionalSaveData(tag);
         tag.putInt("KraveFed", getKraveFed());
         tag.putBoolean("KraveRage", isRageUnlocked());
+        tag.putBoolean("Ssj", isSuperSaiyan());
+        tag.putInt("SsjTicks", this.ssjTicks);
         if (this.home != null) {
             tag.putInt("HomeX", this.home.getX());
             tag.putInt("HomeY", this.home.getY());
@@ -365,11 +436,94 @@ public class CaydenCobb extends TamableAnimal {
         super.readAdditionalSaveData(tag);
         this.entityData.set(FED, tag.getInt("KraveFed"));
         this.entityData.set(RAGE, tag.getBoolean("KraveRage"));
+        if (tag.getBoolean("Ssj")) {
+            this.entityData.set(SSJ, true);
+            this.ssjTicks = Math.max(1, tag.getInt("SsjTicks"));
+            setNoGravity(true);
+        }
         if (tag.contains("HomeX")) {
             this.home = new BlockPos(tag.getInt("HomeX"), tag.getInt("HomeY"), tag.getInt("HomeZ"));
             this.entityData.set(HOUSED, true);
         }
         applyKraveStats();
+    }
+
+    /**
+     * Only relevant transformed and locked onto Krave Monster: flies toward him,
+     * firing Krave Lasers at range and switching to melee once close. This is
+     * intentionally the mod's only way to actually hurt Krave Monster during the
+     * fight (see KraveMonster.hurt()'s damage gating) - the player's job is the
+     * minions and healing boxes, not this fight directly.
+     */
+    static class SsjFlyAttackGoal extends Goal {
+        private static final double RANGE = 5.0D;
+        private final CaydenCobb cayden;
+        private int laserCooldown;
+        private int meleeCooldown;
+
+        SsjFlyAttackGoal(CaydenCobb cayden) {
+            this.cayden = cayden;
+            setFlags(EnumSet.of(Flag.MOVE, Flag.LOOK));
+        }
+
+        @Override
+        public boolean canUse() {
+            return this.cayden.isSuperSaiyan() && this.cayden.getTarget() instanceof KraveMonster target
+                    && target.isAlive();
+        }
+
+        @Override
+        public boolean canContinueToUse() {
+            return canUse();
+        }
+
+        @Override
+        public void start() {
+            if (this.cayden.getTarget() instanceof KraveMonster boss
+                    && this.cayden.level() instanceof ServerLevel sl) {
+                com.barbarajones.apocalypse.KraveKosmosBattle.start(sl, boss, this.cayden);
+            }
+        }
+
+        @Override
+        public void tick() {
+            LivingEntity target = this.cayden.getTarget();
+            if (target == null) {
+                return;
+            }
+            this.cayden.getLookControl().setLookAt(target, 30.0F, 30.0F);
+
+            Vec3 to = target.position().add(0.0D, target.getBbHeight() * 0.5D, 0.0D)
+                    .subtract(this.cayden.position().add(0.0D, this.cayden.getBbHeight() * 0.5D, 0.0D));
+            double dist = to.length();
+
+            if (dist > RANGE) {
+                Vec3 dir = to.scale(1.0D / Math.max(dist, 0.01D));
+                this.cayden.setDeltaMovement(dir.scale(0.5D));
+                if (--this.laserCooldown <= 0) {
+                    this.laserCooldown = 25;
+                    fireLaser(target);
+                }
+            } else {
+                this.cayden.setDeltaMovement(this.cayden.getDeltaMovement().scale(0.6D));
+                if (--this.meleeCooldown <= 0) {
+                    this.meleeCooldown = 15;
+                    this.cayden.doHurtTarget(target);
+                }
+            }
+        }
+
+        private void fireLaser(LivingEntity target) {
+            if (!(this.cayden.level() instanceof ServerLevel)) {
+                return;
+            }
+            Vec3 from = this.cayden.position().add(0.0D, this.cayden.getBbHeight() * 0.6D, 0.0D);
+            Vec3 aim = target.position().add(0.0D, target.getBbHeight() * 0.5D, 0.0D);
+            KraveLaser laser = new KraveLaser(this.cayden.level(), this.cayden, from, aim);
+            this.cayden.level().addFreshEntity(laser);
+            this.cayden.level().playSound(null, this.cayden.blockPosition(),
+                    SoundEvents.BEACON_POWER_SELECT, SoundSource.HOSTILE, 1.2F, 1.6F);
+        }
     }
 
     /** Follow the owner when unhoused; stay near home when housed. */

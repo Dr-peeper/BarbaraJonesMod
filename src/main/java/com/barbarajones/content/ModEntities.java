@@ -7,7 +7,10 @@ import com.barbarajones.entity.Daniel;
 import com.barbarajones.entity.DuhlWol;
 import com.barbarajones.entity.DuhlWolCar;
 import com.barbarajones.entity.GiantKraveBox;
+import com.barbarajones.entity.KraveHealingBox;
+import com.barbarajones.entity.KraveLaser;
 import com.barbarajones.entity.KraveMeteor;
+import com.barbarajones.entity.KraveMinion;
 import com.barbarajones.entity.KraveMonster;
 import com.barbarajones.entity.KraveTornado;
 import com.barbarajones.entity.MomCobb;
@@ -101,6 +104,24 @@ public final class ModEntities {
                     .<KraveTornado>of(KraveTornado::new, MobCategory.MISC)
                     .sized(2.0F, 8.0F).clientTrackingRange(16).updateInterval(1)
                     .build("krave_tornado"));
+
+    public static final RegistryObject<EntityType<KraveMinion>> KRAVE_MINION =
+            ENTITIES.register("krave_minion", () -> EntityType.Builder
+                    .of(KraveMinion::new, MobCategory.MISC)
+                    .sized(0.5F, 1.2F).clientTrackingRange(12)
+                    .build("krave_minion"));
+
+    public static final RegistryObject<EntityType<KraveHealingBox>> KRAVE_HEALING_BOX =
+            ENTITIES.register("krave_healing_box", () -> EntityType.Builder
+                    .of(KraveHealingBox::new, MobCategory.MISC)
+                    .sized(0.8F, 0.8F).clientTrackingRange(12)
+                    .build("krave_healing_box"));
+
+    public static final RegistryObject<EntityType<KraveLaser>> KRAVE_LASER =
+            ENTITIES.register("krave_laser", () -> EntityType.Builder
+                    .<KraveLaser>of(KraveLaser::new, MobCategory.MISC)
+                    .sized(0.3F, 0.3F).clientTrackingRange(16).updateInterval(1)
+                    .build("krave_laser"));
 
     public static final RegistryObject<EntityType<SkyCinematic>> SKY_CINEMATIC =
             ENTITIES.register("sky_cinematic", () -> EntityType.Builder

@@ -523,12 +523,20 @@ public class KraveApocalypse {
             }
         }
 
-        // STAGE 10: the Krave Monster himself crawls out of the ruin.
+        // STAGE 10: the Krave Monster himself crawls out of the ruin - the same
+        // one who lives in the Krave Kosmos, pulled here rather than duplicated.
         if (this.stage >= 10) {
-            KraveMonster monster = ModEntities.KRAVE_MONSTER.get().create(this.level);
+            Vec3 spawnAt = new Vec3(this.pos.x, this.pos.y + 1.0D, this.pos.z);
+            KraveMonster monster = com.barbarajones.dimension.KraveKosmosData
+                    .pullBossToOverworld(this.level.getServer(), this.level, spawnAt);
+            if (monster == null) {
+                monster = ModEntities.KRAVE_MONSTER.get().create(this.level);
+                if (monster != null) {
+                    monster.setPos(spawnAt.x, spawnAt.y, spawnAt.z);
+                    this.level.addFreshEntity(monster);
+                }
+            }
             if (monster != null) {
-                monster.setPos(this.pos.x, this.pos.y + 1.0D, this.pos.z);
-                this.level.addFreshEntity(monster);
                 monster.setTarget(this.owner);
                 this.owner.sendSystemMessage(Component.literal(ChatFormatting.DARK_PURPLE + ""
                         + ChatFormatting.BOLD + "HE HAS COME THROUGH THE GATES."));

@@ -7,6 +7,8 @@ import com.barbarajones.client.render.DuhlWolRenderer;
 import com.barbarajones.client.render.DuhlWolCarRenderer;
 import com.barbarajones.client.render.GiantKraveBoxRenderer;
 import com.barbarajones.client.render.HumanoidLikeRenderer;
+import com.barbarajones.client.render.KraveHealingBoxRenderer;
+import com.barbarajones.client.render.KraveLaserRenderer;
 import com.barbarajones.client.render.KraveMeteorRenderer;
 import com.barbarajones.client.render.KraveMonsterModel;
 import com.barbarajones.client.render.KraveMonsterRenderer;
@@ -42,8 +44,12 @@ public final class ClientSetup {
                 ctx -> new HumanoidLikeRenderer<>(ctx, "plug", 0.5F));
         event.registerEntityRenderer(ModEntities.DUHL_WOL.get(), DuhlWolRenderer::new);
         event.registerEntityRenderer(ModEntities.DUHL_WOL_CAR.get(), DuhlWolCarRenderer::new);
+        event.registerEntityRenderer(ModEntities.KRAVE_MINION.get(),
+                ctx -> new HumanoidLikeRenderer<>(ctx, "krave_minion", 0.4F));
+        event.registerEntityRenderer(ModEntities.KRAVE_HEALING_BOX.get(), KraveHealingBoxRenderer::new);
 
         event.registerEntityRenderer(ModEntities.METEOR.get(), KraveMeteorRenderer::new);
+        event.registerEntityRenderer(ModEntities.KRAVE_LASER.get(), KraveLaserRenderer::new);
         event.registerEntityRenderer(ModEntities.GIANT_BOX.get(), GiantKraveBoxRenderer::new);
         event.registerEntityRenderer(ModEntities.TORNADO.get(), KraveTornadoRenderer::new);
         event.registerEntityRenderer(ModEntities.SKY_CINEMATIC.get(), SkyCinematicRenderer::new);

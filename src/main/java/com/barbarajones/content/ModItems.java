@@ -5,6 +5,7 @@ import com.barbarajones.item.CaydenCompassItem;
 import com.barbarajones.item.ComputerMouseItem;
 import com.barbarajones.item.HousingQueryItem;
 import com.barbarajones.item.KraveCleanseItem;
+import com.barbarajones.item.KraveTetherItem;
 import com.barbarajones.item.KraveTools;
 import com.barbarajones.item.JointItem;
 import com.barbarajones.item.KraveBoxItem;
@@ -16,6 +17,8 @@ import com.barbarajones.item.RedHatItem;
 import net.minecraft.world.effect.MobEffectInstance;
 import net.minecraft.world.effect.MobEffects;
 import net.minecraft.world.food.FoodProperties;
+import net.minecraft.world.item.BlockItem;
+import net.minecraft.world.item.BucketItem;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.item.Rarity;
 import net.minecraftforge.registries.DeferredRegister;
@@ -204,4 +207,18 @@ public final class ModItems {
 
     public static final RegistryObject<Item> KRAVE_CLEANSE =
             ITEMS.register("krave_cleanse", () -> new KraveCleanseItem(props().stacksTo(1)));
+
+    // ---- the Krave Kosmos portal ---------------------------------------------
+
+    public static final RegistryObject<Item> KRAVE_BLOCK_ITEM =
+            ITEMS.register("krave_block", () -> new BlockItem(ModBlocks.KRAVE_BLOCK.get(), props()));
+    public static final RegistryObject<Item> KRAVE_DOOR_ITEM =
+            ITEMS.register("krave_door", () -> new BlockItem(ModBlocks.KRAVE_DOOR.get(), props()));
+    public static final RegistryObject<Item> KRAVE_TETHER =
+            ITEMS.register("krave_tether", () -> new KraveTetherItem(props().stacksTo(4)));
+
+    // ---- liquid chocolate ------------------------------------------------------
+
+    public static final RegistryObject<Item> CHOCOLATE_BUCKET = ITEMS.register("chocolate_bucket",
+            () -> new BucketItem(() -> ModFluids.CHOCOLATE.get(), props().stacksTo(1).craftRemainder(net.minecraft.world.item.Items.BUCKET)));
 }

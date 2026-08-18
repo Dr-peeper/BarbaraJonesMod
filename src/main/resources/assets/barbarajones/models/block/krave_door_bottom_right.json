@@ -1,0 +1,4 @@
+﻿{
+  "parent": "minecraft:block/door_bottom_right",
+  "textures": { "bottom": "barbarajones:block/krave_door_bottom", "top": "barbarajones:block/krave_door_top" }
+}

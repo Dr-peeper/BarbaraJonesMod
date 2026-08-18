@@ -174,6 +174,20 @@ public class KraveMonster extends Monster {
         }
     }
 
+    /**
+     * Set true while a KraveKosmosBattle is actively fighting this boss.
+     * While active, only Super Saiyan Cayden (directly, or via his Krave
+     * Lasers - both attribute the hit to him as the damage source's entity)
+     * can do meaningful damage; "only Cayden can fight him to the death"
+     * meant literally. Outside an active fight, normal rules apply, so a
+     * player poking him early while exploring the Kosmos isn't punished.
+     */
+    private boolean bossFightActive;
+
+    public void setBossFightActive(boolean active) {
+        this.bossFightActive = active;
+    }
+
     @Override
     public boolean hurt(DamageSource source, float amount) {
         // blink away half the time you land a hit. rude.
@@ -182,7 +196,12 @@ public class KraveMonster extends Monster {
                 // keep trying
             }
         }
-        return super.hurt(source, amount);
+        float applied = amount;
+        if (this.bossFightActive
+                && !(source.getEntity() instanceof CaydenCobb cayden && cayden.isSuperSaiyan())) {
+            applied = amount * 0.05F;
+        }
+        return super.hurt(source, applied);
     }
 
     private boolean teleportRandomly() {

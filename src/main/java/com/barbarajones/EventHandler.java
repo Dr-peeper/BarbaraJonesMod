@@ -1,7 +1,9 @@
 package com.barbarajones;
 
 import com.barbarajones.apocalypse.KraveApocalypse;
+import com.barbarajones.apocalypse.KraveKosmosBattle;
 import com.barbarajones.content.ModEntities;
+import com.barbarajones.content.ModFluids;
 import com.barbarajones.content.ModItems;
 import com.barbarajones.entity.BarbaraJones;
 import com.barbarajones.entity.CaydenCobb;
@@ -21,6 +23,7 @@ import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.ItemStack;
 import net.minecraftforge.event.TickEvent;
 import net.minecraftforge.event.entity.living.LivingDeathEvent;
+import net.minecraftforge.event.entity.living.LivingEvent;
 import net.minecraftforge.event.entity.player.PlayerEvent;
 import net.minecraftforge.eventbus.api.SubscribeEvent;
 
@@ -74,6 +77,24 @@ public class EventHandler {
     public void onServerTick(TickEvent.ServerTickEvent event) {
         if (event.phase == TickEvent.Phase.END) {
             KraveApocalypse.tickAll();
+            KraveKosmosBattle.tickAll();
+        }
+    }
+
+    /**
+     * Liquid chocolate is hot and burns like lava. Cayden reacts differently
+     * (see CaydenCobb.tick(), which checks the same fluid type) so he's
+     * excluded here rather than taking damage on top of transforming.
+     */
+    @SubscribeEvent
+    public void onLivingTick(LivingEvent.LivingTickEvent event) {
+        LivingEntity entity = (LivingEntity) event.getEntity();
+        if (entity.level().isClientSide || entity instanceof CaydenCobb) {
+            return;
+        }
+        if (entity.getFluidTypeHeight(ModFluids.CHOCOLATE_TYPE.get()) > 0.0D) {
+            entity.setSecondsOnFire(1);
+            entity.hurt(entity.damageSources().lava(), 2.0F);
         }
     }
 
