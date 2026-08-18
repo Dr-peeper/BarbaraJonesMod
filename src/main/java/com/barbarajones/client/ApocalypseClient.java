@@ -97,6 +97,11 @@ public final class ApocalypseClient {
         return redLevel > 0.0F || flashTimer > 0 || jumpscareTimer > 0 || wrathTimer > 0;
     }
 
+    /** True while the full apocalypse show is on screen - the ambient Dread stands down for it. */
+    public static boolean isActive() {
+        return anyActive();
+    }
+
     // ---- easing + the camera swing -----------------------------------------
 
     @SubscribeEvent

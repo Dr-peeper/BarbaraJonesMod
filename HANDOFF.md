@@ -180,6 +180,20 @@ The player takes no damage during any of it.
 
 ## Recently completed
 
+- **Ambient horror ("Dread") + a horror sound pass.** `client/DreadClient.java` is
+  a client-only director that runs during NORMAL play (stands down during the
+  apocalypse via new `ApocalypseClient.isActive()`, and off when
+  `Config.ENABLE_DREAD` is false). An "unease" meter rises with dark / night /
+  underground / alone / a mod-entity-standing-behind-you and drives, on long
+  unpredictable cooldowns: a breathing vignette, a quickening heartbeat, whispers
+  placed *behind* the camera, a subliminal single-frame face flash, paranoia
+  chat lines, and a rare "lights out" beat. Cosmetic only. **Every sound file was
+  also re-processed into a horror version** — pitched down, slowed, bit-crushed
+  and drowned in reverb (heavy for krave_*/deaths/hurts/alarm, gentler for the
+  `va_*` dialogue + idles so they stay comical). Kept MONO so positional audio
+  still works. The transform lives in `tools/make_horror.ps1` — **run it LAST
+  after any `make_*.ps1` regen or the clean audio comes back.** Processed here
+  with ffmpeg 8; not yet built with Gradle or heard in-game.
 - **Quest system rebuilt as a branching graph (`quest/Quests.java`).** The old
   design was a single `QuestStage` int marching 0→10 in one straight line. It is
   now a directed graph: a hub (`START`) fans into six directions — **Story,

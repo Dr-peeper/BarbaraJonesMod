@@ -13,9 +13,21 @@ public final class Config {
 
     public static final ForgeConfigSpec SPEC;
     public static final ForgeConfigSpec.BooleanValue ALLOW_KRAVE_CLEANSE;
+    public static final ForgeConfigSpec.BooleanValue ENABLE_DREAD;
 
     static {
         ForgeConfigSpec.Builder builder = new ForgeConfigSpec.Builder();
+
+        builder.push("horror");
+        ENABLE_DREAD = builder
+                .comment(
+                    "The ambient Dread director: creeping vignette, distant whispers behind you,",
+                    "a rising heartbeat, subliminal face flashes and rare light-outs when you're",
+                    "alone in the dark. Purely client-side atmosphere - no gameplay effect.",
+                    "Set false for a calmer experience.")
+                .define("enableDread", true);
+        builder.pop();
+
         builder.push("endlessMode");
         ALLOW_KRAVE_CLEANSE = builder
                 .comment(
