@@ -101,9 +101,27 @@ public class KraveMountainFeature extends Feature<NoneFeatureConfiguration> {
                 BlockPos anchor = upperSurface.get(random.nextInt(upperSurface.size()));
                 level.setBlock(anchor.above(), frame, 3);
             }
-            if (random.nextBoolean()) {
-                BlockPos spring = upperSurface.get(random.nextInt(upperSurface.size()));
-                level.setBlock(spring.above(), ModBlocks.CHOCOLATE_BLOCK.get().defaultBlockState(), 3);
+
+            // Prefer points with an open horizontal neighbor (an actual ledge
+            // the mound tapers away from) so the spring has somewhere to
+            // cascade down into, rather than a random upper point that might
+            // sit on a locally flat patch near the peak.
+            List<BlockPos> edges = new ArrayList<>();
+            for (BlockPos p : upperSurface) {
+                if (!level.getBlockState(p.north()).isSolid() || !level.getBlockState(p.south()).isSolid()
+                        || !level.getBlockState(p.east()).isSolid() || !level.getBlockState(p.west()).isSolid()) {
+                    edges.add(p);
+                }
+            }
+            List<BlockPos> springCandidates = edges.isEmpty() ? upperSurface : edges;
+
+            // No more coin flip - waterfalls were reported missing twice in a
+            // row, so every mountain guarantees at least one; a second is a
+            // 50/50 for variety.
+            BlockState chocolate = ModBlocks.CHOCOLATE_BLOCK.get().defaultBlockState();
+            level.setBlock(springCandidates.get(random.nextInt(springCandidates.size())).above(), chocolate, 3);
+            if (springCandidates.size() > 1 && random.nextBoolean()) {
+                level.setBlock(springCandidates.get(random.nextInt(springCandidates.size())).above(), chocolate, 3);
             }
         }
 

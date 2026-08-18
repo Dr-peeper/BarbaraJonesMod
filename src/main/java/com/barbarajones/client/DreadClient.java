@@ -6,7 +6,6 @@ import com.barbarajones.content.ModSounds;
 
 import com.mojang.blaze3d.systems.RenderSystem;
 import net.minecraft.ChatFormatting;
-import net.minecraft.Util;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.core.BlockPos;
@@ -40,7 +39,6 @@ import net.minecraftforge.registries.ForgeRegistries;
  * if it's <em>behind</em> you) - and decays in daylight and company. Unease drives,
  * with long unpredictable cooldowns so it never settles into a rhythm:
  * <ul>
- *   <li>a slow, breathing <b>vignette</b> that closes in as tension climbs;</li>
  *   <li>a <b>heartbeat</b> that quickens with unease;</li>
  *   <li>distant <b>whispers</b> placed <em>behind</em> your head - "did you hear that?";</li>
  *   <li>a <b>subliminal</b> single-flash of an uncanny face - barely there, "did I
@@ -296,7 +294,7 @@ public final class DreadClient {
 
     @SubscribeEvent
     public static void onOverlay(RenderGuiOverlayEvent.Post event) {
-        if (unease <= 0.02F && subliminalTimer <= 0 && blackoutTimer <= 0) {
+        if (subliminalTimer <= 0 && blackoutTimer <= 0) {
             return;
         }
         if (ApocalypseClient.isActive()) {
@@ -311,43 +309,19 @@ public final class DreadClient {
 
     private static void render(GuiGraphics gfx) {
         int w = gfx.guiWidth(), h = gfx.guiHeight();
-        float rt = (float) (Util.getMillis() % 1_000_000L) * 0.001F;
-
-        float breathe = 0.9F + 0.1F * Mth.sin(rt * 2.0F);
-        float strength = unease * 0.72F * breathe;
-        if (strength > 0.02F) {
-            vignette(gfx, w, h, strength);
-        }
+        // The closing screen-edge vignette has been removed entirely (reported
+        // as still showing up unwantedly, repeatedly, even in the Overworld
+        // where it's "working as intended" per the ambient-horror design) -
+        // heartbeat/whispers/messages/subliminal-face/blackout (all audio or
+        // brief, not a persistent darkening frame) are the atmosphere now.
+        // `unease` still drives all of those via rollEvents(), just no
+        // longer has a visual effect of its own.
         if (subliminalTimer > 0) {
             drawFace(gfx, FACES[subliminalFace], w, h, 0.16F * (subliminalTimer / 3.0F));
         }
         if (blackoutTimer > 0) {
             int alpha = (int) (Mth.clamp(blackoutTimer / 10.0F, 0.0F, 1.0F) * 235);
             gfx.fill(0, 0, w, h, alpha << 24);
-        }
-    }
-
-    /** A soft dark frame that closes in from every edge. */
-    private static void vignette(GuiGraphics gfx, int w, int h, float s) {
-        // Capped well below full coverage/opacity so this can never actually
-        // obscure gameplay, only frame it - and drawn in coarse bands instead
-        // of per-2px strips, since a screen-edge gradient doesn't need that
-        // resolution and the old loop could issue 600+ fill calls a frame.
-        int band = (int) (Math.min(w, h) * 0.22F);
-        int maxA = (int) (Mth.clamp(s, 0.0F, 1.0F) * 140);
-        int steps = 16;
-        int stepSize = Math.max(1, band / steps);
-        for (int i = 0; i < band; i += stepSize) {
-            int a = maxA * (band - i) / band;
-            if (a <= 0) {
-                continue;
-            }
-            int col = a << 24;
-            int t = Math.min(stepSize, band - i);
-            gfx.fill(0, i, w, i + t, col);
-            gfx.fill(0, h - i - t, w, h - i, col);
-            gfx.fill(i, 0, i + t, h, col);
-            gfx.fill(w - i - t, 0, w - i, h, col);
         }
     }
 
