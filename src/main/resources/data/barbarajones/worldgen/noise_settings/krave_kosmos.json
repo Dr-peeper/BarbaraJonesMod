@@ -138,7 +138,7 @@
     "sequence": [
       {
         "type": "minecraft:condition",
-        "if_condition": {
+        "if_true": {
           "type": "minecraft:stone_depth",
           "offset": 0,
           "surface_type": "floor",
@@ -152,7 +152,7 @@
       },
       {
         "type": "minecraft:condition",
-        "if_condition": {
+        "if_true": {
           "type": "minecraft:stone_depth",
           "offset": 6,
           "surface_type": "floor",
