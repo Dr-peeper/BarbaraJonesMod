@@ -44,7 +44,7 @@ public class EventHandler {
             player.getInventory().add(new ItemStack(ModItems.HOUSING_QUERY.get()));
             player.sendSystemMessage(Component.literal(ChatFormatting.GOLD
                     + "Read THE KRAVE MANUAL first. Rule #1 is on page one."));
-            Quests.announce(player, Quests.START);
+            Quests.onFirstJoin(player);
         }
 
         CompoundTag persist = persisted(player);
@@ -85,10 +85,9 @@ public class EventHandler {
         if (player.tickCount % 40 != 0) {
             return;
         }
-        if (Quests.getStage(player) == Quests.START
-                && player.getInventory().contains(new ItemStack(ModItems.KRAVE_CEREAL.get()))) {
-            Quests.advanceTo(player, Quests.CAYDEN);
-        }
+        // Sweep the whole graph: any collect quest whose items are now all in the
+        // inventory auto-completes, and milestones cascade behind them.
+        Quests.tick(player);
     }
 
     /** Boss and Plug deaths advance the quest; pet deaths trigger the apocalypse. */
@@ -102,17 +101,15 @@ public class EventHandler {
         if (dead instanceof KraveMonster) {
             for (Player player : level.getEntitiesOfClass(Player.class,
                     dead.getBoundingBox().inflate(48.0D, 32.0D, 48.0D))) {
-                if (Quests.getStage(player) == Quests.FIGHT) {
-                    Quests.advanceTo(player, Quests.ACT2_HAT);   // the boss falls; ACT II begins
-                }
+                Quests.complete(player, Quests.SLAY_KRAVE);   // the boss falls; ACT II begins
+                Quests.complete(player, Quests.REVENGE);      // may already be avenged if Plug fell first
             }
             return;
         }
 
         if (dead instanceof ThePlug) {
-            if (event.getSource().getEntity() instanceof Player player
-                    && Quests.getStage(player) == Quests.ACT2_REVENGE) {
-                Quests.advanceTo(player, Quests.DONE);
+            if (event.getSource().getEntity() instanceof Player player) {
+                Quests.complete(player, Quests.REVENGE);
             }
             return;
         }

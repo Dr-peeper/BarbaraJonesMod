@@ -31,9 +31,9 @@ public class KraveBoxItem extends Item {
         if (level.isClientSide) {
             return InteractionResultHolder.success(stack);
         }
-        if (Quests.getStage(player) < Quests.SUMMON) {
+        if (!Quests.isUnlocked(player, Quests.SUMMON_KRAVE)) {
             player.sendSystemMessage(Component.literal(ChatFormatting.LIGHT_PURPLE + "[Krave Quest] "
-                    + ChatFormatting.GRAY + "Nothing happens. Recruit Barbara and Cayden first."));
+                    + ChatFormatting.GRAY + "Nothing happens. Recruit Barbara and stock a full bowl first."));
             return InteractionResultHolder.fail(stack);
         }
 
@@ -46,7 +46,7 @@ public class KraveBoxItem extends Item {
             monster.setTarget(player);
         }
         level.playSound(null, player.blockPosition(), SoundEvents.WITHER_SPAWN, SoundSource.HOSTILE, 1.0F, 1.2F);
-        Quests.advanceTo(player, Quests.FIGHT);
+        Quests.complete(player, Quests.SUMMON_KRAVE);
 
         if (!player.getAbilities().instabuild) {
             stack.shrink(1);

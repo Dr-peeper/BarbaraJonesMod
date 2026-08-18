@@ -135,7 +135,7 @@ public class ThePlug extends Monster {
                 give(player, new ItemStack(ModItems.FAKE_COCAINE.get(), 3));
                 player.sendSystemMessage(Component.literal(ChatFormatting.DARK_GRAY
                         + "The Plug: \"it's real. trust.\""));
-                Quests.advanceTo(player, Quests.ACT2_SEWER);
+                Quests.complete(player, Quests.THE_PLUG_DEAL);
             }
             return InteractionResult.sidedSuccess(level().isClientSide);
         }

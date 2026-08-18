@@ -71,7 +71,8 @@ public class JointItem extends Item {
             if (entity instanceof Player player) {
                 barbaraDisapproves(level, player);
 
-                if (player.getY() < 45.0D && Quests.getStage(player) == Quests.ACT2_SEWER) {
+                if (player.getY() < 45.0D && Quests.isUnlocked(player, Quests.THE_SEWER)
+                        && !Quests.isDone(player, Quests.THE_SEWER)) {
                     sewerRealization(level, player);
                 }
             }
@@ -115,6 +116,6 @@ public class JointItem extends Item {
         }
         player.sendSystemMessage(Component.literal(ChatFormatting.DARK_GRAY
                 + "Somewhere above you, a scope glints."));
-        Quests.advanceTo(player, Quests.ACT2_REVENGE);
+        Quests.complete(player, Quests.THE_SEWER);
     }
 }

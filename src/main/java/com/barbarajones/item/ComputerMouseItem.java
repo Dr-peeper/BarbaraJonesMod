@@ -52,7 +52,7 @@ public class ComputerMouseItem extends Item {
         if (!player.getAbilities().instabuild) {
             stack.shrink(1);
         }
-        Quests.advanceTo(player, Quests.ACT2_PLUG);
+        Quests.complete(player, Quests.SMASH_MOUSE);
         return InteractionResultHolder.consume(stack);
     }
 }

@@ -47,7 +47,7 @@ public class RedHatItem extends Item {
                     + "Mom: \"Are those stupid irrelevant puns?! I KNEW I should have put "
                     + "you up for adoption.\""));
         }
-        Quests.advanceTo(player, Quests.ACT2_MOUSE);
+        Quests.complete(player, Quests.KRAVE_DANCE);
         return InteractionResultHolder.consume(stack);
     }
 }

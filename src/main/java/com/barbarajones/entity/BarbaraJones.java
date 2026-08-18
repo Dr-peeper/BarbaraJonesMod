@@ -359,14 +359,14 @@ public class BarbaraJones extends PathfinderMob {
         // empty hand = recruit her for the questline
         if (held.isEmpty()) {
             if (!level().isClientSide) {
-                boolean advanced = Quests.advanceTo(player, Quests.SUMMON);
+                boolean advanced = Quests.complete(player, Quests.RECRUIT_BARBARA);
                 playSound(ModSounds.BARBARA_IDLE.get(), 1.0F, 1.0F);
                 if (!advanced) {
-                    int stage = Quests.getStage(player);
+                    boolean already = Quests.isDone(player, Quests.RECRUIT_BARBARA);
                     player.sendSystemMessage(Component.literal(ChatFormatting.GRAY
-                            + (stage < Quests.BARBARA
-                                    ? "Barbara: \"Find that boy Cayden first, then come back.\""
-                                    : "Barbara: \"I'm already with you, sugar.\"")));
+                            + (already
+                                    ? "Barbara: \"I'm already with you, sugar.\""
+                                    : "Barbara: \"Bring me some grass first, then come back.\"")));
                 }
             }
             return InteractionResult.sidedSuccess(level().isClientSide);

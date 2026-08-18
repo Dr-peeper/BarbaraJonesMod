@@ -9,64 +9,101 @@ import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.network.chat.Component;
 import net.minecraft.world.item.ItemStack;
 
-/** The Krave Quest Book screen - reads the stage straight off the carried book. */
+import java.util.ArrayList;
+import java.util.List;
+
+/**
+ * The Krave Quest Book screen - now a branching board. Reads completion straight
+ * off the carried book's NBT, groups quests by branch into two columns, and marks
+ * each as done / available / locked. Available quests show their objective inline.
+ */
 public class QuestBookScreen extends Screen {
+
+    // Which branches sit in the left column; everything else goes right.
+    private static final List<String> LEFT = List.of(Quests.B_STORY, Quests.B_GRASS, Quests.B_KRAVE);
 
     public QuestBookScreen() {
         super(Component.literal("The Krave Quest"));
     }
 
-    private int currentStage() {
+    private ItemStack book() {
         var player = Minecraft.getInstance().player;
-        if (player == null) {
-            return Quests.START;
-        }
-        ItemStack book = Quests.findBook(player);
-        return book == null ? Quests.START : Quests.getStage(book);
+        return player == null ? null : Quests.findBook(player);
     }
 
     @Override
     public void render(GuiGraphics gfx, int mouseX, int mouseY, float partial) {
         renderBackground(gfx);
+        ItemStack book = book();
 
         int cx = this.width / 2;
-        int panelW = 300;
-        int left = cx - panelW / 2;
-        int top = 24;
-        gfx.fill(left - 8, top - 12, left + panelW + 8, top + 20 + Quests.DONE * 22, 0xC0100010);
+        int colW = 232;
+        int gap = 16;
+        int totalW = colW * 2 + gap;
+        int leftX = cx - totalW / 2;
+        int rightX = leftX + colW + gap;
+        int top = 18;
 
+        gfx.fill(leftX - 10, top - 12, leftX + totalW + 10, this.height - 12, 0xC0100010);
+
+        int done = Quests.doneCount(book);
+        int total = Quests.total();
         gfx.drawCenteredString(this.font,
-                ChatFormatting.LIGHT_PURPLE + "" + ChatFormatting.BOLD + "THE KRAVE QUEST",
+                ChatFormatting.LIGHT_PURPLE + "" + ChatFormatting.BOLD + "THE KRAVE QUEST  "
+                        + ChatFormatting.GRAY + "(" + done + "/" + total + ")",
                 cx, top - 6, 0xFFFFFF);
 
-        int stage = currentStage();
-        int y = top + 14;
-        for (int i = 0; i < Quests.DONE; i++) {
-            boolean done = stage > i;
-            boolean active = stage == i;
-            String mark = done ? (ChatFormatting.GREEN + "[x] ")
-                    : active ? (ChatFormatting.YELLOW + "[>] ")
-                    : (ChatFormatting.DARK_GRAY + "[ ] ");
-            String title = (done ? ChatFormatting.GREEN
-                    : active ? ChatFormatting.YELLOW : ChatFormatting.GRAY) + Quests.TITLE[i];
-            gfx.drawString(this.font, mark + title, left, y, 0xFFFFFF);
-            y += 11;
-            if (active) {
-                for (var line : this.font.split(
-                        Component.literal(ChatFormatting.WHITE + Quests.OBJECTIVE[i]), panelW - 16)) {
-                    gfx.drawString(this.font, line, left + 12, y, 0xCCCCCC);
-                    y += 10;
-                }
-                y += 2;
-            }
+        List<String> leftBranches = new ArrayList<>();
+        List<String> rightBranches = new ArrayList<>();
+        for (String b : Quests.BRANCHES) {
+            (LEFT.contains(b) ? leftBranches : rightBranches).add(b);
         }
 
-        if (stage >= Quests.DONE) {
+        int startY = top + 12;
+        renderColumn(gfx, book, leftBranches, leftX, startY, colW);
+        renderColumn(gfx, book, rightBranches, rightX, startY, colW);
+
+        if (Quests.isDone(book, Quests.PEACE)) {
             gfx.drawCenteredString(this.font,
-                    ChatFormatting.GOLD + "" + ChatFormatting.BOLD + "QUEST COMPLETE",
-                    cx, y + 6, 0xFFFFFF);
+                    ChatFormatting.GOLD + "" + ChatFormatting.BOLD + "PEACE AT LAST - EVERY ITEM COLLECTED",
+                    cx, this.height - 22, 0xFFFFFF);
         }
         super.render(gfx, mouseX, mouseY, partial);
+    }
+
+    private void renderColumn(GuiGraphics gfx, ItemStack book, List<String> branches,
+                              int x, int y, int colW) {
+        for (String branch : branches) {
+            gfx.drawString(this.font,
+                    ChatFormatting.GOLD + "" + ChatFormatting.BOLD + branch.toUpperCase(),
+                    x, y, 0xFFFFFF);
+            y += 11;
+            for (Quests.Quest q : Quests.ALL) {
+                if (!q.branch.equals(branch)) {
+                    continue;
+                }
+                boolean qDone = Quests.isDone(book, q.id);
+                boolean available = !qDone && Quests.isUnlocked(book, q);
+
+                String mark = qDone ? (ChatFormatting.GREEN + "[x] ")
+                        : available ? (ChatFormatting.YELLOW + "[>] ")
+                        : (ChatFormatting.DARK_GRAY + "[ ] ");
+                ChatFormatting col = qDone ? ChatFormatting.GREEN
+                        : available ? ChatFormatting.YELLOW : ChatFormatting.DARK_GRAY;
+                gfx.drawString(this.font, mark + col + q.title, x, y, 0xFFFFFF);
+                y += 10;
+
+                if (available) {
+                    for (var line : this.font.split(
+                            Component.literal(ChatFormatting.GRAY + q.objective), colW - 14)) {
+                        gfx.drawString(this.font, line, x + 12, y, 0xBBBBBB);
+                        y += 9;
+                    }
+                    y += 1;
+                }
+            }
+            y += 6;
+        }
     }
 
     @Override

@@ -37,13 +37,13 @@ public class QuestBookItem extends Item {
     @Override
     public void appendHoverText(ItemStack stack, @Nullable Level level,
                                 List<Component> tooltip, TooltipFlag flag) {
-        int stage = Quests.getStage(stack);
-        tooltip.add(Component.literal(ChatFormatting.YELLOW + "Stage " + stage + ": " + Quests.TITLE[stage]));
+        tooltip.add(Component.literal(ChatFormatting.YELLOW
+                + "Quests: " + Quests.doneCount(stack) + " / " + Quests.total()));
         tooltip.add(Component.literal(ChatFormatting.GRAY + "Right-click to open"));
     }
 
     @Override
     public boolean isFoil(ItemStack stack) {
-        return Quests.getStage(stack) >= Quests.DONE;   // shimmer once finished
+        return Quests.isDone(stack, Quests.PEACE);   // shimmer once everything is done
     }
 }

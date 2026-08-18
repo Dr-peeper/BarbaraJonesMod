@@ -180,6 +180,21 @@ The player takes no damage during any of it.
 
 ## Recently completed
 
+- **Quest system rebuilt as a branching graph (`quest/Quests.java`).** The old
+  design was a single `QuestStage` int marching 0→10 in one straight line. It is
+  now a directed graph: a hub (`START`) fans into six directions — **Story,
+  Grass, Krave, Cayden, Fame, Streets** — worked in any order, re-converging on a
+  `PEACE` finale. Two completion types: **collect** quests auto-complete when
+  every listed item is in inventory (checked in `EventHandler.onPlayerTick` →
+  `Quests.tick`), and **event** quests fire from the canon hooks (Barbara
+  recruit, Krave summon/slay, red-hat dance, mouse smash, $500 deal, sewer,
+  revenge). The collect quests between them name **every item in the mod**, so
+  finishing the questline literally means collecting one of everything; `PEACE`
+  is gated on all of them. Progress moved from an int to a string-list of done
+  ids on the Quest Book NBT (`KraveDone`), plus a `KraveSeen` set so unlock
+  notices never repeat. `QuestBookScreen` is now a two-column branch board with
+  done/available/locked markers. **Compiles cleanly against the source; not yet
+  built with Gradle or run in-game** (no `.tools/` on this Linux box).
 - **Red overlay removed entirely.** The user was emphatic: *"there shouldn't
   even really be an overlay. the sky should turn blood red."* The fullscreen
   fill is gone. `ApocalypseClient.renderBloodSky()` draws a real red shell at
