@@ -2,6 +2,7 @@ package com.barbarajones.block;
 
 import com.barbarajones.content.ModBlocks;
 import com.barbarajones.content.ModEntities;
+import com.barbarajones.content.ModItems;
 import com.barbarajones.dimension.KraveDimensions;
 import com.barbarajones.dimension.KraveKosmosData;
 import com.barbarajones.entity.KraveMonster;
@@ -17,6 +18,7 @@ import net.minecraft.world.effect.MobEffectInstance;
 import net.minecraft.world.effect.MobEffects;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.player.Player;
+import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.DoorBlock;
 import net.minecraft.world.level.block.state.BlockBehaviour;
@@ -84,6 +86,16 @@ public class KraveDoorBlock extends DoorBlock {
         persist.putDouble("KraveReturnX", player.getX());
         persist.putDouble("KraveReturnY", player.getY());
         persist.putDouble("KraveReturnZ", player.getZ());
+
+        // Nobody should be able to walk in without a way out: top the player up
+        // to at least one Krave Tether on every entry, regardless of whether
+        // they thought to craft/bring one themselves.
+        if (player.getInventory().countItem(ModItems.KRAVE_TETHER.get()) < 1) {
+            ItemStack tether = new ItemStack(ModItems.KRAVE_TETHER.get(), 1);
+            if (!player.getInventory().add(tether)) {
+                player.drop(tether, false);
+            }
+        }
 
         player.changeDimension(dest, new ITeleporter() {
             @Override

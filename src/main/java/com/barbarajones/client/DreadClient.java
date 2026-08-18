@@ -11,6 +11,7 @@ import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.core.BlockPos;
 import net.minecraft.network.chat.Component;
+import net.minecraft.resources.ResourceKey;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.sounds.SoundEvent;
 import net.minecraft.sounds.SoundSource;
@@ -18,6 +19,7 @@ import net.minecraft.util.Mth;
 import net.minecraft.util.RandomSource;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.player.Player;
+import net.minecraft.world.level.Level;
 import net.minecraft.world.level.LightLayer;
 import net.minecraft.world.phys.Vec3;
 import net.minecraftforge.api.distmarker.Dist;
@@ -78,11 +80,19 @@ public final class DreadClient {
         "It knows you are almost out of Krave."
     };
 
+    /** How many ticks after joining a level before dread is allowed to build at all -
+     *  lets chunk lighting settle so a fresh spawn doesn't misread as pitch dark. */
+    private static final int JOIN_GRACE_TICKS = 100;
+
     private static float unease = 0.0F;
     private static int stingerCd = 0, subliminalCd = 0, messageCd = 0, blackoutCd = 0;
     private static int heartbeatTimer = 0;
     private static int subliminalTimer = 0, subliminalFace = 0;
     private static int blackoutTimer = 0;
+    private static ResourceKey<Level> lastLevel = null;
+    private static int joinGrace = 0;
+    private static float cachedTarget = 0.0F;
+    private static int watcherRefresh = 0;
 
     private DreadClient() { }
 
@@ -105,19 +115,43 @@ public final class DreadClient {
         decayTimers();
 
         if (!enabled() || mc.player == null || mc.level == null || mc.isPaused()) {
+            lastLevel = null;
             unease += (0.0F - unease) * 0.05F;
             if (unease < 0.001F) {
                 unease = 0.0F;
             }
             return;
         }
+
+        // A fresh world/dimension join resets dread and holds off building any
+        // back up until chunk lighting has had a chance to settle - otherwise
+        // unlit spawn chunks read as pitch dark and the vignette can slam in
+        // immediately, which is exactly backwards for a "slow build" effect.
+        ResourceKey<Level> here = mc.level.dimension();
+        if (!here.equals(lastLevel)) {
+            lastLevel = here;
+            unease = 0.0F;
+            joinGrace = JOIN_GRACE_TICKS;
+        }
+        if (joinGrace > 0) {
+            joinGrace--;
+            return;
+        }
+
         if (ApocalypseClient.isActive()) {
             unease += (0.15F - unease) * 0.05F;   // keep a low simmer under the show
             return;
         }
 
-        float target = computeTarget(mc.player);
-        unease = Mth.clamp(unease + (target - unease) * 0.02F, 0.0F, 1.0F);
+        // The nearby-entity scan in computeTarget() is the expensive part;
+        // the target only feeds a slow lerp anyway, so refreshing it a few
+        // times a second instead of every tick is free smoothing, not a
+        // behavior change.
+        if (--watcherRefresh <= 0) {
+            watcherRefresh = 4;
+            cachedTarget = computeTarget(mc.player);
+        }
+        unease = Mth.clamp(unease + (cachedTarget - unease) * 0.02F, 0.0F, 1.0F);
         rollEvents(mc, mc.player);
     }
 
@@ -280,18 +314,25 @@ public final class DreadClient {
 
     /** A soft dark frame that closes in from every edge. */
     private static void vignette(GuiGraphics gfx, int w, int h, float s) {
-        int band = (int) (Math.min(w, h) * 0.32F);
-        int maxA = (int) (Mth.clamp(s, 0.0F, 1.0F) * 210);
-        for (int i = 0; i < band; i += 2) {
+        // Capped well below full coverage/opacity so this can never actually
+        // obscure gameplay, only frame it - and drawn in coarse bands instead
+        // of per-2px strips, since a screen-edge gradient doesn't need that
+        // resolution and the old loop could issue 600+ fill calls a frame.
+        int band = (int) (Math.min(w, h) * 0.22F);
+        int maxA = (int) (Mth.clamp(s, 0.0F, 1.0F) * 140);
+        int steps = 16;
+        int stepSize = Math.max(1, band / steps);
+        for (int i = 0; i < band; i += stepSize) {
             int a = maxA * (band - i) / band;
             if (a <= 0) {
                 continue;
             }
             int col = a << 24;
-            gfx.fill(0, i, w, i + 2, col);
-            gfx.fill(0, h - i - 2, w, h - i, col);
-            gfx.fill(i, 0, i + 2, h, col);
-            gfx.fill(w - i - 2, 0, w - i, h, col);
+            int t = Math.min(stepSize, band - i);
+            gfx.fill(0, i, w, i + t, col);
+            gfx.fill(0, h - i - t, w, h - i, col);
+            gfx.fill(i, 0, i + t, h, col);
+            gfx.fill(w - i - t, 0, w - i, h, col);
         }
     }
 
