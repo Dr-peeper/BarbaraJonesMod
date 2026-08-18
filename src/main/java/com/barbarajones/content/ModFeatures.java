@@ -3,6 +3,7 @@ package com.barbarajones.content;
 import com.barbarajones.BarbaraJonesMod;
 import com.barbarajones.worldgen.feature.KraveCavePocketFeature;
 import com.barbarajones.worldgen.feature.KraveMountainFeature;
+import com.barbarajones.worldgen.feature.KravePeakFeature;
 import com.barbarajones.worldgen.feature.KraveRuinFeature;
 import com.barbarajones.worldgen.feature.KraveValleyFeature;
 
@@ -31,4 +32,7 @@ public final class ModFeatures {
 
     public static final RegistryObject<Feature<NoneFeatureConfiguration>> KRAVE_VALLEY =
             FEATURES.register("krave_valley", () -> new KraveValleyFeature(NoneFeatureConfiguration.CODEC));
+
+    public static final RegistryObject<Feature<NoneFeatureConfiguration>> KRAVE_PEAK =
+            FEATURES.register("krave_peak", () -> new KravePeakFeature(NoneFeatureConfiguration.CODEC));
 }

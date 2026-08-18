@@ -3,7 +3,6 @@ package com.barbarajones.entity;
 import com.barbarajones.content.ModItems;
 import com.barbarajones.content.ModSounds;
 
-import net.minecraft.core.BlockPos;
 import net.minecraft.network.chat.Component;
 import net.minecraft.network.syncher.EntityDataAccessor;
 import net.minecraft.network.syncher.EntityDataSerializers;
@@ -167,11 +166,20 @@ public class KraveMonster extends Monster {
         if (--this.teleportTimer <= 0) {
             this.teleportTimer = 30 + this.random.nextInt(40);
             if (target != null) {
-                for (int i = 0; i < 8 && !teleportRandomly(); i++) {
-                    // keep trying
-                }
+                KraveBlink.tryRandomBlink(this, this.random, 16.0D, 8, 20, 8, ModSounds.KRAVE_SCREECH.get());
             }
         }
+    }
+
+    /**
+     * His signature move is jumping absurdly high toward the target (see the
+     * "absurd hops" block above) - now that the Kosmos has real elevation,
+     * that lands him from real heights. Taking fall damage from his own
+     * jump was never the intent.
+     */
+    @Override
+    public boolean causeFallDamage(float distance, float multiplier, DamageSource source) {
+        return false;
     }
 
     private void pushGhost() {
@@ -201,9 +209,7 @@ public class KraveMonster extends Monster {
     public boolean hurt(DamageSource source, float amount) {
         // blink away half the time you land a hit. rude.
         if (!level().isClientSide && source.getEntity() != null && this.random.nextBoolean()) {
-            for (int i = 0; i < 16 && !teleportRandomly(); i++) {
-                // keep trying
-            }
+            KraveBlink.tryRandomBlink(this, this.random, 16.0D, 6, 6, 16, ModSounds.KRAVE_SCREECH.get());
         }
         float applied = amount;
         if (this.bossFightActive
@@ -211,42 +217,6 @@ public class KraveMonster extends Monster {
             applied = amount * 0.05F;
         }
         return super.hurt(source, applied);
-    }
-
-    private boolean teleportRandomly() {
-        double x = getX() + (this.random.nextDouble() - 0.5D) * 16.0D;
-        double y = getY() + (this.random.nextInt(12) - 6);
-        double z = getZ() + (this.random.nextDouble() - 0.5D) * 16.0D;
-        return blinkTo(x, y, z);
-    }
-
-    private boolean blinkTo(double x, double y, double z) {
-        BlockPos.MutableBlockPos pos = new BlockPos.MutableBlockPos(x, y, z);
-        while (pos.getY() > level().getMinBuildHeight()
-                && !level().getBlockState(pos).blocksMotion()) {
-            pos.move(0, -1, 0);
-        }
-        if (!level().getBlockState(pos).blocksMotion()) {
-            return false;
-        }
-        Vec3 from = position();
-        boolean ok = randomTeleport(x, pos.getY() + 1.0D, z, false);
-        if (ok) {
-            level().playSound(null, from.x, from.y, from.z, ModSounds.KRAVE_SCREECH.get(),
-                    getSoundSource(), 0.8F, 1.4F);
-            playSound(ModSounds.KRAVE_SCREECH.get(), 0.8F, 1.4F);
-            for (int i = 0; i < 48; i++) {
-                double t = i / 47.0D;
-                level().addParticle(net.minecraft.core.particles.ParticleTypes.PORTAL,
-                        from.x + (getX() - from.x) * t + (this.random.nextDouble() - 0.5D) * 2.0D,
-                        from.y + (getY() - from.y) * t + this.random.nextDouble() * getBbHeight(),
-                        from.z + (getZ() - from.z) * t + (this.random.nextDouble() - 0.5D) * 2.0D,
-                        (this.random.nextFloat() - 0.5F) * 0.2F,
-                        (this.random.nextFloat() - 0.5F) * 0.2F,
-                        (this.random.nextFloat() - 0.5F) * 0.2F);
-            }
-        }
-        return ok;
     }
 
     @Override
@@ -278,8 +248,13 @@ public class KraveMonster extends Monster {
 
     /**
      * The mouth beam: a blue "kamehameha"-style bolt fired at players beyond
-     * melee range. LOOK-only flag (no MOVE) so it runs alongside the existing
-     * stroll/melee goals without a goal-selector conflict.
+     * melee range. Claims NO goal flags (not even LOOK) so it can never
+     * conflict with anything else in the selector - it was originally
+     * LOOK-only, but vanilla's MeleeAttackGoal (registered at the same
+     * priority) also claims LOOK, which made the two goals mutually
+     * exclusive and starved this one down to firing once. setLookAt() below
+     * doesn't need the flag - that's just a normal API call, not gated by
+     * goal-selector exclusivity.
      */
     static class MouthBeamGoal extends Goal {
         private static final double MIN_RANGE = 5.0D;
@@ -290,7 +265,7 @@ public class KraveMonster extends Monster {
 
         MouthBeamGoal(KraveMonster monster) {
             this.monster = monster;
-            setFlags(EnumSet.of(Flag.LOOK));
+            setFlags(EnumSet.noneOf(Flag.class));
         }
 
         @Override

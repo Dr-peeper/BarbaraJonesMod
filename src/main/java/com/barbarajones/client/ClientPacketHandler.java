@@ -25,6 +25,10 @@ public final class ClientPacketHandler {
         CaydenHudClient.accept(msg);
     }
 
+    public static void handleKraveHit(com.barbarajones.net.PacketKraveHit msg) {
+        KraveHitClient.accept();
+    }
+
     public static void openManual() {
         Minecraft.getInstance().setScreen(new KraveManualScreen());
     }

@@ -9,13 +9,17 @@ import com.barbarajones.content.ModItems;
 import com.barbarajones.entity.BarbaraJones;
 import com.barbarajones.entity.CaydenCobb;
 import com.barbarajones.entity.KraveMonster;
+import com.barbarajones.entity.KraveMouthBeam;
 import com.barbarajones.entity.ThePlug;
+import com.barbarajones.net.ModNetwork;
+import com.barbarajones.net.PacketKraveHit;
 import com.barbarajones.quest.Quests;
 
 import net.minecraft.ChatFormatting;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.network.chat.Component;
 import net.minecraft.server.level.ServerLevel;
+import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.sounds.SoundEvents;
 import net.minecraft.sounds.SoundSource;
 import net.minecraft.world.entity.Entity;
@@ -25,6 +29,7 @@ import net.minecraft.world.item.ItemStack;
 import net.minecraftforge.event.TickEvent;
 import net.minecraftforge.event.entity.living.LivingDeathEvent;
 import net.minecraftforge.event.entity.living.LivingEvent;
+import net.minecraftforge.event.entity.living.LivingHurtEvent;
 import net.minecraftforge.event.entity.player.PlayerEvent;
 import net.minecraftforge.eventbus.api.SubscribeEvent;
 
@@ -172,6 +177,23 @@ public class EventHandler {
             }
         } catch (Throwable err) {
             LOGGER.error("Failed to spawn Duhl Wol", err);
+        }
+    }
+
+    /**
+     * The Krave Kosmos's actual tension cue: tell the victim's client to
+     * flash a hit vignette when Krave Monster (melee or his mouth beam)
+     * lands a hit - replaces the generic ambient Dread vignette that used to
+     * run there permanently maxed-out (see DreadClient.tick()).
+     */
+    @SubscribeEvent
+    public void onLivingHurt(LivingHurtEvent event) {
+        if (!(event.getEntity() instanceof ServerPlayer player)) {
+            return;
+        }
+        Entity attacker = event.getSource().getEntity();
+        if (attacker instanceof KraveMonster || attacker instanceof KraveMouthBeam) {
+            ModNetwork.sendTo(player, new PacketKraveHit());
         }
     }
 

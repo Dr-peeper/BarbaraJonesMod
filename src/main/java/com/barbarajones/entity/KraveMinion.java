@@ -27,9 +27,28 @@ import net.minecraft.world.level.Level;
  */
 public class KraveMinion extends Monster {
 
+    private int teleportTimer;
+
     public KraveMinion(EntityType<? extends Monster> type, Level level) {
         super(type, level);
         this.xpReward = 3;
+    }
+
+    @Override
+    public void tick() {
+        super.tick();
+        if (level().isClientSide) {
+            return;
+        }
+        // Same blink ability as the boss - both so Kosmonauts read as
+        // consistent with him, and so they don't get stranded in the
+        // mountain/valley terrain the way they could before.
+        if (--this.teleportTimer <= 0) {
+            this.teleportTimer = 60 + this.random.nextInt(80);
+            if (getTarget() != null) {
+                KraveBlink.tryRandomBlink(this, this.random, 14.0D, 8, 20, 6, ModSounds.KRAVE_SCREECH.get());
+            }
+        }
     }
 
     public static AttributeSupplier.Builder createAttributes() {

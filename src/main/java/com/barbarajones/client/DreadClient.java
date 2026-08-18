@@ -143,6 +143,21 @@ public final class DreadClient {
             return;
         }
 
+        // The Krave Kosmos is dark, solo, and always near a mod entity by
+        // design - every ambient-dread heuristic below reads it as maximum
+        // tension permanently, which is backwards for a "slow build" effect
+        // and just looks like a stuck/broken vignette. It has its own
+        // tension already (boss bar, health alarm, KraveHitClient's
+        // hit-by-the-boss flash) so ambient Dread stands down here entirely,
+        // same as it already does during the apocalypse.
+        if (here.equals(com.barbarajones.dimension.KraveDimensions.KRAVE_KOSMOS)) {
+            unease += (0.0F - unease) * 0.05F;
+            if (unease < 0.001F) {
+                unease = 0.0F;
+            }
+            return;
+        }
+
         // The nearby-entity scan in computeTarget() is the expensive part;
         // the target only feeds a slow lerp anyway, so refreshing it a few
         // times a second instead of every tick is free smoothing, not a

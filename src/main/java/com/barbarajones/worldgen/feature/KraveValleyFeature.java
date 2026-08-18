@@ -13,24 +13,21 @@ import net.minecraft.world.level.levelgen.feature.FeaturePlaceContext;
 import net.minecraft.world.level.levelgen.feature.configurations.NoneFeatureConfiguration;
 
 /**
- * The inverse of KraveMountainFeature - a shallow bowl-shaped depression
- * carved down from the surface, so the islands read as having real valleys
- * instead of being uniformly domed. Depth is capped and validated against
- * how much solid ground actually exists below the surface first, so this can
- * never carve through a thin island into the void underneath (same
- * risk-mitigation principle as KraveCavePocketFeature). The naturally
- * shrinking radius as it carves deeper leaves the surrounding untouched
- * terrain as sloped walls - since the ground is already layered
- * grass/dirt/blackstone via the surface_rule, those walls read as a natural
- * cliff face with no extra re-lining pass needed.
+ * A carved-down crevasse - the inverse of KraveMountainFeature, made rarer
+ * and larger (fewer, bigger crevasses rather than lots of small round
+ * bowls), with the same organic-lobe cross-section plus a dedicated
+ * elongation term along a random axis so it reads as a crack in the terrain
+ * rather than a pit. Depth is capped and validated against how much solid
+ * ground actually exists below the surface first, so this can never carve
+ * through a thin island into the void underneath.
  */
 public class KraveValleyFeature extends Feature<NoneFeatureConfiguration> {
 
-    private static final int MAX_DEPTH = 10;
-    private static final int MIN_DEPTH = 5;
-    private static final int MIN_BASE_RADIUS = 6;
-    private static final int BASE_RADIUS_RANGE = 5; // -> 6..10
-    private static final int MIN_SOLID_BELOW = 6;
+    private static final int MAX_DEPTH = 14;
+    private static final int MIN_DEPTH = 6;
+    private static final int MIN_BASE_RADIUS = 8;
+    private static final int BASE_RADIUS_RANGE = 7; // -> 8..14
+    private static final int MIN_SOLID_BELOW = 7;
     private static final int SAFETY_MARGIN = 3;
 
     public KraveValleyFeature(Codec<NoneFeatureConfiguration> codec) {
@@ -56,16 +53,20 @@ public class KraveValleyFeature extends Feature<NoneFeatureConfiguration> {
             return false;
         }
         int baseRadius = MIN_BASE_RADIUS + random.nextInt(BASE_RADIUS_RANGE);
+        double[][] lobes = crevasseLobes(random);
 
         BlockState air = Blocks.AIR.defaultBlockState();
         BlockState floorBlock = ModBlocks.KRAVE_DIRT.get().defaultBlockState();
 
         for (int y = 0; y < depth; y++) {
-            int radius = radiusAt(y, depth, baseRadius);
+            double layerBase = radiusAt(y, depth, baseRadius);
             boolean isFloor = y == depth - 1;
-            for (int dx = -radius; dx <= radius; dx++) {
-                for (int dz = -radius; dz <= radius; dz++) {
-                    if (dx * dx + dz * dz > radius * radius) {
+            int scanR = (int) Math.ceil(layerBase * 1.8) + 1;
+            for (int dx = -scanR; dx <= scanR; dx++) {
+                for (int dz = -scanR; dz <= scanR; dz++) {
+                    double dist = Math.sqrt(dx * dx + dz * dz);
+                    double effectiveR = layerBase * KraveTerrainShape.lobeMultiplier(Math.atan2(dz, dx), lobes);
+                    if (dist > effectiveR) {
                         continue;
                     }
                     BlockPos pos = origin.offset(dx, -y, dz);
@@ -76,10 +77,21 @@ public class KraveValleyFeature extends Feature<NoneFeatureConfiguration> {
         return true;
     }
 
-    /** Linear taper from baseRadius at the rim down to 1 at the floor. */
-    private int radiusAt(int y, int depth, int baseRadius) {
+    /** General jaggedness lobes plus one dedicated elongation term along a random axis. */
+    private double[][] crevasseLobes(RandomSource random) {
+        double[][] jagged = KraveTerrainShape.randomLobes(random, 2, 3, 0.12, 0.25);
+        double axisAngle = random.nextDouble() * Math.PI * 2.0;
+        double elongation = 0.35 + random.nextDouble() * 0.4;
+        double[][] lobes = new double[jagged.length + 1][3];
+        System.arraycopy(jagged, 0, lobes, 0, jagged.length);
+        lobes[jagged.length] = new double[] { -2.0 * axisAngle, 2, elongation };
+        return lobes;
+    }
+
+    /** Linear taper from baseRadius at the rim down to ~40% of that at the floor. */
+    private double radiusAt(int y, int depth, int baseRadius) {
         double t = (double) y / (double) depth;
-        return Math.max(1, (int) Math.round(baseRadius * (1.0 - t * 0.6)));
+        return Math.max(1.0, baseRadius * (1.0 - t * 0.6));
     }
 
     private int countSolidBelow(WorldGenLevel level, BlockPos origin, int maxScan) {
