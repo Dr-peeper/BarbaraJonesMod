@@ -53,6 +53,27 @@ public class SsjAuraLayer extends RenderLayer<CaydenCobb, CaydenModel> {
         // billboard the flat effects toward the camera
         float camYaw = Minecraft.getInstance().gameRenderer.getMainCamera().getYRot();
 
+        // Per-rung tint: rather than every tier reading the same gold as SSJ1,
+        // multiply the whole pass's shader color so each rung reads as its own
+        // distinct palette instead of a linear gold->brighter-gold ramp. Ultra
+        // Instinct shifts hue over time instead of sitting on one color, so it
+        // reads as categorically different rather than "one more step."
+        float tr = 1.0F, tg = 1.0F, tb = 1.0F;
+        int tier = full ? entity.getTier() : 0;
+        switch (tier) {
+            case 2 -> { tr = 1.0F; tg = 1.0F; tb = 0.85F; }               // SSJ2: white-hot gold
+            case 3 -> { tr = 1.0F; tg = 0.7F; tb = 0.35F; }               // SSJ3: deep orange
+            case 4 -> { tr = 1.0F; tg = 0.22F; tb = 0.28F; }              // GOD: red
+            case 5 -> { tr = 0.35F; tg = 0.55F; tb = 1.0F; }              // BLUE: blue
+            case 6 -> {                                                  // ULTRA: shifting prismatic
+                tr = 0.55F + 0.45F * Mth.sin(t * 0.045F);
+                tg = 0.15F + 0.15F * Mth.sin(t * 0.03F + 2.0F);
+                tb = 0.55F + 0.45F * Mth.cos(t * 0.05F);
+            }
+            default -> { }                                               // SSJ1 / half / dark: unchanged gold-red
+        }
+        com.mojang.blaze3d.systems.RenderSystem.setShaderColor(tr, tg, tb, 1.0F);
+
         flameColumn(pose, buf, t, camYaw);
         skyBeam(pose, buf, t, camYaw);
         hairSpikes(pose, buf, t);
@@ -61,6 +82,13 @@ public class SsjAuraLayer extends RenderLayer<CaydenCobb, CaydenModel> {
         shockwave(pose, buf, entity, t);
         groundPulse(pose, buf, t);
 
+        // Ultra Instinct gets a second, wider shockwave ring on top of the
+        // normal one - the standout "this is the final form" flourish.
+        if (tier == 6) {
+            shockwave(pose, buf, entity, t + 40.0F);
+        }
+
+        com.mojang.blaze3d.systems.RenderSystem.setShaderColor(1.0F, 1.0F, 1.0F, 1.0F);
         pose.popPose();
     }
 

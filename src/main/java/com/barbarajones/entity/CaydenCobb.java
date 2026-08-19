@@ -170,6 +170,19 @@ public class CaydenCobb extends TamableAnimal {
         super(type, level);
     }
 
+    /**
+     * Hitbox grows with him, more conservatively than the visual scale in
+     * CaydenRenderer#scale (which goes up to 1.6x) so collision never gets
+     * comically oversized - just enough that a fully ascended Cayden doesn't
+     * look huge while still fitting through a 1-block gap the same as before.
+     */
+    @Override
+    public net.minecraft.world.entity.EntityDimensions getDimensions(net.minecraft.world.entity.Pose pose) {
+        net.minecraft.world.entity.EntityDimensions base = super.getDimensions(pose);
+        float scale = 1.0F + getTier() * 0.05F;
+        return base.scale(scale);
+    }
+
     public static AttributeSupplier.Builder createAttributes() {
         return TamableAnimal.createLivingAttributes()
                 .add(Attributes.MAX_HEALTH, 24.0D)

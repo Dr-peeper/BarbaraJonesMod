@@ -30,10 +30,12 @@ public class CaydenRenderer extends MobRenderer<CaydenCobb, CaydenModel> {
         float tall = 0.85F * fat;
 
         if (entity.isSuperSaiyan()) {
-            // A permanent step up in size the moment he ascends - he should
-            // read as bigger even standing still, not just brighter.
-            wide *= 1.18F;
-            tall *= 1.18F;
+            // Bigger with every rung, not just a flat bump on first ascension -
+            // BASE=1.0x up through ULTRA=1.6x, so the climb reads in silhouette
+            // and not just in the aura.
+            float tierScale = 1.0F + entity.getTier() * 0.10F;
+            wide *= tierScale;
+            tall *= tierScale;
 
             // A hard swell on transformation that settles back over ~1s, so the
             // ascension lands as a physical event rather than a texture swap.
