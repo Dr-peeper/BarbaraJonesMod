@@ -3,6 +3,8 @@ package com.barbarajones.client;
 import com.barbarajones.BarbaraJonesMod;
 import com.barbarajones.client.render.BarbaraRenderer;
 import com.barbarajones.client.render.CaydenRenderer;
+import com.barbarajones.client.render.EmberCherryRenderer;
+import com.barbarajones.client.render.SmokeRingRenderer;
 import com.barbarajones.client.render.DuhlWolRenderer;
 import com.barbarajones.client.render.DuhlWolCarRenderer;
 import com.barbarajones.client.render.GiantKraveBoxRenderer;
@@ -58,6 +60,17 @@ public final class ClientSetup {
         event.registerEntityRenderer(ModEntities.KRAVE_MINION.get(),
                 ctx -> new HumanoidLikeRenderer<>(ctx, "krave_minion", 0.4F));
         event.registerEntityRenderer(ModEntities.KRAVE_HEALING_BOX.get(), KraveHealingBoxRenderer::new);
+
+        // Barbara's kit. Both renderer classes were written and both entities
+        // were registered; nothing ever connected them, so the first Torching
+        // spawned a smoke ring the client had no renderer for and the render
+        // dispatcher NPE'd straight out of the game.
+        event.registerEntityRenderer(ModEntities.SMOKE_RING.get(), SmokeRingRenderer::new);
+        event.registerEntityRenderer(ModEntities.EMBER_CHERRY.get(), EmberCherryRenderer::new);
+        // The recliner seat is a mount with nothing to draw, but "nothing to
+        // draw" still has to BE a renderer or it fails the same way on sitting.
+        event.registerEntityRenderer(com.barbarajones.content.extra.ExtraRegistry.RECLINER_SEAT.get(),
+                net.minecraft.client.renderer.entity.NoopRenderer::new);
 
         event.registerEntityRenderer(ModEntities.METEOR.get(), KraveMeteorRenderer::new);
         event.registerEntityRenderer(ModEntities.KRAVE_LASER.get(), KraveLaserRenderer::new);
