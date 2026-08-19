@@ -8,7 +8,9 @@ import com.barbarajones.block.KraveGrassBlock;
 
 import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.Blocks;
+import net.minecraft.world.level.block.LeavesBlock;
 import net.minecraft.world.level.block.LiquidBlock;
+import net.minecraft.world.level.block.RotatedPillarBlock;
 import net.minecraft.world.level.block.SoundType;
 import net.minecraft.world.level.block.state.BlockBehaviour;
 import net.minecraft.world.level.block.state.properties.BlockSetType;
@@ -63,6 +65,14 @@ public final class ModBlocks {
 
     public static final RegistryObject<Block> KRAVE_DIRT = BLOCKS.register("krave_dirt",
             () -> new KraveDirtBlock(BlockBehaviour.Properties.copy(Blocks.DIRT).randomTicks()));
+
+    // ---- Chocolate trees: vanilla log/leaves behavior, reskinned -----------
+
+    public static final RegistryObject<Block> CHOCOLATE_LOG = BLOCKS.register("chocolate_log",
+            () -> new RotatedPillarBlock(BlockBehaviour.Properties.copy(Blocks.OAK_LOG)));
+
+    public static final RegistryObject<Block> KRAVE_LEAVES = BLOCKS.register("krave_leaves",
+            () -> new LeavesBlock(BlockBehaviour.Properties.copy(Blocks.OAK_LEAVES)));
 
     // ---- Krafting Bench: a red Krave Box that combines pickaxe+axe+shovel ---
 

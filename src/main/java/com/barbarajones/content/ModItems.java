@@ -226,6 +226,10 @@ public final class ModItems {
             ITEMS.register("krave_dirt", () -> new BlockItem(ModBlocks.KRAVE_DIRT.get(), props()));
     public static final RegistryObject<Item> KRAFTING_BENCH_ITEM =
             ITEMS.register("krafting_bench", () -> new BlockItem(ModBlocks.KRAFTING_BENCH.get(), props()));
+    public static final RegistryObject<Item> CHOCOLATE_LOG_ITEM =
+            ITEMS.register("chocolate_log", () -> new BlockItem(ModBlocks.CHOCOLATE_LOG.get(), props()));
+    public static final RegistryObject<Item> KRAVE_LEAVES_ITEM =
+            ITEMS.register("krave_leaves", () -> new BlockItem(ModBlocks.KRAVE_LEAVES.get(), props()));
 
     // ---- liquid chocolate ------------------------------------------------------
 

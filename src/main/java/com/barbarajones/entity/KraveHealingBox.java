@@ -1,5 +1,6 @@
 package com.barbarajones.entity;
 
+import com.barbarajones.content.ModDamageTypes;
 import com.barbarajones.content.ModSounds;
 import com.barbarajones.dimension.KraveKosmosData;
 
@@ -138,8 +139,12 @@ public class KraveHealingBox extends Entity {
         level().playSound(null, blockPosition(), ModSounds.KRAVE_BOOM.get(), SoundSource.HOSTILE, 0.8F, 1.0F);
         // NONE block interaction: real explosion knockback/damage and the
         // vanilla explosion sound+particle, without cratering the terrain -
-        // this is a destroyed protector box, not a bomb.
-        level().explode(this, getX(), getY(), getZ(), EXPLOSION_POWER, false, Level.ExplosionInteraction.NONE);
+        // this is a destroyed protector box, not a bomb. The custom damage
+        // type gives a real death message ("blown to bits by a Krave Box")
+        // instead of the generic "blew up" - null calculator uses vanilla's
+        // default falloff/knockback math, only the message changes.
+        level().explode(this, ModDamageTypes.of(level(), ModDamageTypes.KRAVE_BOX), null,
+                getX(), getY(), getZ(), EXPLOSION_POWER, false, Level.ExplosionInteraction.NONE);
         discard();
         return true;
     }

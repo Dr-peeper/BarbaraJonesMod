@@ -16,7 +16,8 @@
   "features": [
     [],
     [
-      "barbarajones:chocolate_lake_underground"
+      "barbarajones:chocolate_lake_underground",
+      "barbarajones:chocolate_lake_surface"
     ],
     [
       "barbarajones:krave_mountain",
@@ -28,6 +29,13 @@
     ],
     [
       "barbarajones:krave_ruin"
+    ],
+    [],
+    [],
+    [],
+    [],
+    [
+      "barbarajones:chocolate_tree"
     ]
   ],
   "has_precipitation": false,

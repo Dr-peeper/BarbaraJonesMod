@@ -1,0 +1,7 @@
+{
+  "parent": "minecraft:block/cube_column",
+  "textures": {
+    "end": "barbarajones:block/chocolate_log_top",
+    "side": "barbarajones:block/chocolate_log"
+  }
+}

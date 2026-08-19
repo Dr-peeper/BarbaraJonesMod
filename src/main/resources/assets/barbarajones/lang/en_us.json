@@ -107,5 +107,11 @@
   "subtitles.barbarajones.krave": "Barbara Jones Mod",
   "subtitles.barbarajones.krave_beam": "Barbara Jones Mod",
   "item.barbarajones.krave_multitool": "Krave Multitool",
-  "item.barbarajones.krafting_bench": "Krafting Bench"
+  "item.barbarajones.krafting_bench": "Krafting Bench",
+  "item.barbarajones.chocolate_log": "Chocolate Log",
+  "item.barbarajones.krave_leaves": "Krave Leaves",
+  "death.attack.chocolate": "%1$s tried to swim in chocolate",
+  "death.attack.chocolate.player": "%1$s tried to swim in chocolate to escape %2$s",
+  "death.attack.krave_box": "%1$s was blown to bits by a Krave Box",
+  "death.attack.krave_box.player": "%1$s was blown to bits by a Krave Box while fighting %2$s"
 }

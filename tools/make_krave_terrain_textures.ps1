@@ -1,13 +1,14 @@
-# Krave Grass/Dirt textures: literally vanilla's dirt/grass art, recolored -
-# not an original design. Source PNGs are extracted from the vanilla client
-# jar (assets/minecraft/textures/block/...) into tools/vanilla_src/ before
-# running this script (see the extraction step in the session that added
-# this - grass_block_top.png and grass_block_side_overlay.png are the
-# grayscale "tintable" masks vanilla itself recolors per-biome at runtime;
-# dirt.png is already colored art). Both kinds are recolored the same way
-# here: convert to luminance, multiply by a fixed Krave tint - the same math
+# Krave Grass/Dirt AND chocolate tree textures: literally vanilla's dirt/
+# grass/oak_log/oak_leaves art, recolored - not original designs. Source
+# PNGs are extracted from the vanilla client jar
+# (assets/minecraft/textures/block/...) into tools/vanilla_src/ before
+# running this script - grass_block_top.png and grass_block_side_overlay.png
+# are the grayscale "tintable" masks vanilla itself recolors per-biome at
+# runtime; dirt.png/oak_log*.png/oak_leaves.png are already-colored art.
+# Every source is recolored the same way regardless of which kind it is:
+# convert to luminance, multiply by a fixed Krave tint - the same math
 # vanilla's own biome tint applies, just baked into the file once instead of
-# computed every frame, since this block doesn't use the tint system.
+# computed every frame, since none of these blocks use the tint system.
 Add-Type -AssemblyName System.Drawing
 $root = Split-Path -Parent $PSScriptRoot
 $srcDir = "$PSScriptRoot\vanilla_src"
@@ -43,8 +44,8 @@ function Composite($base,$overlay){
     return $out
 }
 
-$dirtTint = 'D6BFEA'    # a lighter lilac so luminance*tint doesn't just crush dirt.png toward black
-$grassTint = '9B4DFF'   # vivid violet - reads as "grass," clearly Krave-purple
+$dirtTint = 'B85C3C'    # rusty terracotta - same warm-red family as the box, reads as "dirt"
+$grassTint = 'C62828'   # the Krave Box's own red, exactly - ties the whole Kosmos to one palette
 
 $dirtSrc = Load 'dirt.png'
 $dirtOut = Recolor $dirtSrc $dirtTint
@@ -69,4 +70,17 @@ $dirtSideBase = Recolor (Load 'grass_block_side.png') $dirtTint
 $sideOut = Composite $dirtSideBase $overlayTinted
 $sideOut.Save("$bdir\krave_grass_side.png", [System.Drawing.Imaging.ImageFormat]::Png)
 
-Write-Output "wrote krave_dirt, krave_grass_top, krave_grass_side (recolored from vanilla art)"
+# ---- chocolate trees: vanilla oak log/leaves art, recolored -------------------
+$logTint = '6B4226'     # chocolate brown - matches the mod's existing $choc/$chocL tones
+$leafTint = 'C62828'    # the same Krave Box red as the grass - "red leaves"
+
+$logSideOut = Recolor (Load 'oak_log.png') $logTint
+$logSideOut.Save("$bdir\chocolate_log.png", [System.Drawing.Imaging.ImageFormat]::Png)
+
+$logTopOut = Recolor (Load 'oak_log_top.png') $logTint
+$logTopOut.Save("$bdir\chocolate_log_top.png", [System.Drawing.Imaging.ImageFormat]::Png)
+
+$leavesOut = Recolor (Load 'oak_leaves.png') $leafTint
+$leavesOut.Save("$bdir\krave_leaves.png", [System.Drawing.Imaging.ImageFormat]::Png)
+
+Write-Output "wrote krave_dirt, krave_grass_top, krave_grass_side, chocolate_log(+top), krave_leaves (recolored from vanilla art)"
