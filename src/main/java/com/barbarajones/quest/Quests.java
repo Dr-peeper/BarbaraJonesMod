@@ -330,6 +330,10 @@ public final class Quests {
                 pre(START),
                 ModItems.TOASTER_PASTRIES);
 
+        for (com.barbarajones.quest.expansion.QuestExpansion.Spec s : com.barbarajones.quest.expansion.QuestExpansion.ALL) {
+            add(new Quest(s.id, s.branch, s.title, s.objective, s.prereqs, s.event, false, s.collect));
+        }
+
         // ---- the finale -----------------------------------------------------
         milestone(PEACE, B_END, "Peace at Last",
                 "Every branch walked, every item collected, the Krave conquered and the scam avenged. "

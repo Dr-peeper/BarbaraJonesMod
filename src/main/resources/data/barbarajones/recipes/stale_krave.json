@@ -1,0 +1,5 @@
+{
+  "type": "minecraft:crafting_shapeless",
+  "ingredients": [ { "item": "barbarajones:krave_cereal" }, { "item": "minecraft:rotten_flesh" } ],
+  "result": { "item": "barbarajones:stale_krave", "count": 2 }
+}

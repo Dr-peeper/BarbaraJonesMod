@@ -1,0 +1,5 @@
+{
+  "type": "minecraft:crafting_shapeless",
+  "ingredients": [ { "item": "minecraft:bread" }, { "item": "minecraft:cooked_chicken" } ],
+  "result": { "item": "barbarajones:chicken_sandwich", "count": 1 }
+}

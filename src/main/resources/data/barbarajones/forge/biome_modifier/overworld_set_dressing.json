@@ -1,0 +1,11 @@
+{
+  "type": "forge:add_features",
+  "biomes": "#minecraft:is_overworld",
+  "features": [
+    "barbarajones:barbara_lawn",
+    "barbarajones:sewer_entrance",
+    "barbarajones:abandoned_car",
+    "barbarajones:cereal_shrine"
+  ],
+  "step": "surface_structures"
+}

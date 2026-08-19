@@ -1,0 +1,5 @@
+{
+  "type": "minecraft:crafting_shapeless",
+  "ingredients": [ { "item": "barbarajones:mr_pibb" }, { "item": "barbarajones:mr_pibb" }, { "item": "barbarajones:mr_pibb" }, { "item": "minecraft:glass_bottle" } ],
+  "result": { "item": "barbarajones:mr_pibb_two_liter", "count": 1 }
+}

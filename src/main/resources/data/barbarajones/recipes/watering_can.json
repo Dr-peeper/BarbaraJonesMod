@@ -1,0 +1,5 @@
+{
+  "type": "minecraft:crafting_shapeless",
+  "ingredients": [ { "item": "minecraft:bucket" }, { "item": "minecraft:iron_nugget" }, { "item": "minecraft:iron_nugget" }, { "item": "minecraft:iron_nugget" } ],
+  "result": { "item": "barbarajones:watering_can", "count": 1 }
+}

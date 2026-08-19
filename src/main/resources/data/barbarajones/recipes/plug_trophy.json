@@ -1,0 +1,5 @@
+{
+  "type": "minecraft:crafting_shapeless",
+  "ingredients": [ { "item": "barbarajones:ski_mask" }, { "item": "minecraft:gold_ingot" }, { "item": "minecraft:gold_ingot" } ],
+  "result": { "item": "barbarajones:plug_trophy", "count": 1 }
+}

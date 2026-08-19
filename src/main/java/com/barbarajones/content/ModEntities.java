@@ -1,6 +1,13 @@
 package com.barbarajones.content;
 
 import com.barbarajones.BarbaraJonesMod;
+import com.barbarajones.boss.manager.FilingCabinet;
+import com.barbarajones.boss.manager.ManagerMinion;
+import com.barbarajones.boss.manager.TerminationNotice;
+import com.barbarajones.boss.manager.TheManager;
+import com.barbarajones.boss.mom.MomCobbBoss;
+import com.barbarajones.boss.mom.MomKraveStash;
+import com.barbarajones.boss.mom.ThrownHousehold;
 import com.barbarajones.entity.BarbaraJones;
 import com.barbarajones.entity.CaydenCobb;
 import com.barbarajones.entity.Daniel;
@@ -137,4 +144,40 @@ public final class ModEntities {
                     .<SkyCinematic>of(SkyCinematic::new, MobCategory.MISC)
                     .sized(2.0F, 4.0F).clientTrackingRange(20).updateInterval(2)
                     .build("sky_cinematic"));
+
+    public static final RegistryObject<EntityType<MomCobbBoss>> MOM_BOSS =
+            ENTITIES.register("mom_cobb_boss", () -> EntityType.Builder
+                    .of(MomCobbBoss::new, MobCategory.MONSTER)
+                    .sized(0.7F, 2.1F).clientTrackingRange(16)
+                    .build("mom_cobb_boss"));
+    public static final RegistryObject<EntityType<MomKraveStash>> MOM_STASH =
+            ENTITIES.register("mom_krave_stash", () -> EntityType.Builder
+                    .of(MomKraveStash::new, MobCategory.MISC)
+                    .sized(0.8F, 1.0F).clientTrackingRange(12)
+                    .build("mom_krave_stash"));
+    public static final RegistryObject<EntityType<ThrownHousehold>> MOM_THROWN =
+            ENTITIES.register("mom_thrown_object", () -> EntityType.Builder
+                    .<ThrownHousehold>of(ThrownHousehold::new, MobCategory.MISC)
+                    .sized(0.4F, 0.4F).clientTrackingRange(16).updateInterval(1)
+                    .build("mom_thrown_object"));
+    public static final RegistryObject<EntityType<TheManager>> THE_MANAGER =
+            ENTITIES.register("the_manager", () -> EntityType.Builder
+                    .of(TheManager::new, MobCategory.MONSTER)
+                    .sized(0.7F, 2.3F).clientTrackingRange(24).fireImmune()
+                    .build("the_manager"));
+    public static final RegistryObject<EntityType<ManagerMinion>> MANAGER_MINION =
+            ENTITIES.register("manager_minion", () -> EntityType.Builder
+                    .of(ManagerMinion::new, MobCategory.MONSTER)
+                    .sized(0.6F, 1.9F).clientTrackingRange(16)
+                    .build("manager_minion"));
+    public static final RegistryObject<EntityType<TerminationNotice>> TERMINATION_NOTICE =
+            ENTITIES.register("termination_notice", () -> EntityType.Builder
+                    .<TerminationNotice>of(TerminationNotice::new, MobCategory.MISC)
+                    .sized(0.5F, 0.5F).clientTrackingRange(20).updateInterval(1)
+                    .build("termination_notice"));
+    public static final RegistryObject<EntityType<FilingCabinet>> FILING_CABINET =
+            ENTITIES.register("filing_cabinet", () -> EntityType.Builder
+                    .<FilingCabinet>of(FilingCabinet::new, MobCategory.MISC)
+                    .sized(1.0F, 1.5F).clientTrackingRange(16).updateInterval(3)
+                    .build("filing_cabinet"));
 }

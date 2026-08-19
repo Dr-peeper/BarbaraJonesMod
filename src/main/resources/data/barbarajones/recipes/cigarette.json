@@ -1,0 +1,5 @@
+{
+  "type": "minecraft:crafting_shapeless",
+  "ingredients": [ { "item": "barbarajones:rolling_paper" }, { "item": "barbarajones:burnt_grass" } ],
+  "result": { "item": "barbarajones:cigarette", "count": 2 }
+}

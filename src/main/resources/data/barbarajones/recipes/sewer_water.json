@@ -1,0 +1,5 @@
+{
+  "type": "minecraft:crafting_shapeless",
+  "ingredients": [ { "item": "minecraft:glass_bottle" }, { "item": "minecraft:slime_ball" }, { "item": "barbarajones:rat_tail" } ],
+  "result": { "item": "barbarajones:sewer_water", "count": 1 }
+}

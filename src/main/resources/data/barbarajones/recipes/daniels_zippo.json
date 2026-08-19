@@ -1,0 +1,5 @@
+{
+  "type": "minecraft:crafting_shapeless",
+  "ingredients": [ { "item": "barbarajones:lighter" }, { "item": "minecraft:iron_ingot" }, { "item": "minecraft:flint" } ],
+  "result": { "item": "barbarajones:daniels_zippo", "count": 1 }
+}

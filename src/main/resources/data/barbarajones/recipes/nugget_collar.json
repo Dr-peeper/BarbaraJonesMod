@@ -1,0 +1,9 @@
+{
+  "type": "minecraft:crafting_shapeless",
+  "ingredients": [
+    { "item": "minecraft:leather" },
+    { "item": "minecraft:orange_dye" },
+    { "item": "minecraft:string" }
+  ],
+  "result": { "item": "barbarajones:nugget_collar", "count": 1 }
+}

@@ -1,0 +1,13 @@
+{
+  "variants": {
+    "fill=0": { "model": "barbarajones:block/stash_box" },
+    "fill=1": { "model": "barbarajones:block/stash_box_half" },
+    "fill=2": { "model": "barbarajones:block/stash_box_half" },
+    "fill=3": { "model": "barbarajones:block/stash_box_half" },
+    "fill=4": { "model": "barbarajones:block/stash_box_half" },
+    "fill=5": { "model": "barbarajones:block/stash_box_full" },
+    "fill=6": { "model": "barbarajones:block/stash_box_full" },
+    "fill=7": { "model": "barbarajones:block/stash_box_full" },
+    "fill=8": { "model": "barbarajones:block/stash_box_full" }
+  }
+}

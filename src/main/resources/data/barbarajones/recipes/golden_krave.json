@@ -1,0 +1,6 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "pattern": [ "GGG", "GKG", "GGG" ],
+  "key": { "G": { "item": "minecraft:gold_ingot" }, "K": { "item": "barbarajones:krave_cereal" } },
+  "result": { "item": "barbarajones:golden_krave", "count": 1 }
+}

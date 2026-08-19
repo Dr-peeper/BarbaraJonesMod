@@ -1,0 +1,6 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "pattern": [ " K ", "GGG", " G " ],
+  "key": { "K": { "item": "barbarajones:krave_box" }, "G": { "item": "minecraft:gold_ingot" } },
+  "result": { "item": "barbarajones:krave_monster_trophy", "count": 1 }
+}

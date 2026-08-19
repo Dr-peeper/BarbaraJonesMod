@@ -1,0 +1,5 @@
+{
+  "type": "minecraft:crafting_shapeless",
+  "ingredients": [ { "item": "barbarajones:managers_tie" }, { "item": "minecraft:gold_ingot" }, { "item": "minecraft:paper" } ],
+  "result": { "item": "barbarajones:barbara_trophy", "count": 1 }
+}

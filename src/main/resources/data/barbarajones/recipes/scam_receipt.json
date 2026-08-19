@@ -1,0 +1,5 @@
+{
+  "type": "minecraft:crafting_shapeless",
+  "ingredients": [ { "item": "minecraft:paper" }, { "item": "minecraft:paper" }, { "item": "minecraft:light_gray_dye" } ],
+  "result": { "item": "barbarajones:scam_receipt", "count": 2 }
+}

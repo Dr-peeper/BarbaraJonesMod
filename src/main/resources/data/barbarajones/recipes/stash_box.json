@@ -1,0 +1,6 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "pattern": [ "PPP", "PGP", "PPP" ],
+  "key": { "P": { "item": "minecraft:oak_planks" }, "G": { "item": "barbarajones:handful_of_grass" } },
+  "result": { "item": "barbarajones:stash_box", "count": 1 }
+}

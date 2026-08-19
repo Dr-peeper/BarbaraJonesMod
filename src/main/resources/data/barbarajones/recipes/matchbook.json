@@ -1,0 +1,5 @@
+{
+  "type": "minecraft:crafting_shapeless",
+  "ingredients": [ { "item": "minecraft:paper" }, { "item": "minecraft:stick" }, { "item": "minecraft:gunpowder" } ],
+  "result": { "item": "barbarajones:matchbook", "count": 1 }
+}

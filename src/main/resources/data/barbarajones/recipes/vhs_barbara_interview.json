@@ -1,0 +1,5 @@
+{
+  "type": "minecraft:crafting_shapeless",
+  "ingredients": [ { "item": "barbarajones:vhs_blank" }, { "item": "barbarajones:flyrich_poster" }, { "item": "minecraft:redstone" } ],
+  "result": { "item": "barbarajones:vhs_barbara_interview", "count": 1 }
+}

@@ -1,0 +1,12 @@
+{
+  "variants": {
+    "facing=north,lit=false": { "model": "barbarajones:block/television" },
+    "facing=north,lit=true": { "model": "barbarajones:block/television_on" },
+    "facing=east,lit=false": { "model": "barbarajones:block/television", "y": 90 },
+    "facing=east,lit=true": { "model": "barbarajones:block/television_on", "y": 90 },
+    "facing=south,lit=false": { "model": "barbarajones:block/television", "y": 180 },
+    "facing=south,lit=true": { "model": "barbarajones:block/television_on", "y": 180 },
+    "facing=west,lit=false": { "model": "barbarajones:block/television", "y": 270 },
+    "facing=west,lit=true": { "model": "barbarajones:block/television_on", "y": 270 }
+  }
+}

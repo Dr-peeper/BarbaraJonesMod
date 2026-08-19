@@ -1,0 +1,8 @@
+{
+  "variants": {
+    "facing=north": { "model": "barbarajones:block/recliner" },
+    "facing=east": { "model": "barbarajones:block/recliner", "y": 90 },
+    "facing=south": { "model": "barbarajones:block/recliner", "y": 180 },
+    "facing=west": { "model": "barbarajones:block/recliner", "y": 270 }
+  }
+}

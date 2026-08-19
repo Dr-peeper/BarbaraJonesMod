@@ -1,0 +1,27 @@
+{
+  "parent": "barbarajones:root",
+  "display": {
+    "icon": { "item": "barbarajones:krave_sword" },
+    "title": { "text": "Krave Arsenal" },
+    "description": { "text": "Hold the whole cursed tool set at once: pickaxe, sword, axe, shovel and hoe." },
+    "frame": "goal",
+    "show_toast": true,
+    "announce_to_chat": true,
+    "hidden": false
+  },
+  "criteria": {
+    "full_set": {
+      "trigger": "minecraft:inventory_changed",
+      "conditions": {
+        "items": [
+          { "items": [ "barbarajones:krave_pickaxe" ] },
+          { "items": [ "barbarajones:krave_sword" ] },
+          { "items": [ "barbarajones:krave_axe" ] },
+          { "items": [ "barbarajones:krave_shovel" ] },
+          { "items": [ "barbarajones:krave_hoe" ] }
+        ]
+      }
+    }
+  },
+  "requirements": [ [ "full_set" ] ]
+}

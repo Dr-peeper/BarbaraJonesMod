@@ -1,0 +1,5 @@
+{
+  "type": "minecraft:crafting_shapeless",
+  "ingredients": [ { "item": "minecraft:stone_button" }, { "item": "minecraft:redstone" }, { "item": "minecraft:black_dye" }, { "item": "minecraft:stick" } ],
+  "result": { "item": "barbarajones:remote_control", "count": 1 }
+}

@@ -1,0 +1,6 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "pattern": [ "GGG", "III", "RRR" ],
+  "key": { "G": { "item": "minecraft:glass" }, "I": { "item": "minecraft:iron_ingot" }, "R": { "item": "minecraft:redstone" } },
+  "result": { "item": "barbarajones:laptop", "count": 1 }
+}

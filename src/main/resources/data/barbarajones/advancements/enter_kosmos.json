@@ -1,0 +1,21 @@
+{
+  "parent": "barbarajones:root",
+  "display": {
+    "icon": { "item": "barbarajones:krave_door" },
+    "title": { "text": "The Krave Kosmos" },
+    "description": { "text": "Step through the Krave Door. Floating islands, liquid chocolate, and something that teleports." },
+    "frame": "goal",
+    "show_toast": true,
+    "announce_to_chat": true,
+    "hidden": false
+  },
+  "criteria": {
+    "entered_kosmos": {
+      "trigger": "minecraft:changed_dimension",
+      "conditions": {
+        "to": "barbarajones:krave_kosmos"
+      }
+    }
+  },
+  "requirements": [ [ "entered_kosmos" ] ]
+}

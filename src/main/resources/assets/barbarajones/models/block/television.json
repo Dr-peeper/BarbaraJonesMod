@@ -1,0 +1,8 @@
+{
+  "parent": "minecraft:block/orientable",
+  "textures": {
+    "top": "barbarajones:block/tv_top",
+    "front": "barbarajones:block/tv_front_off",
+    "side": "barbarajones:block/tv_side"
+  }
+}

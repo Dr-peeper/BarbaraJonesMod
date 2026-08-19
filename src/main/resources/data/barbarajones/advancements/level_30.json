@@ -1,0 +1,19 @@
+{
+  "parent": "barbarajones:level_20",
+  "display": {
+    "icon": { "item": "barbarajones:red_hat" },
+    "title": { "text": "I KRAVE THE KRAVE" },
+    "description": { "text": "Krave Level 30. The cap. The Plug will not short you, Barbara lets it go, and the curses are mostly quiet." },
+    "frame": "challenge",
+    "show_toast": true,
+    "announce_to_chat": true,
+    "hidden": false
+  },
+  "rewards": { "experience": 500 },
+  "criteria": {
+    "reached_level": {
+      "trigger": "minecraft:impossible"
+    }
+  },
+  "requirements": [ [ "reached_level" ] ]
+}

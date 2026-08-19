@@ -1,0 +1,18 @@
+{
+  "parent": "barbarajones:root",
+  "display": {
+    "icon": { "item": "barbarajones:handful_of_grass" },
+    "title": { "text": "Krave Level 5" },
+    "description": { "text": "Grass Toucher. You have earned your first perks off the couch." },
+    "frame": "task",
+    "show_toast": true,
+    "announce_to_chat": true,
+    "hidden": false
+  },
+  "criteria": {
+    "reached_level": {
+      "trigger": "minecraft:impossible"
+    }
+  },
+  "requirements": [ [ "reached_level" ] ]
+}

@@ -1,0 +1,9 @@
+{
+  "type": "minecraft:crafting_shapeless",
+  "ingredients": [
+    { "item": "minecraft:stone_pressure_plate" },
+    { "item": "minecraft:redstone" },
+    { "item": "minecraft:iron_nugget" }
+  ],
+  "result": { "item": "barbarajones:pocket_scale", "count": 1 }
+}

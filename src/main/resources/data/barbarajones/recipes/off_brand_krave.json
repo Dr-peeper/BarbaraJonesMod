@@ -1,0 +1,5 @@
+{
+  "type": "minecraft:crafting_shapeless",
+  "ingredients": [ { "item": "barbarajones:krave_dust" }, { "item": "minecraft:wheat" }, { "item": "minecraft:sugar" } ],
+  "result": { "item": "barbarajones:off_brand_krave", "count": 1 }
+}

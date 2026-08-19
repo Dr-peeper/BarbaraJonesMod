@@ -1,0 +1,22 @@
+{
+  "parent": "barbarajones:the_scam",
+  "display": {
+    "icon": { "item": "barbarajones:sniper_scope" },
+    "title": { "text": "Got That Mothafucker" },
+    "description": { "text": "Kill The Plug. The weed was fake, the cocaine was snow, and he shot Cayden." },
+    "frame": "challenge",
+    "show_toast": true,
+    "announce_to_chat": true,
+    "hidden": false
+  },
+  "rewards": { "experience": 100 },
+  "criteria": {
+    "killed_the_plug": {
+      "trigger": "minecraft:player_killed_entity",
+      "conditions": {
+        "entity": { "type": "barbarajones:the_plug" }
+      }
+    }
+  },
+  "requirements": [ [ "killed_the_plug" ] ]
+}

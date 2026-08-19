@@ -1,0 +1,22 @@
+{
+  "parent": "barbarajones:root",
+  "display": {
+    "icon": { "item": "barbarajones:cereal_bowl" },
+    "title": { "text": "Feed The Kid" },
+    "description": { "text": "Right-click Cayden Cobb with a box of Krave Cereal. He will announce it. Every single time." },
+    "frame": "task",
+    "show_toast": true,
+    "announce_to_chat": true,
+    "hidden": false
+  },
+  "criteria": {
+    "fed_cayden": {
+      "trigger": "minecraft:player_interacted_with_entity",
+      "conditions": {
+        "item": { "items": [ "barbarajones:krave_cereal" ] },
+        "entity": { "type": "barbarajones:cayden_cobb" }
+      }
+    }
+  },
+  "requirements": [ [ "fed_cayden" ] ]
+}

@@ -1,0 +1,6 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "pattern": [ "R  ", "RRR", "LLL" ],
+  "key": { "R": { "item": "minecraft:red_wool" }, "L": { "item": "minecraft:oak_log" } },
+  "result": { "item": "barbarajones:recliner", "count": 1 }
+}

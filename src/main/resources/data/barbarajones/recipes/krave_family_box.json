@@ -1,0 +1,6 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "pattern": [ "KKK", "KKK", "KKK" ],
+  "key": { "K": { "item": "barbarajones:krave_cereal" } },
+  "result": { "item": "barbarajones:krave_family_box", "count": 1 }
+}

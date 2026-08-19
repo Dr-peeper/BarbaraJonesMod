@@ -1,0 +1,5 @@
+{
+  "type": "minecraft:crafting_shapeless",
+  "ingredients": [ { "item": "minecraft:bread" }, { "item": "minecraft:cooked_beef" }, { "item": "minecraft:cooked_beef" } ],
+  "result": { "item": "barbarajones:double_cheeseburger", "count": 1 }
+}

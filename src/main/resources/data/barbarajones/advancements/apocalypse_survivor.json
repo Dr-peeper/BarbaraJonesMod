@@ -1,0 +1,18 @@
+{
+  "parent": "barbarajones:feed_cayden",
+  "display": {
+    "icon": { "item": "barbarajones:krave_cleanse" },
+    "title": { "text": "You Broke Rule #1" },
+    "description": { "text": "Cayden died, the sky opened, and you were still breathing when it closed." },
+    "frame": "goal",
+    "show_toast": true,
+    "announce_to_chat": true,
+    "hidden": false
+  },
+  "criteria": {
+    "survived": {
+      "trigger": "minecraft:impossible"
+    }
+  },
+  "requirements": [ [ "survived" ] ]
+}

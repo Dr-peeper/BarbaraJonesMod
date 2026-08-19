@@ -1,0 +1,22 @@
+{
+  "parent": "barbarajones:root",
+  "display": {
+    "icon": { "item": "barbarajones:five_hundred_dollars" },
+    "title": { "text": "It's Real. Trust." },
+    "description": { "text": "Hand The Plug Mom's $500 and find out exactly what $500 buys." },
+    "frame": "task",
+    "show_toast": true,
+    "announce_to_chat": true,
+    "hidden": false
+  },
+  "criteria": {
+    "paid_the_plug": {
+      "trigger": "minecraft:player_interacted_with_entity",
+      "conditions": {
+        "item": { "items": [ "barbarajones:five_hundred_dollars" ] },
+        "entity": { "type": "barbarajones:the_plug" }
+      }
+    }
+  },
+  "requirements": [ [ "paid_the_plug" ] ]
+}

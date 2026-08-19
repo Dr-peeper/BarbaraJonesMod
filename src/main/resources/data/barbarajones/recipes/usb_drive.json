@@ -1,0 +1,5 @@
+{
+  "type": "minecraft:crafting_shapeless",
+  "ingredients": [ { "item": "minecraft:iron_nugget" }, { "item": "minecraft:redstone" }, { "item": "minecraft:quartz" } ],
+  "result": { "item": "barbarajones:usb_drive", "count": 1 }
+}

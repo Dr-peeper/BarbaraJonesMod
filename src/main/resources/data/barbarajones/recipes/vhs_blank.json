@@ -1,0 +1,5 @@
+{
+  "type": "minecraft:crafting_shapeless",
+  "ingredients": [ { "item": "minecraft:black_dye" }, { "item": "minecraft:paper" }, { "item": "minecraft:iron_nugget" } ],
+  "result": { "item": "barbarajones:vhs_blank", "count": 1 }
+}

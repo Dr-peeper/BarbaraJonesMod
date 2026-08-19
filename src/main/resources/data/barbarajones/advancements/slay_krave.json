@@ -1,0 +1,22 @@
+{
+  "parent": "barbarajones:root",
+  "display": {
+    "icon": { "item": "barbarajones:krave_box" },
+    "title": { "text": "The Monster Falls" },
+    "description": { "text": "Kill the Krave Monster. Hit him between blinks. This is where ACT II starts." },
+    "frame": "challenge",
+    "show_toast": true,
+    "announce_to_chat": true,
+    "hidden": false
+  },
+  "rewards": { "experience": 100 },
+  "criteria": {
+    "killed_krave": {
+      "trigger": "minecraft:player_killed_entity",
+      "conditions": {
+        "entity": { "type": "barbarajones:krave_monster" }
+      }
+    }
+  },
+  "requirements": [ [ "killed_krave" ] ]
+}

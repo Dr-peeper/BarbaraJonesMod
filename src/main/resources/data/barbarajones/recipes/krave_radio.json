@@ -1,0 +1,5 @@
+{
+  "type": "minecraft:crafting_shapeless",
+  "ingredients": [ { "item": "minecraft:iron_ingot" }, { "item": "minecraft:note_block" }, { "item": "barbarajones:krave_cereal" }, { "item": "minecraft:redstone" } ],
+  "result": { "item": "barbarajones:krave_radio", "count": 1 }
+}

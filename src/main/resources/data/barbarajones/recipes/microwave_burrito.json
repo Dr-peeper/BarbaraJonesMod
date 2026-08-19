@@ -1,0 +1,5 @@
+{
+  "type": "minecraft:crafting_shapeless",
+  "ingredients": [ { "item": "minecraft:bread" }, { "item": "minecraft:beetroot" }, { "item": "minecraft:cooked_beef" }, { "item": "minecraft:brown_mushroom" } ],
+  "result": { "item": "barbarajones:microwave_burrito", "count": 1 }
+}

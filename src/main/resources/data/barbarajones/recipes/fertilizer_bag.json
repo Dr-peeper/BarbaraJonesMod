@@ -1,0 +1,5 @@
+{
+  "type": "minecraft:crafting_shapeless",
+  "ingredients": [ { "item": "minecraft:bone_meal" }, { "item": "minecraft:bone_meal" }, { "item": "minecraft:bone_meal" }, { "item": "minecraft:leather" } ],
+  "result": { "item": "barbarajones:fertilizer_bag", "count": 1 }
+}

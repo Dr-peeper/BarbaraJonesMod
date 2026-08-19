@@ -1,0 +1,9 @@
+{
+  "type": "minecraft:crafting_shapeless",
+  "ingredients": [
+    { "item": "barbarajones:cocoa_substitute" },
+    { "item": "barbarajones:cocoa_substitute" },
+    { "item": "minecraft:sugar" }
+  ],
+  "result": { "item": "barbarajones:chocolate_bar", "count": 1 }
+}

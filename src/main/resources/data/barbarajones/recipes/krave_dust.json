@@ -1,0 +1,5 @@
+{
+  "type": "minecraft:crafting_shapeless",
+  "ingredients": [ { "item": "barbarajones:krave_cereal" } ],
+  "result": { "item": "barbarajones:krave_dust", "count": 2 }
+}

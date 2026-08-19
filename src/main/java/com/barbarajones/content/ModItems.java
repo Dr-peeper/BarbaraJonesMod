@@ -1,6 +1,16 @@
 package com.barbarajones.content;
 
 import com.barbarajones.BarbaraJonesMod;
+import com.barbarajones.content.extra.CigaretteItem;
+import com.barbarajones.content.extra.CounterfeitBillItem;
+import com.barbarajones.content.extra.FlipPhoneItem;
+import com.barbarajones.content.extra.GoldenKraveItem;
+import com.barbarajones.content.extra.KraveRadioItem;
+import com.barbarajones.content.extra.LawnMowerItem;
+import com.barbarajones.content.extra.RemoteControlItem;
+import com.barbarajones.content.extra.TrophyItem;
+import com.barbarajones.content.extra.WateringCanItem;
+import com.barbarajones.content.extra.ZippoLighterItem;
 import com.barbarajones.item.CaydenCompassItem;
 import com.barbarajones.item.ComputerMouseItem;
 import com.barbarajones.item.HousingQueryItem;
@@ -257,4 +267,145 @@ public final class ModItems {
     /** Cycles through the prop entities that cannot take a spawn egg. */
     public static final RegistryObject<Item> PROP_SPAWNER = ITEMS.register("krave_prop_spawner",
             () -> new KravePropSpawnerItem(props().stacksTo(1)));
+
+    public static final RegistryObject<Item> MOMS_TV_REMOTE = plain("moms_tv_remote", 1);
+    public static final RegistryObject<Item> CONFISCATED_KRAVE = edible("confiscated_krave",
+            food(8, 0.9F).alwaysEat()
+                    .effect(() -> new MobEffectInstance(MobEffects.MOVEMENT_SPEED, 300), 1.0F)
+                    .effect(() -> new MobEffectInstance(MobEffects.REGENERATION, 120), 1.0F).build());
+    public static final RegistryObject<Item> EGG_MOM_BOSS = ITEMS.register("mom_cobb_boss_spawn_egg",
+            () -> new ForgeSpawnEggItem(ModEntities.MOM_BOSS, 0x7A2233, 0x2A1D18, props()));
+    public static final RegistryObject<Item> PINK_SLIP            = plain("pink_slip", 16);
+    public static final RegistryObject<Item> SEVERANCE_CHECK      = plain("severance_check", 16);
+    public static final RegistryObject<Item> EMPLOYEE_OF_THE_MONTH = plain("employee_of_the_month", 1);
+    public static final RegistryObject<Item> EGG_THE_MANAGER = ITEMS.register("the_manager_spawn_egg",
+            () -> new ForgeSpawnEggItem(ModEntities.THE_MANAGER, 0x2A2C33, 0x8E1218, props()));
+    public static final RegistryObject<Item> EGG_MANAGER_MINION = ITEMS.register("manager_minion_spawn_egg",
+            () -> new ForgeSpawnEggItem(ModEntities.MANAGER_MINION, 0x4C505A, 0x1E2C50, props()));
+    // ---- EXTRA CONTENT: block items ----------------------------------------
+    public static final RegistryObject<Item> STASH_BOX_ITEM =
+            ITEMS.register("stash_box", () -> new BlockItem(ModBlocks.STASH_BOX.get(), props()));
+    public static final RegistryObject<Item> BOOMBOX_ITEM =
+            ITEMS.register("boombox", () -> new BlockItem(ModBlocks.BOOMBOX.get(), props()));
+    public static final RegistryObject<Item> RECLINER_ITEM =
+            ITEMS.register("recliner", () -> new BlockItem(ModBlocks.RECLINER.get(), props()));
+    public static final RegistryObject<Item> TELEVISION_ITEM =
+            ITEMS.register("television", () -> new BlockItem(ModBlocks.TELEVISION.get(), props()));
+    public static final RegistryObject<Item> SEWER_PIPE_ITEM =
+            ITEMS.register("sewer_pipe", () -> new BlockItem(ModBlocks.SEWER_PIPE.get(), props()));
+    public static final RegistryObject<Item> SHAG_CARPET_ITEM =
+            ITEMS.register("shag_carpet", () -> new BlockItem(ModBlocks.SHAG_CARPET.get(), props()));
+    public static final RegistryObject<Item> WOOD_PANELING_ITEM =
+            ITEMS.register("wood_paneling", () -> new BlockItem(ModBlocks.WOOD_PANELING.get(), props()));
+    // ---- EXTRA CONTENT: the Krave line -------------------------------------
+    /** One box in a hundred thousand. Eating it near Cayden puts him back to full. */
+    public static final RegistryObject<Item> GOLDEN_KRAVE = ITEMS.register("golden_krave",
+            () -> new GoldenKraveItem(props().stacksTo(4).rarity(Rarity.EPIC).food(food(8, 1.0F)
+                    .alwaysEat()
+                    .effect(() -> new MobEffectInstance(MobEffects.REGENERATION, 600, 2), 1.0F)
+                    .effect(() -> new MobEffectInstance(MobEffects.DAMAGE_BOOST, 900, 1), 1.0F)
+                    .effect(() -> new MobEffectInstance(MobEffects.MOVEMENT_SPEED, 900, 1), 1.0F)
+                    .effect(() -> new MobEffectInstance(MobEffects.ABSORPTION, 1200, 2), 1.0F).build())));
+    public static final RegistryObject<Item> STALE_KRAVE = edible("stale_krave",
+            food(2, 0.1F).effect(() -> new MobEffectInstance(MobEffects.HUNGER, 300), 0.8F).build());
+    public static final RegistryObject<Item> OFF_BRAND_KRAVE = edible("off_brand_krave",
+            food(3, 0.2F)
+                    .effect(() -> new MobEffectInstance(MobEffects.HUNGER, 400), 1.0F)
+                    .effect(() -> new MobEffectInstance(MobEffects.WEAKNESS, 200), 0.5F).build());
+    public static final RegistryObject<Item> KRAVE_DUST       = plain("krave_dust", 64);
+    public static final RegistryObject<Item> KRAVE_FAMILY_BOX = plain("krave_family_box", 16);
+    // ---- EXTRA CONTENT: smoking --------------------------------------------
+    public static final RegistryObject<Item> CIGARETTE =
+            ITEMS.register("cigarette", () -> new CigaretteItem(props().stacksTo(16)));
+    public static final RegistryObject<Item> CIGARETTE_PACK = plain("cigarette_pack", 16);
+    public static final RegistryObject<Item> CIGAR          = plain("cigar", 16);
+    public static final RegistryObject<Item> MATCHBOOK      = plain("matchbook", 16);
+    public static final RegistryObject<Item> ASH            = plain("ash", 64);
+    public static final RegistryObject<Item> DANIELS_ZIPPO =
+            ITEMS.register("daniels_zippo", () -> new ZippoLighterItem(props().stacksTo(1).durability(128)));
+    // ---- EXTRA CONTENT: lawn and garden ------------------------------------
+    // LawnMowerItem's second argument is the cut radius, so the whacker and the
+    // mower are the same class at two sizes.
+    public static final RegistryObject<Item> LAWN_MOWER = ITEMS.register("lawn_mower",
+            () -> new LawnMowerItem(props().stacksTo(1).durability(250), 3));
+    public static final RegistryObject<Item> WEED_WHACKER = ITEMS.register("weed_whacker",
+            () -> new LawnMowerItem(props().stacksTo(1).durability(180), 1));
+    public static final RegistryObject<Item> WATERING_CAN = ITEMS.register("watering_can",
+            () -> new WateringCanItem(props().stacksTo(1).durability(200)));
+    public static final RegistryObject<Item> HEDGE_TRIMMER =
+            ITEMS.register("hedge_trimmer", () -> new Item(props().stacksTo(1).durability(200)));
+    public static final RegistryObject<Item> RAKE =
+            ITEMS.register("rake", () -> new Item(props().stacksTo(1).durability(150)));
+    public static final RegistryObject<Item> FERTILIZER_BAG = plain("fertilizer_bag", 16);
+    // ---- EXTRA CONTENT: the living room ------------------------------------
+    public static final RegistryObject<Item> REMOTE_CONTROL =
+            ITEMS.register("remote_control", () -> new RemoteControlItem(props().stacksTo(1)));
+    public static final RegistryObject<Item> KRAVE_RADIO =
+            ITEMS.register("krave_radio", () -> new KraveRadioItem(props().stacksTo(1)));
+    public static final RegistryObject<Item> FLIP_PHONE =
+            ITEMS.register("flip_phone", () -> new FlipPhoneItem(props().stacksTo(1)));
+    public static final RegistryObject<Item> VHS_BLANK             = plain("vhs_blank", 16);
+    public static final RegistryObject<Item> VHS_BARBARA_INTERVIEW = plain("vhs_barbara_interview", 16);
+    public static final RegistryObject<Item> TV_ANTENNA            = plain("tv_antenna", 16);
+    public static final RegistryObject<Item> BURNER_PHONE          = plain("burner_phone", 16);
+    public static final RegistryObject<Item> LAPTOP                = plain("laptop", 1);
+    public static final RegistryObject<Item> USB_DRIVE             = plain("usb_drive", 16);
+    // ---- EXTRA CONTENT: the fridge and the drive-thru ----------------------
+    public static final RegistryObject<Item> MR_PIBB_XTRA = edible("mr_pibb_xtra",
+            food(3, 0.4F).alwaysEat()
+                    .effect(() -> new MobEffectInstance(MobEffects.MOVEMENT_SPEED, 240), 1.0F).build());
+    public static final RegistryObject<Item> MR_PIBB_TWO_LITER = edible("mr_pibb_two_liter",
+            food(6, 0.5F).alwaysEat()
+                    .effect(() -> new MobEffectInstance(MobEffects.MOVEMENT_SPEED, 600, 1), 1.0F)
+                    .effect(() -> new MobEffectInstance(MobEffects.CONFUSION, 120), 0.4F).build());
+    public static final RegistryObject<Item> CHEPINA_JUG = edible("chepina_jug",
+            food(5, 0.5F).alwaysEat()
+                    .effect(() -> new MobEffectInstance(MobEffects.REGENERATION, 200), 1.0F).build());
+    public static final RegistryObject<Item> DOUBLE_CHEESEBURGER = edible("double_cheeseburger", food(10, 0.9F).build());
+    public static final RegistryObject<Item> CHICKEN_SANDWICH    = edible("chicken_sandwich", food(7, 0.7F).build());
+    public static final RegistryObject<Item> HASH_BROWNS         = edible("hash_browns", food(5, 0.5F).build());
+    public static final RegistryObject<Item> APPLE_PIE           = edible("apple_pie", food(6, 0.4F).build());
+    public static final RegistryObject<Item> MILKSHAKE = edible("milkshake", food(5, 0.6F).alwaysEat().build());
+    public static final RegistryObject<Item> SWEET_TEA = edible("sweet_tea",
+            food(2, 0.2F).alwaysEat()
+                    .effect(() -> new MobEffectInstance(MobEffects.MOVEMENT_SPEED, 300), 1.0F).build());
+    public static final RegistryObject<Item> HONEY_BUN = edible("honey_bun", food(6, 0.5F).build());
+    public static final RegistryObject<Item> GAS_STATION_HOT_DOG = edible("gas_station_hot_dog",
+            food(6, 0.4F).effect(() -> new MobEffectInstance(MobEffects.HUNGER, 300), 0.35F).build());
+    public static final RegistryObject<Item> MICROWAVE_BURRITO = edible("microwave_burrito",
+            food(8, 0.6F).effect(() -> new MobEffectInstance(MobEffects.CONFUSION, 100), 0.25F).build());
+    public static final RegistryObject<Item> SEWER_WATER = edible("sewer_water",
+            food(0, 0.0F).alwaysEat()
+                    .effect(() -> new MobEffectInstance(MobEffects.POISON, 200), 1.0F)
+                    .effect(() -> new MobEffectInstance(MobEffects.CONFUSION, 300), 1.0F).build());
+    // ---- EXTRA CONTENT: the sewer and the red fit --------------------------
+    public static final RegistryObject<Item> SEWER_KEY = plain("sewer_key", 16);
+    public static final RegistryObject<Item> RAT_TAIL  = plain("rat_tail", 64);
+    public static final RegistryObject<Item> RED_PANTS = plain("red_pants", 16);
+    public static final RegistryObject<Item> RED_SHOES = plain("red_shoes", 16);
+    // ---- EXTRA CONTENT: cash and scams -------------------------------------
+    public static final RegistryObject<Item> COUNTERFEIT_BILL =
+            ITEMS.register("counterfeit_bill", () -> new CounterfeitBillItem(props().stacksTo(16)));
+    public static final RegistryObject<Item> IOU_NOTE     = plain("iou_note", 64);
+    public static final RegistryObject<Item> DEBT_NOTICE  = plain("debt_notice", 64);
+    public static final RegistryObject<Item> SCAM_RECEIPT = plain("scam_receipt", 64);
+    // ---- EXTRA CONTENT: trophies -------------------------------------------
+    // TrophyItem takes the RegistryObject rather than the SoundEvent so the clip
+    // is resolved on use, long after sound registration has run.
+    public static final RegistryObject<Item> KRAVE_MONSTER_TROPHY = ITEMS.register("krave_monster_trophy",
+            () -> new TrophyItem(props().stacksTo(1).rarity(Rarity.EPIC),
+                    "You put the Krave Monster in the ground.", ModSounds.KRAVE_ROAR));
+    public static final RegistryObject<Item> PLUG_TROPHY = ITEMS.register("plug_trophy",
+            () -> new TrophyItem(props().stacksTo(1).rarity(Rarity.RARE),
+                    "The weed was fake. The scope was not.", ModSounds.EVT_ROLL));
+    public static final RegistryObject<Item> DUHL_WOL_TROPHY = ITEMS.register("duhl_wol_trophy",
+            () -> new TrophyItem(props().stacksTo(1).rarity(Rarity.RARE),
+                    "He wanted five hundred. He got towed.", ModSounds.EVT_DEMOCRAT));
+    public static final RegistryObject<Item> BARBARA_TROPHY = ITEMS.register("barbara_trophy",
+            () -> new TrophyItem(props().stacksTo(1).rarity(Rarity.RARE),
+                    "Employee of the Month. Nobody remembers the month.", ModSounds.EVT_MANAGER));
+    public static final RegistryObject<Item> STASH_JAR     = plain("stash_jar", 16);
+    public static final RegistryObject<Item> POCKET_SCALE  = plain("pocket_scale", 1);
+    public static final RegistryObject<Item> NUGGET_COLLAR = plain("nugget_collar", 16);
+    public static final RegistryObject<Item> CHOCOLATE_BAR = edible("chocolate_bar", food(6, 0.7F).effect(() -> new MobEffectInstance(MobEffects.MOVEMENT_SPEED, 200), 1.0F).build());
 }

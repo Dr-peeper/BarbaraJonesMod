@@ -1,0 +1,5 @@
+{
+  "type": "minecraft:crafting_shapeless",
+  "ingredients": [ { "item": "minecraft:iron_ingot" }, { "item": "barbarajones:sewer_grate" } ],
+  "result": { "item": "barbarajones:sewer_key", "count": 1 }
+}

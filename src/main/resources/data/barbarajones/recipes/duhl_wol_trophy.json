@@ -1,0 +1,5 @@
+{
+  "type": "minecraft:crafting_shapeless",
+  "ingredients": [ { "item": "minecraft:iron_block" }, { "item": "minecraft:gold_ingot" }, { "item": "barbarajones:dollars" } ],
+  "result": { "item": "barbarajones:duhl_wol_trophy", "count": 1 }
+}

@@ -1,0 +1,5 @@
+{
+  "type": "minecraft:crafting_shapeless",
+  "ingredients": [ { "item": "minecraft:glass_bottle" }, { "item": "minecraft:sugar" }, { "item": "minecraft:sugar" }, { "item": "minecraft:dried_kelp" } ],
+  "result": { "item": "barbarajones:sweet_tea", "count": 1 }
+}

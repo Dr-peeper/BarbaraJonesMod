@@ -1,6 +1,10 @@
 package com.barbarajones.content;
 
 import com.barbarajones.BarbaraJonesMod;
+import com.barbarajones.boss.manager.ManagerMinion;
+import com.barbarajones.boss.manager.TheManager;
+import com.barbarajones.boss.mom.MomCobbBoss;
+import com.barbarajones.boss.mom.MomKraveStash;
 import com.barbarajones.entity.BarbaraJones;
 import com.barbarajones.entity.CaydenCobb;
 import com.barbarajones.entity.Daniel;
@@ -47,7 +51,9 @@ public final class ModEntityAttributes {
     private static final List<RegistryObject<? extends EntityType<?>>> REQUIRED = List.of(
             ModEntities.BARBARA, ModEntities.CAYDEN, ModEntities.KRAVE_MONSTER,
             ModEntities.NUGGET, ModEntities.DANIEL, ModEntities.MOM, ModEntities.PLUG,
-            ModEntities.DUHL_WOL, ModEntities.KRAVE_MINION, ModEntities.KRAVE_HEALING_BOX);
+            ModEntities.DUHL_WOL, ModEntities.KRAVE_MINION, ModEntities.KRAVE_HEALING_BOX,
+            ModEntities.MOM_BOSS, ModEntities.MOM_STASH,
+            ModEntities.THE_MANAGER, ModEntities.MANAGER_MINION);
 
     /** Populated as we register, then checked against REQUIRED. */
     private static final Set<EntityType<?>> REGISTERED = new HashSet<>();
@@ -66,6 +72,10 @@ public final class ModEntityAttributes {
         put(event, ModEntities.DUHL_WOL.get(),           DuhlWol.createAttributes().build());
         put(event, ModEntities.KRAVE_MINION.get(),       KraveMinion.createAttributes().build());
         put(event, ModEntities.KRAVE_HEALING_BOX.get(),  KraveHealingBox.createAttributes().build());
+        put(event, ModEntities.MOM_BOSS.get(),           MomCobbBoss.createAttributes().build());
+        put(event, ModEntities.MOM_STASH.get(),          MomKraveStash.createAttributes().build());
+        put(event, ModEntities.THE_MANAGER.get(),        TheManager.createAttributes().build());
+        put(event, ModEntities.MANAGER_MINION.get(),     ManagerMinion.createAttributes().build());
 
         verifyEveryMobRegistered();
     }

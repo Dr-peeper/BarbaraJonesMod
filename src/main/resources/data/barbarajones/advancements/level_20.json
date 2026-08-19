@@ -1,0 +1,18 @@
+{
+  "parent": "barbarajones:level_10",
+  "display": {
+    "icon": { "item": "barbarajones:golden_joint" },
+    "title": { "text": "Krave Level 20" },
+    "description": { "text": "Kosmonaut. Surviving the end of the world now pays half again as much." },
+    "frame": "goal",
+    "show_toast": true,
+    "announce_to_chat": true,
+    "hidden": false
+  },
+  "criteria": {
+    "reached_level": {
+      "trigger": "minecraft:impossible"
+    }
+  },
+  "requirements": [ [ "reached_level" ] ]
+}

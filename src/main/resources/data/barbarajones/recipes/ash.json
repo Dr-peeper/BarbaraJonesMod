@@ -1,0 +1,7 @@
+{
+  "type": "minecraft:smelting",
+  "ingredient": { "item": "barbarajones:burnt_grass" },
+  "result": "barbarajones:ash",
+  "experience": 0.05,
+  "cookingtime": 200
+}

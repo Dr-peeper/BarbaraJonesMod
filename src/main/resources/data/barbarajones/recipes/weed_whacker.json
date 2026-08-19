@@ -1,0 +1,5 @@
+{
+  "type": "minecraft:crafting_shapeless",
+  "ingredients": [ { "item": "minecraft:iron_ingot" }, { "item": "minecraft:stick" }, { "item": "minecraft:string" }, { "item": "minecraft:redstone" } ],
+  "result": { "item": "barbarajones:weed_whacker", "count": 1 }
+}

@@ -1,0 +1,9 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "pattern": [ "GGG", "GBG", "GGG" ],
+  "key": {
+    "G": { "item": "minecraft:glass_pane" },
+    "B": { "item": "barbarajones:burnt_grass" }
+  },
+  "result": { "item": "barbarajones:stash_jar", "count": 1 }
+}

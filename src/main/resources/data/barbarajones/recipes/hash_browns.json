@@ -1,0 +1,5 @@
+{
+  "type": "minecraft:crafting_shapeless",
+  "ingredients": [ { "item": "minecraft:baked_potato" }, { "item": "minecraft:baked_potato" } ],
+  "result": { "item": "barbarajones:hash_browns", "count": 2 }
+}

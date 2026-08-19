@@ -1,0 +1,5 @@
+{
+  "type": "minecraft:crafting_shapeless",
+  "ingredients": [ { "item": "minecraft:paper" }, { "item": "minecraft:green_dye" }, { "item": "minecraft:ink_sac" } ],
+  "result": { "item": "barbarajones:counterfeit_bill", "count": 2 }
+}

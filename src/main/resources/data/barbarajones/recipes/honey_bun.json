@@ -1,0 +1,5 @@
+{
+  "type": "minecraft:crafting_shapeless",
+  "ingredients": [ { "item": "minecraft:bread" }, { "item": "minecraft:honey_bottle" }, { "item": "minecraft:sugar" } ],
+  "result": { "item": "barbarajones:honey_bun", "count": 1 }
+}

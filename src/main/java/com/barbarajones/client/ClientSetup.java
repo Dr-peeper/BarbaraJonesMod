@@ -16,6 +16,13 @@ import com.barbarajones.client.render.KraveMonsterRenderer;
 import com.barbarajones.client.render.KraveTornadoRenderer;
 import com.barbarajones.client.render.NuggetRenderer;
 import com.barbarajones.client.render.SkyCinematicRenderer;
+import com.barbarajones.boss.manager.FilingCabinetRenderer;
+import com.barbarajones.boss.manager.ManagerModel;
+import com.barbarajones.boss.manager.ManagerRenderer;
+import com.barbarajones.boss.manager.TerminationNoticeRenderer;
+import com.barbarajones.boss.mom.client.MomCobbBossRenderer;
+import com.barbarajones.boss.mom.client.MomKraveStashRenderer;
+import com.barbarajones.boss.mom.client.ThrownHouseholdRenderer;
 import com.barbarajones.content.ModEntities;
 
 import net.minecraftforge.api.distmarker.Dist;
@@ -55,10 +62,19 @@ public final class ClientSetup {
         event.registerEntityRenderer(ModEntities.GIANT_BOX.get(), GiantKraveBoxRenderer::new);
         event.registerEntityRenderer(ModEntities.TORNADO.get(), KraveTornadoRenderer::new);
         event.registerEntityRenderer(ModEntities.SKY_CINEMATIC.get(), SkyCinematicRenderer::new);
+        event.registerEntityRenderer(ModEntities.MOM_BOSS.get(), MomCobbBossRenderer::new);
+        event.registerEntityRenderer(ModEntities.MOM_STASH.get(), MomKraveStashRenderer::new);
+        event.registerEntityRenderer(ModEntities.MOM_THROWN.get(), ThrownHouseholdRenderer::new);
+        event.registerEntityRenderer(ModEntities.THE_MANAGER.get(), ManagerRenderer::new);
+        event.registerEntityRenderer(ModEntities.MANAGER_MINION.get(),
+                ctx -> new HumanoidLikeRenderer<>(ctx, "manager_minion", 0.5F));
+        event.registerEntityRenderer(ModEntities.TERMINATION_NOTICE.get(), TerminationNoticeRenderer::new);
+        event.registerEntityRenderer(ModEntities.FILING_CABINET.get(), FilingCabinetRenderer::new);
     }
 
     @SubscribeEvent
     public static void registerLayers(EntityRenderersEvent.RegisterLayerDefinitions event) {
         event.registerLayerDefinition(KraveMonsterModel.LAYER_LOCATION, KraveMonsterModel::createBodyLayer);
+        event.registerLayerDefinition(ManagerModel.LAYER_LOCATION, ManagerModel::createBodyLayer);
     }
 }

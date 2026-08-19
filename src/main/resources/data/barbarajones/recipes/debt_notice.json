@@ -1,0 +1,5 @@
+{
+  "type": "minecraft:crafting_shapeless",
+  "ingredients": [ { "item": "barbarajones:iou_note" }, { "item": "barbarajones:iou_note" }, { "item": "minecraft:red_dye" } ],
+  "result": { "item": "barbarajones:debt_notice", "count": 1 }
+}

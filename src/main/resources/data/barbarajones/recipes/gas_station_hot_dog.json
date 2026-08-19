@@ -1,0 +1,5 @@
+{
+  "type": "minecraft:crafting_shapeless",
+  "ingredients": [ { "item": "minecraft:bread" }, { "item": "minecraft:cooked_porkchop" } ],
+  "result": { "item": "barbarajones:gas_station_hot_dog", "count": 1 }
+}

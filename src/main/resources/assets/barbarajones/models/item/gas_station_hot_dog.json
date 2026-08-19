@@ -1,0 +1,4 @@
+{
+  "parent": "minecraft:item/generated",
+  "textures": { "layer0": "barbarajones:item/gas_station_hot_dog" }
+}

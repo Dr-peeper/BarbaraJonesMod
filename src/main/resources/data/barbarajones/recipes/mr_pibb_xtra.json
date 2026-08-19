@@ -1,0 +1,5 @@
+{
+  "type": "minecraft:crafting_shapeless",
+  "ingredients": [ { "item": "barbarajones:mr_pibb" }, { "item": "minecraft:sugar" } ],
+  "result": { "item": "barbarajones:mr_pibb_xtra", "count": 1 }
+}
