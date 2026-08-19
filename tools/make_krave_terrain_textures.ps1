@@ -13,6 +13,8 @@ Add-Type -AssemblyName System.Drawing
 $root = Split-Path -Parent $PSScriptRoot
 $srcDir = "$PSScriptRoot\vanilla_src"
 $bdir = "$root\src\main\resources\assets\barbarajones\textures\block"
+$miscdir = "$root\src\main\resources\assets\barbarajones\textures\misc"
+New-Item -ItemType Directory -Force $miscdir | Out-Null
 
 function Load($name){ [System.Drawing.Bitmap]::new("$srcDir\$name") }
 function NewImg($w,$h){ New-Object System.Drawing.Bitmap $w,$h,([System.Drawing.Imaging.PixelFormat]::Format32bppArgb) }
@@ -86,4 +88,22 @@ $leavesOut.Save("$bdir\krave_leaves.png", [System.Drawing.Imaging.ImageFormat]::
 $planksOut = Recolor (Load 'oak_planks.png') $logTint
 $planksOut.Save("$bdir\chocolate_planks.png", [System.Drawing.Imaging.ImageFormat]::Png)
 
-Write-Output "wrote krave_dirt, krave_grass_top, krave_grass_side, chocolate_log(+top), krave_leaves, chocolate_planks (recolored from vanilla art)"
+# Chocolate Block (formerly "Krave Block", the portal-frame/structure material) -
+# vanilla stone bricks, recolored dark chocolate. A different, darker tint
+# than the planks/log - it's meant to read as a dense, crunchy building
+# material, not the same wood-brown as the trees.
+$blockTint = '4A2C18'
+$krBlockOut = Recolor (Load 'stone_bricks.png') $blockTint
+$krBlockOut.Save("$bdir\krave_block.png", [System.Drawing.Imaging.ImageFormat]::Png)
+
+# In-fluid screen overlay - vanilla's own underwater.png is just a flat
+# translucent tinted tile (not a wave pattern), so recoloring it brown
+# reproduces the same "tinted screen while submerged" mechanic water uses,
+# for chocolate. This is the effect that actually reads as "hard to see" -
+# lava itself only uses short fog distance (no overlay texture exists for
+# it), which is a separate, harder-to-verify-from-outside-a-running-game
+# mechanism.
+$overlayOut = Recolor (Load 'underwater.png') 'D6A86A'
+$overlayOut.Save("$miscdir\chocolate_overlay.png", [System.Drawing.Imaging.ImageFormat]::Png)
+
+Write-Output "wrote krave_dirt, krave_grass_top, krave_grass_side, chocolate_log(+top), krave_leaves, chocolate_planks, krave_block, chocolate_overlay (recolored from vanilla art)"

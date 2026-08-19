@@ -41,6 +41,8 @@ public final class ModFluids {
             new ResourceLocation(BarbaraJonesMod.MODID, "block/chocolate_still");
     private static final ResourceLocation FLOWING_TEXTURE =
             new ResourceLocation(BarbaraJonesMod.MODID, "block/chocolate_flow");
+    private static final ResourceLocation OVERLAY_TEXTURE =
+            new ResourceLocation(BarbaraJonesMod.MODID, "misc/chocolate_overlay");
 
     public static final RegistryObject<FluidType> CHOCOLATE_TYPE = FLUID_TYPES.register("chocolate",
             () -> new FluidType(FluidType.Properties.create()
@@ -75,6 +77,19 @@ public final class ModFluids {
                         @Override
                         public int getTintColor() {
                             return 0xFF3A2412;
+                        }
+
+                        /**
+                         * The actual "screen goes murky brown" effect - vanilla water's own
+                         * underwater.png is a flat translucent tinted tile (not a wave
+                         * texture), recolored here the same way. This is the reliable half
+                         * of "hard to see when submerged": it's a direct HUD-layer blit,
+                         * not a 3D fog uniform, so it isn't at the mercy of whatever a
+                         * shaderpack does to the fog pipeline the way modifyFogRender below is.
+                         */
+                        @Override
+                        public ResourceLocation getOverlayTexture() {
+                            return OVERLAY_TEXTURE;
                         }
 
                         /** Thick brown murk instead of the default fog color - "hard to see when submerged." */

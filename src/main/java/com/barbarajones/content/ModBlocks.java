@@ -31,11 +31,16 @@ public final class ModBlocks {
 
     private ModBlocks() { }
 
+    // Registry name stays "krave_block" (renaming it would break existing
+    // worlds/recipes referencing the id) - only the display name changed to
+    // "Chocolate Block". Obsidian's real hardness/blast resistance (50/1200)
+    // regressed back to 6/1200 in a merge once already - if this keeps
+    // happening, check here first.
     public static final RegistryObject<Block> KRAVE_BLOCK = BLOCKS.register("krave_block",
             () -> new Block(BlockBehaviour.Properties.of()
                     .mapColor(MapColor.COLOR_PURPLE)
-                    .strength(6.0F, 1200.0F)
-                    .sound(SoundType.NETHERITE_BLOCK)
+                    .strength(50.0F, 1200.0F)
+                    .sound(SoundType.BASALT)
                     .requiresCorrectToolForDrops()));
 
     public static final RegistryObject<Block> KRAVE_DOOR = BLOCKS.register("krave_door",
