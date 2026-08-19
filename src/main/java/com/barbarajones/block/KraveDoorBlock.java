@@ -6,6 +6,7 @@ import com.barbarajones.content.ModItems;
 import com.barbarajones.dimension.KraveDimensions;
 import com.barbarajones.dimension.KraveKosmosData;
 import com.barbarajones.dimension.KraveLanding;
+import com.barbarajones.entity.KraveHealingBox;
 import com.barbarajones.entity.KraveMonster;
 
 import net.minecraft.core.BlockPos;
@@ -103,6 +104,7 @@ public class KraveDoorBlock extends DoorBlock {
         // used to drop players straight into the void.
         Vec3 landing = KraveLanding.findLanding(dest, KraveDimensions.PORTAL_LANDING, 6)
                 .orElse(KraveDimensions.PORTAL_LANDING);
+        ensureLandingBoxesExist(dest, landing);
 
         // Gather the companions BEFORE the player leaves - afterwards they are
         // no longer "near the player" in any level we can search.
@@ -158,6 +160,45 @@ public class KraveDoorBlock extends DoorBlock {
         // had no target to latch onto yet - KraveHealingBox.resolveTarget()'s
         // KraveKosmosData fallback picks him up automatically on their next
         // heal tick now that setBossId() above has run, no extra wiring needed.
+    }
+
+    /**
+     * The four ordinary healing boxes ring the landing island - the larger
+     * island players actually arrive on and explore - rather than the den,
+     * which now has just its one elite guardian (see KraveDenBuilder). Same
+     * one-time-authoring pattern as ensureBossExists: guarded by a flag in
+     * KraveKosmosData so re-entering the Kosmos never duplicates them, and
+     * each spot is independently ground-searched from the landing point
+     * since the island's shape isn't a fixed, authored platform like the den.
+     */
+    private void ensureLandingBoxesExist(ServerLevel kosmos, Vec3 landing) {
+        KraveKosmosData data = KraveKosmosData.get(kosmos);
+        if (data.isLandingBoxesSpawned()) {
+            return;
+        }
+        data.setLandingBoxesSpawned(true);
+
+        var bossId = data.getBossId();
+        KraveMonster boss = bossId != null && kosmos.getEntity(bossId) instanceof KraveMonster m ? m : null;
+
+        int[][] offsets = { {12, 0}, {-12, 0}, {0, 12}, {0, -12} };
+        for (int[] off : offsets) {
+            Vec3 seed = landing.add(off[0], 0.0D, off[1]);
+            var spot = KraveLanding.findLanding(kosmos, seed, 2);
+            if (spot.isEmpty()) {
+                continue;
+            }
+            KraveHealingBox box = ModEntities.KRAVE_HEALING_BOX.get().create(kosmos);
+            if (box == null) {
+                continue;
+            }
+            Vec3 pos = spot.get();
+            box.moveTo(pos.x, pos.y, pos.z, 0.0F, 0.0F);
+            if (boss != null) {
+                box.setHealTarget(boss);
+            }
+            kosmos.addFreshEntity(box);
+        }
     }
 
     private CompoundTag persisted(ServerPlayer player) {

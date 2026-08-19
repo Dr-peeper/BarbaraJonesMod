@@ -2,6 +2,7 @@ package com.barbarajones.content;
 
 import com.barbarajones.BarbaraJonesMod;
 import com.barbarajones.block.KraveDoorBlock;
+import com.barbarajones.block.KraveGrassBlock;
 
 import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.LiquidBlock;
@@ -48,10 +49,11 @@ public final class ModBlocks {
     // ---- Krave Kosmos terrain: coherent grass/dirt pair, vanilla-style ------
 
     public static final RegistryObject<Block> KRAVE_GRASS = BLOCKS.register("krave_grass",
-            () -> new Block(BlockBehaviour.Properties.of()
+            () -> new KraveGrassBlock(BlockBehaviour.Properties.of()
                     .mapColor(MapColor.COLOR_PURPLE)
                     .strength(1.0F)
                     .sound(SoundType.STONE)
+                    .randomTicks()
                     .requiresCorrectToolForDrops()));
 
     public static final RegistryObject<Block> KRAVE_DIRT = BLOCKS.register("krave_dirt",

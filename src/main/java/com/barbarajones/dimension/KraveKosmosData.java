@@ -25,6 +25,7 @@ public class KraveKosmosData extends SavedData {
 
     @Nullable
     private UUID bossId;
+    private boolean landingBoxesSpawned;
 
     public static KraveKosmosData get(ServerLevel kosmos) {
         return kosmos.getDataStorage().computeIfAbsent(KraveKosmosData::load, KraveKosmosData::new, KEY);
@@ -37,6 +38,16 @@ public class KraveKosmosData extends SavedData {
 
     public void setBossId(@Nullable UUID id) {
         this.bossId = id;
+        setDirty();
+    }
+
+    /** Guards KraveDoorBlock.ensureLandingBoxesExist so the four landing-island boxes are placed exactly once. */
+    public boolean isLandingBoxesSpawned() {
+        return this.landingBoxesSpawned;
+    }
+
+    public void setLandingBoxesSpawned(boolean value) {
+        this.landingBoxesSpawned = value;
         setDirty();
     }
 
@@ -81,6 +92,7 @@ public class KraveKosmosData extends SavedData {
         if (tag.hasUUID("BossId")) {
             data.bossId = tag.getUUID("BossId");
         }
+        data.landingBoxesSpawned = tag.getBoolean("LandingBoxesSpawned");
         return data;
     }
 
@@ -89,6 +101,7 @@ public class KraveKosmosData extends SavedData {
         if (this.bossId != null) {
             tag.putUUID("BossId", this.bossId);
         }
+        tag.putBoolean("LandingBoxesSpawned", this.landingBoxesSpawned);
         return tag;
     }
 }

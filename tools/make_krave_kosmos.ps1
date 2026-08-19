@@ -300,8 +300,11 @@ $glyphA = @('010','101','111','101','101')
 $glyphV = @('101','101','101','101','010')
 $glyphE = @('111','100','110','100','111')
 
-$boxBase = C '8A2CD0'; $boxDeep = C '3D1270'; $boxLight = C 'C9A8FF'
-$boxLogo = C 'FFD23F'; $boxCream = C 'FFF3D6'; $boxRed = C 'D6432E'; $boxBowl = C 'E8E8F0'
+# Red box, gold wordmark - the classic cereal-box combo - rather than the
+# Kosmos's usual purple, so the box itself reads as a distinct "product" and
+# not just more dimension scenery.
+$boxBase = C 'C62828'; $boxDeep = C '7A1414'; $boxLight = C 'FFE9D2'
+$boxLogo = C 'FFD23F'; $boxCream = C 'FFF3D6'; $boxAccent = C 'FF9A3D'; $boxBowl = C 'E8E8F0'
 
 $box = NewImg 48 64
 Rct $box 0 0 48 64 $boxBase
@@ -321,7 +324,7 @@ Rct $box 12 34 24 3 $boxBowl
 Rct $box 13 37 22 3 $boxBowl
 Rct $box 15 40 18 3 $boxBowl
 Rct $box 17 43 14 2 $boxBowl
-Rct $box 14 32 2 2 $boxRed; Rct $box 20 31 2 2 $boxLogo; Rct $box 26 32 2 2 $boxRed
+Rct $box 14 32 2 2 $boxAccent; Rct $box 20 31 2 2 $boxLogo; Rct $box 26 32 2 2 $boxAccent
 Rct $box 31 33 2 2 $boxLogo; Rct $box 18 33 2 2 $boxCream; Rct $box 28 34 2 2 $boxCream
 # spoon
 Rct $box 34 24 2 14 $boxCream

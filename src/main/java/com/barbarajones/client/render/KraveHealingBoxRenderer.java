@@ -32,6 +32,7 @@ public class KraveHealingBoxRenderer extends EntityRenderer<KraveHealingBox> {
     private static final float HALF_X = 0.6F;
     private static final float HALF_Y = 0.9F;
     private static final float HALF_Z = 0.22F;
+    private static final float ELITE_SCALE = 1.5F;
 
     public KraveHealingBoxRenderer(EntityRendererProvider.Context ctx) {
         super(ctx);
@@ -41,20 +42,24 @@ public class KraveHealingBoxRenderer extends EntityRenderer<KraveHealingBox> {
     public void render(KraveHealingBox entity, float yaw, float partial, PoseStack pose,
                        MultiBufferSource buffers, int light) {
         float age = entity.tickCount + partial;
+        float scale = entity.isElite() ? ELITE_SCALE : 1.0F;
+        float hx = HALF_X * scale;
+        float hy = HALF_Y * scale;
+        float hz = HALF_Z * scale;
 
         pose.pushPose();
-        pose.translate(0.0D, HALF_Y + Math.sin(age * 0.08D) * 0.05D, 0.0D);
+        pose.translate(0.0D, hy + Math.sin(age * 0.08D) * 0.05D, 0.0D);
         pose.mulPose(Axis.YP.rotationDegrees(age * 1.2F));
 
-        drawBox(pose, buffers.getBuffer(RenderType.entityCutoutNoCull(TEXTURE)), light,
-                HALF_X, HALF_Y, HALF_Z, 255);
+        drawBox(pose, buffers.getBuffer(RenderType.entityCutoutNoCull(TEXTURE)), light, hx, hy, hz, 255);
 
         int shield = entity.getShield();
         if (shield > 0) {
             VertexConsumer shieldBuf = buffers.getBuffer(RenderType.entityTranslucent(SHIELD_TEXTURE));
             float pulse = 0.55F + 0.15F * (float) Math.sin(age * 0.15D);
-            int alpha = (int) (pulse * 220 * (shield / 3.0F));
-            drawBox(pose, shieldBuf, light, HALF_X + 0.15F, HALF_Y + 0.15F, HALF_Z + 0.15F, alpha);
+            float shieldFraction = shield / (float) entity.maxShield();
+            int alpha = (int) (pulse * 220 * shieldFraction);
+            drawBox(pose, shieldBuf, light, hx + 0.15F, hy + 0.15F, hz + 0.15F, alpha);
         }
 
         pose.popPose();
