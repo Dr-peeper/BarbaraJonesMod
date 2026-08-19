@@ -2,6 +2,7 @@ package com.barbarajones.content;
 
 import com.barbarajones.BarbaraJonesMod;
 import com.barbarajones.block.KraftingBenchBlock;
+import com.barbarajones.block.KraveDirtBlock;
 import com.barbarajones.block.KraveDoorBlock;
 import com.barbarajones.block.KraveGrassBlock;
 
@@ -27,7 +28,12 @@ public final class ModBlocks {
     public static final RegistryObject<Block> KRAVE_BLOCK = BLOCKS.register("krave_block",
             () -> new Block(BlockBehaviour.Properties.of()
                     .mapColor(MapColor.COLOR_PURPLE)
-                    .strength(6.0F, 1200.0F)
+                    // Obsidian's own hardness (50) and blast resistance (1200) -
+                    // it was 6 before, nowhere near obsidian-tough despite the
+                    // portal-frame role. requiresCorrectToolForDrops() alone
+                    // doesn't gate the tool TIER though - see the
+                    // needs_diamond_tool tag addition for that half.
+                    .strength(50.0F, 1200.0F)
                     .sound(SoundType.NETHERITE_BLOCK)
                     .requiresCorrectToolForDrops()));
 
@@ -56,7 +62,7 @@ public final class ModBlocks {
             () -> new KraveGrassBlock(BlockBehaviour.Properties.copy(Blocks.GRASS_BLOCK).randomTicks()));
 
     public static final RegistryObject<Block> KRAVE_DIRT = BLOCKS.register("krave_dirt",
-            () -> new Block(BlockBehaviour.Properties.copy(Blocks.DIRT)));
+            () -> new KraveDirtBlock(BlockBehaviour.Properties.copy(Blocks.DIRT).randomTicks()));
 
     // ---- Krafting Bench: a red Krave Box that combines pickaxe+axe+shovel ---
 

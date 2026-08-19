@@ -1,0 +1,72 @@
+# Krave Grass/Dirt textures: literally vanilla's dirt/grass art, recolored -
+# not an original design. Source PNGs are extracted from the vanilla client
+# jar (assets/minecraft/textures/block/...) into tools/vanilla_src/ before
+# running this script (see the extraction step in the session that added
+# this - grass_block_top.png and grass_block_side_overlay.png are the
+# grayscale "tintable" masks vanilla itself recolors per-biome at runtime;
+# dirt.png is already colored art). Both kinds are recolored the same way
+# here: convert to luminance, multiply by a fixed Krave tint - the same math
+# vanilla's own biome tint applies, just baked into the file once instead of
+# computed every frame, since this block doesn't use the tint system.
+Add-Type -AssemblyName System.Drawing
+$root = Split-Path -Parent $PSScriptRoot
+$srcDir = "$PSScriptRoot\vanilla_src"
+$bdir = "$root\src\main\resources\assets\barbarajones\textures\block"
+
+function Load($name){ [System.Drawing.Bitmap]::new("$srcDir\$name") }
+function NewImg($w,$h){ New-Object System.Drawing.Bitmap $w,$h,([System.Drawing.Imaging.PixelFormat]::Format32bppArgb) }
+function ToRgb([string]$h){ [Convert]::ToInt32($h.Substring(0,2),16),[Convert]::ToInt32($h.Substring(2,2),16),[Convert]::ToInt32($h.Substring(4,2),16) }
+
+# Recolor by luminance*tint - works whether the source is already grayscale
+# (the tint masks) or fully colored (dirt.png) since it discards the
+# original hue either way and imposes the new one uniformly.
+function Recolor($src, [string]$tintHex){
+    $tint = ToRgb $tintHex
+    $out = NewImg $src.Width $src.Height
+    for($x=0; $x -lt $src.Width; $x++){ for($y=0; $y -lt $src.Height; $y++){
+        $p = $src.GetPixel($x,$y)
+        $lum = (0.299*$p.R + 0.587*$p.G + 0.114*$p.B) / 255.0
+        $r = [Math]::Min(255,[int]($lum*$tint[0]))
+        $g = [Math]::Min(255,[int]($lum*$tint[1]))
+        $b = [Math]::Min(255,[int]($lum*$tint[2]))
+        $out.SetPixel($x,$y,[System.Drawing.Color]::FromArgb($p.A,$r,$g,$b))
+    }}
+    return $out
+}
+
+function Composite($base,$overlay){
+    $out = NewImg $base.Width $base.Height
+    for($x=0; $x -lt $base.Width; $x++){ for($y=0; $y -lt $base.Height; $y++){
+        $ov = $overlay.GetPixel($x,$y)
+        if($ov.A -gt 0){ $out.SetPixel($x,$y,$ov) } else { $out.SetPixel($x,$y,$base.GetPixel($x,$y)) }
+    }}
+    return $out
+}
+
+$dirtTint = 'D6BFEA'    # a lighter lilac so luminance*tint doesn't just crush dirt.png toward black
+$grassTint = '9B4DFF'   # vivid violet - reads as "grass," clearly Krave-purple
+
+$dirtSrc = Load 'dirt.png'
+$dirtOut = Recolor $dirtSrc $dirtTint
+$dirtOut.Save("$bdir\krave_dirt.png", [System.Drawing.Imaging.ImageFormat]::Png)
+
+$topSrc = Load 'grass_block_top.png'
+$topOut = Recolor $topSrc $grassTint
+$topOut.Save("$bdir\krave_grass_top.png", [System.Drawing.Imaging.ImageFormat]::Png)
+
+$overlaySrc = Load 'grass_block_side_overlay.png'
+$overlayTinted = Recolor $overlaySrc $grassTint
+# vanilla's overlay mask is fully opaque where it draws (it's the grayscale
+# fringe art itself, not an alpha gradient) - use its own luminance as an
+# alpha mask so it blends into the dirt body instead of stamping a hard edge.
+for($x=0; $x -lt $overlayTinted.Width; $x++){ for($y=0; $y -lt $overlayTinted.Height; $y++){
+    $p = $overlayTinted.GetPixel($x,$y)
+    $srcP = $overlaySrc.GetPixel($x,$y)
+    $lum = [int]((0.299*$srcP.R + 0.587*$srcP.G + 0.114*$srcP.B))
+    $overlayTinted.SetPixel($x,$y,[System.Drawing.Color]::FromArgb($lum,$p.R,$p.G,$p.B))
+}}
+$dirtSideBase = Recolor (Load 'grass_block_side.png') $dirtTint
+$sideOut = Composite $dirtSideBase $overlayTinted
+$sideOut.Save("$bdir\krave_grass_side.png", [System.Drawing.Imaging.ImageFormat]::Png)
+
+Write-Output "wrote krave_dirt, krave_grass_top, krave_grass_side (recolored from vanilla art)"

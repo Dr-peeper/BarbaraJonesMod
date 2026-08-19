@@ -21,7 +21,12 @@ public enum KraveTier implements Tier {
 
     @Override
     public float getSpeed() {
-        return 20.0F;                   // faster than netherite (9.0) by a wide margin
+        // Krave Block just went to obsidian's real hardness (50, was 6) so it
+        // still needs to clear fast: at speed 20 it was ~2.8s per block even
+        // with the right tool, and the pickaxe read as sluggish generally.
+        // 40 clears obsidian-hardness material in well under a second,
+        // against a diamond pick's ~9+ seconds on real obsidian.
+        return 40.0F;
     }
 
     @Override
