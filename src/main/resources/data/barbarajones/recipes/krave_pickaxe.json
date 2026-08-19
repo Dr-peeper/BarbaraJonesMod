@@ -1,6 +1,6 @@
 ﻿{
   "type": "minecraft:crafting_shaped",
-  "pattern": [ "KKK", " S ", " S " ],
-  "key": { "S": { "item": "minecraft:stick" }, "K": { "item": "barbarajones:krave_cereal" } },
+  "pattern": [ "NCN", " S ", " S " ],
+  "key": { "C": { "item": "barbarajones:krave_cereal" }, "S": { "item": "minecraft:stick" }, "N": { "item": "minecraft:netherite_ingot" } },
   "result": { "item": "barbarajones:krave_pickaxe", "count": 1 }
 }

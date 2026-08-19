@@ -1,6 +1,7 @@
 package com.barbarajones.content;
 
 import com.barbarajones.BarbaraJonesMod;
+import com.barbarajones.block.KraftingBenchBlock;
 import com.barbarajones.block.KraveDoorBlock;
 import com.barbarajones.block.KraveGrassBlock;
 
@@ -56,4 +57,12 @@ public final class ModBlocks {
 
     public static final RegistryObject<Block> KRAVE_DIRT = BLOCKS.register("krave_dirt",
             () -> new Block(BlockBehaviour.Properties.copy(Blocks.DIRT)));
+
+    // ---- Krafting Bench: a red Krave Box that combines pickaxe+axe+shovel ---
+
+    public static final RegistryObject<Block> KRAFTING_BENCH = BLOCKS.register("krafting_bench",
+            () -> new KraftingBenchBlock(BlockBehaviour.Properties.of()
+                    .mapColor(MapColor.COLOR_RED)
+                    .strength(2.5F, 6.0F)
+                    .sound(SoundType.WOOD)));
 }

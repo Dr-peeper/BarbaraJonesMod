@@ -1,0 +1,6 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "pattern": [ "KK", "KK" ],
+  "key": { "K": { "item": "barbarajones:krave_block" } },
+  "result": { "item": "barbarajones:krafting_bench", "count": 1 }
+}

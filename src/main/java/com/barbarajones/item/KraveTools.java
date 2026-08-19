@@ -18,7 +18,9 @@ import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.entity.MobSpawnType;
 import net.minecraft.world.entity.monster.Zombie;
 import net.minecraft.world.entity.player.Player;
+import net.minecraft.tags.BlockTags;
 import net.minecraft.world.item.AxeItem;
+import net.minecraft.world.item.DiggerItem;
 import net.minecraft.world.item.HoeItem;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.PickaxeItem;
@@ -32,6 +34,7 @@ import net.minecraft.world.phys.Vec3;
 
 import javax.annotation.Nullable;
 import java.util.List;
+import java.util.Set;
 
 /**
  * The Krave tool set. Every one of them is genuinely excellent - and comes with
@@ -261,6 +264,60 @@ public final class KraveTools {
         public void appendHoverText(ItemStack stack, @Nullable Level level,
                                     List<Component> tooltip, TooltipFlag flag) {
             curseTip(tooltip, "the crunching is deafening. It draws hostiles to you.");
+        }
+    }
+
+    // ---- MULTITOOL: three tools' worth of curse, all at once --------------
+
+    /**
+     * Pickaxe, axe and shovel fused into one - correct-tool-for-drops and
+     * full Krave-tier speed against anything any of the three would mine.
+     * Only buildable at a Krafting Bench (see KraftingBenchMenu), never at
+     * an ordinary crafting table.
+     *
+     * <p>Deliberately doesn't replicate the axe's log-stripping or the
+     * shovel's path-flattening right-click behaviors - those are separate
+     * {@code useOn} interactions on the vanilla items, not part of "mine
+     * three kinds of block fast," and adding them here would be a lot of
+     * copied logic for a secondary convenience feature nobody asked for.
+     */
+    public static class KraveMultiTool extends DiggerItem {
+
+        private static final Set<net.minecraft.tags.TagKey<net.minecraft.world.level.block.Block>> TOOL_TAGS =
+                Set.of(BlockTags.MINEABLE_WITH_PICKAXE, BlockTags.MINEABLE_WITH_AXE, BlockTags.MINEABLE_WITH_SHOVEL);
+
+        public KraveMultiTool(Properties props) {
+            super(5.0F, -2.8F, KraveTier.INSTANCE, BlockTags.MINEABLE_WITH_PICKAXE, props);
+        }
+
+        private static boolean matches(BlockState state) {
+            for (var tag : TOOL_TAGS) {
+                if (state.is(tag)) {
+                    return true;
+                }
+            }
+            return false;
+        }
+
+        @Override
+        public boolean isCorrectToolForDrops(BlockState state) {
+            return matches(state);
+        }
+
+        @Override
+        public boolean isCorrectToolForDrops(ItemStack stack, BlockState state) {
+            return matches(state);
+        }
+
+        @Override
+        public float getDestroySpeed(ItemStack stack, BlockState state) {
+            return matches(state) ? KraveTier.INSTANCE.getSpeed() : super.getDestroySpeed(stack, state);
+        }
+
+        @Override
+        public void appendHoverText(ItemStack stack, @Nullable Level level,
+                                    List<Component> tooltip, TooltipFlag flag) {
+            curseTip(tooltip, "all three curses, all the time.");
         }
     }
 }

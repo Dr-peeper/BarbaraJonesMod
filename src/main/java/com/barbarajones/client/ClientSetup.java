@@ -17,11 +17,14 @@ import com.barbarajones.client.render.KraveTornadoRenderer;
 import com.barbarajones.client.render.NuggetRenderer;
 import com.barbarajones.client.render.SkyCinematicRenderer;
 import com.barbarajones.content.ModEntities;
+import com.barbarajones.menu.ModMenus;
 
+import net.minecraft.client.gui.screens.MenuScreens;
 import net.minecraftforge.api.distmarker.Dist;
 import net.minecraftforge.client.event.EntityRenderersEvent;
 import net.minecraftforge.eventbus.api.SubscribeEvent;
 import net.minecraftforge.fml.common.Mod;
+import net.minecraftforge.fml.event.lifecycle.FMLClientSetupEvent;
 
 /** Binds every entity to its renderer. */
 @Mod.EventBusSubscriber(modid = BarbaraJonesMod.MODID, bus = Mod.EventBusSubscriber.Bus.MOD,
@@ -60,5 +63,10 @@ public final class ClientSetup {
     @SubscribeEvent
     public static void registerLayers(EntityRenderersEvent.RegisterLayerDefinitions event) {
         event.registerLayerDefinition(KraveMonsterModel.LAYER_LOCATION, KraveMonsterModel::createBodyLayer);
+    }
+
+    @SubscribeEvent
+    public static void clientSetup(FMLClientSetupEvent event) {
+        event.enqueueWork(() -> MenuScreens.register(ModMenus.KRAFTING_BENCH.get(), KraftingBenchScreen::new));
     }
 }

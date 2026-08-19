@@ -17,26 +17,44 @@ function SaveIcon($b,$n){ $b.Save((Join-Path $idir "$n.png"),[System.Drawing.Ima
 $choc=C '5A3A22'; $chocL=C '7A5232'; $cream=C 'F0E0C0'; $red=C 'C0392B'; $gold=C 'F2C21A'
 $stick=C '8A6A42'; $glow=C 'FFB020'
 
-# --- shared: a cereal-textured tool head drawn over a stick handle -----------
-function Handle($b){ for($i=0;$i -lt 8;$i++){ P $b (3+$i) (12-$i) $stick; P $b (4+$i) (12-$i) (C '6A4A28') } }
-function Bits($b,$x,$y,$w,$h){
-    Rct $b $x $y $w $h $choc
-    for($i=0;$i -lt ($w*$h/2);$i++){
-        $px=$x+(Get-Random -Maximum $w); $py=$y+(Get-Random -Maximum $h)
-        if((Get-Random -Maximum 3) -eq 0){ P $b $px $py $chocL } elseif((Get-Random -Maximum 5) -eq 0){ P $b $px $py $cream }
+# --- shared: a literal stick handle with small red Krave Box heads, one per
+# tool shape - a real product mascot, not an abstract cereal-textured blob. --
+$stickBrown = C '8B5A2B'; $stickDark = C '6A421D'
+$boxRed = C 'C62828'; $boxDeep = C '7A1414'; $boxGold = C 'FFD23F'
+
+function DiagHandle($b,$x0,$y0,$len,$dx,$dy){
+    $x=$x0; $y=$y0
+    for($i=0;$i -lt $len;$i++){
+        P $b $x $y $stickBrown
+        P $b ($x+1) $y $stickDark
+        $x += $dx; $y += $dy
     }
 }
+function BoxHead($b,$x,$y,$w,$h){
+    Rct $b $x $y $w $h $boxRed
+    Rct $b $x $y $w 1 $boxDeep
+    P $b $x ($y+$h-1) $boxGold
+    P $b ($x+$w-1) $y $boxGold
+}
 
-# krave_pickaxe
-$b=NewIcon; Handle $b; Bits $b 3 2 10 4; Rct $b 3 2 10 1 $chocL; P $b 2 3 $glow; P $b 13 3 $glow; SaveIcon $b 'krave_pickaxe'
-# krave_sword
-$b=NewIcon; Handle $b; Bits $b 5 1 5 9; Rct $b 6 1 3 1 $cream; Rct $b 4 10 7 2 $gold; SaveIcon $b 'krave_sword'
-# krave_axe
-$b=NewIcon; Handle $b; Bits $b 3 2 8 6; Rct $b 3 2 1 6 $chocL; P $b 11 4 $glow; SaveIcon $b 'krave_axe'
-# krave_shovel
-$b=NewIcon; Handle $b; Bits $b 4 2 6 6; Rct $b 4 7 6 1 $chocL; SaveIcon $b 'krave_shovel'
-# krave_hoe
-$b=NewIcon; Handle $b; Bits $b 3 2 9 3; Rct $b 3 5 4 2 $choc; SaveIcon $b 'krave_hoe'
+# krave_pickaxe: diagonal handle, two box heads splayed in a V like a real pick
+$b=NewIcon; DiagHandle $b 2 13 8 1 -1; BoxHead $b 3 3 4 3; BoxHead $b 9 3 4 3
+SaveIcon $b 'krave_pickaxe'
+# krave_axe: diagonal handle, one wide asymmetric box head (single-bladed)
+$b=NewIcon; DiagHandle $b 2 13 8 1 -1; BoxHead $b 8 2 6 5
+SaveIcon $b 'krave_axe'
+# krave_shovel: straight vertical handle, one box "blade" capping the top
+$b=NewIcon; DiagHandle $b 7 13 9 0 -1; BoxHead $b 5 2 6 4
+SaveIcon $b 'krave_shovel'
+# krave_sword: short grip, crossguard, tall box blade straight up
+$b=NewIcon; DiagHandle $b 7 13 4 0 -1; Rct $b 5 9 6 1 $stickDark; BoxHead $b 6 2 4 7
+SaveIcon $b 'krave_sword'
+# krave_hoe: diagonal handle, flat perpendicular box blade at the tip
+$b=NewIcon; DiagHandle $b 2 13 9 1 -1; Rct $b 7 3 6 2 $boxRed; Rct $b 7 3 6 1 $boxDeep; P $b 12 3 $boxGold
+SaveIcon $b 'krave_hoe'
+# krave_multitool: bigger handle, three box heads fused (pick+axe+shovel in one)
+$b=NewIcon; DiagHandle $b 1 14 8 1 -1; BoxHead $b 2 2 4 3; BoxHead $b 7 1 5 4; BoxHead $b 11 4 4 4
+SaveIcon $b 'krave_multitool'
 
 # cayden_compass: blue rim, cereal needle
 $b=NewIcon; Rct $b 3 3 10 10 (C '2A3A5A'); Rct $b 4 4 8 8 (C 'E8E8EC'); Rct $b 5 5 6 6 (C 'C8CCD8')
@@ -50,7 +68,7 @@ $b=NewIcon; Rct $b 4 6 8 7 (C 'A9865A'); Rct $b 5 5 6 1 (C '80663E'); Rct $b 5 8
 P $b 7 9 (C '6A4028'); P $b 9 10 (C '6A4028'); SaveIcon $b 'cocoa_substitute'
 
 # --- item models -------------------------------------------------------------
-$newItems = @('krave_pickaxe','krave_sword','krave_axe','krave_shovel','krave_hoe',
+$newItems = @('krave_pickaxe','krave_sword','krave_axe','krave_shovel','krave_hoe','krave_multitool',
               'cayden_compass','roasted_husk','cocoa_substitute')
 foreach($i in $newItems){
     $parent = if($i -like 'krave_*' -and $i -ne 'krave_cereal'){ 'minecraft:item/handheld' } else { 'minecraft:item/generated' }
@@ -97,12 +115,16 @@ function Smelt($name, $ingredient, $result, $xp){
 "@ | Set-Content "$rdir\$name.json" -Encoding utf8 -NoNewline
 }
 
-$K = @{ 'K' = 'barbarajones:krave_cereal'; 'S' = 'minecraft:stick' }
-Shaped 'krave_pickaxe' @('KKK',' S ',' S ') $K 'krave_pickaxe' 1
-Shaped 'krave_sword'   @(' K ',' K ',' S ') $K 'krave_sword' 1
-Shaped 'krave_axe'     @('KK ','KS ',' S ') $K 'krave_axe' 1
-Shaped 'krave_shovel'  @(' K ',' S ',' S ') $K 'krave_shovel' 1
-Shaped 'krave_hoe'     @('KK ',' S ',' S ') $K 'krave_hoe' 1
+# Netherite ingot (N) as the real cost - genuinely difficult to obtain, not
+# gated behind anything mod-specific we can't name for certain - plus one
+# Krave Cereal (C) keeping the mod's own flavor in the recipe. Stick (S) is
+# the handle, same as vanilla and matching the new "literal stick" look.
+$T = @{ 'N' = 'minecraft:netherite_ingot'; 'C' = 'barbarajones:krave_cereal'; 'S' = 'minecraft:stick' }
+Shaped 'krave_pickaxe' @('NCN',' S ',' S ') $T 'krave_pickaxe' 1
+Shaped 'krave_sword'   @(' N ',' N ',' S ') $T 'krave_sword' 1
+Shaped 'krave_axe'     @('NC ','NS ',' S ') $T 'krave_axe' 1
+Shaped 'krave_shovel'  @(' N ',' S ',' S ') $T 'krave_shovel' 1
+Shaped 'krave_hoe'     @('NC ',' S ',' S ') $T 'krave_hoe' 1
 
 Shapeless 'cayden_compass' @('minecraft:compass','barbarajones:krave_cereal','minecraft:lapis_lazuli') 'cayden_compass' 1
 
@@ -111,4 +133,4 @@ Smelt 'roasted_husk' 'minecraft:brown_mushroom' 'barbarajones:roasted_husk' 0.1
 Shapeless 'cocoa_substitute' @('barbarajones:roasted_husk','barbarajones:roasted_husk','minecraft:sugar','minecraft:coal') 'cocoa_substitute' 1
 Smelt 'cocoa_beans_from_substitute' 'barbarajones:cocoa_substitute' 'minecraft:cocoa_beans' 0.2
 
-Write-Output "wrote 8 icons, 8 models, 9 recipes"
+Write-Output "wrote 9 icons, 9 models, 9 recipes"

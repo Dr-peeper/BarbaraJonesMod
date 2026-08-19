@@ -201,6 +201,8 @@ public final class ModItems {
             ITEMS.register("krave_shovel", () -> new KraveTools.KraveShovel(props()));
     public static final RegistryObject<Item> KRAVE_HOE =
             ITEMS.register("krave_hoe", () -> new KraveTools.KraveHoe(props()));
+    public static final RegistryObject<Item> KRAVE_MULTITOOL =
+            ITEMS.register("krave_multitool", () -> new KraveTools.KraveMultiTool(props()));
 
     public static final RegistryObject<Item> CAYDEN_COMPASS =
             ITEMS.register("cayden_compass", () -> new CaydenCompassItem(props().stacksTo(1)));
@@ -222,6 +224,8 @@ public final class ModItems {
             ITEMS.register("krave_grass", () -> new BlockItem(ModBlocks.KRAVE_GRASS.get(), props()));
     public static final RegistryObject<Item> KRAVE_DIRT_ITEM =
             ITEMS.register("krave_dirt", () -> new BlockItem(ModBlocks.KRAVE_DIRT.get(), props()));
+    public static final RegistryObject<Item> KRAFTING_BENCH_ITEM =
+            ITEMS.register("krafting_bench", () -> new BlockItem(ModBlocks.KRAFTING_BENCH.get(), props()));
 
     // ---- liquid chocolate ------------------------------------------------------
 

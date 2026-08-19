@@ -1,0 +1,7 @@
+{
+  "parent": "minecraft:block/cube_column",
+  "textures": {
+    "end": "barbarajones:block/krafting_bench_top",
+    "side": "barbarajones:block/krafting_bench_side"
+  }
+}

@@ -21,7 +21,7 @@ public enum KraveTier implements Tier {
 
     @Override
     public float getSpeed() {
-        return 14.0F;                   // faster than diamond
+        return 20.0F;                   // faster than netherite (9.0) by a wide margin
     }
 
     @Override
@@ -31,7 +31,10 @@ public enum KraveTier implements Tier {
 
     @Override
     public int getLevel() {
-        return Tiers.IRON.getLevel();   // mines everything iron can
+        // Comfortably past Tiers.NETHERITE (4) - mines ancient debris,
+        // obsidian, everything. The best tool in the game for the job means
+        // never once hitting "Requires a better tool."
+        return Tiers.NETHERITE.getLevel() + 5;
     }
 
     @Override
