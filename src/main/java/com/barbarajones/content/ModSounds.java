@@ -61,4 +61,15 @@ public final class ModSounds {
     public static final RegistryObject<SoundEvent> EVT_MCD      = reg("evt_mcd");
     public static final RegistryObject<SoundEvent> EVT_ROLL     = reg("evt_roll");
     public static final RegistryObject<SoundEvent> EVT_NOTREADY = reg("evt_notready");
+
+    // raw unlabeled speech clips extracted from the source video (see
+    // tools; nobody has matched these to specific lines yet, they're a
+    // generic voice-line pool used for Duhl Wol's arrival and Cayden's
+    // higher-tier transformation shout until someone identifies them)
+    public static final RegistryObject<SoundEvent>[] DIALOGUE = new RegistryObject[24];
+    static {
+        for (int i = 0; i < 24; i++) {
+            DIALOGUE[i] = reg(String.format("dialogue_%02d", i + 1));
+        }
+    }
 }

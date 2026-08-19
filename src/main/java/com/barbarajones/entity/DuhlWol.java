@@ -55,6 +55,20 @@ public class DuhlWol extends PathfinderMob {
 
     private int pinCooldown = 0;
 
+    // Arrival intro beats, counted down after the car parks. Not synced -
+    // purely a server-side script timer, same idea as the debt TIMER but
+    // scoped to the one-time "he just pulled up" moment.
+    private int introTicks = 0;
+    private int introBeat = 0;
+    private String pendingWantedName = null;
+
+    /** Kicks off the "he just got out of the car" dialogue beats. Call once, right after spawning him alongside the car. */
+    public void startArrivalIntro(String wantedName) {
+        this.pendingWantedName = wantedName;
+        this.introBeat = 1;
+        this.introTicks = 30;   // ~1.5s after landing before "hey bro"
+    }
+
     public DuhlWol(EntityType<? extends PathfinderMob> type, Level level) {
         super(type, level);
     }
@@ -153,6 +167,36 @@ public class DuhlWol extends PathfinderMob {
             pinCooldown--;
         }
 
+        // arrival intro: "hey bro" beat, then the actual demand beat with a
+        // visual flourish, a few seconds apart
+        if (introBeat > 0) {
+            if (introTicks > 0) {
+                introTicks--;
+            } else if (introBeat == 1) {
+                for (Player p : this.level().getEntitiesOfClass(Player.class, this.getBoundingBox().inflate(24.0D))) {
+                    p.sendSystemMessage(Component.literal(ChatFormatting.YELLOW + "Duhl Wol: \"Hey bro.\""));
+                }
+                playDialogueClip();
+                introBeat = 2;
+                introTicks = 40;   // ~2s before the actual demand
+            } else if (introBeat == 2) {
+                String want = pendingWantedName != null ? pendingWantedName : "the tribute";
+                for (Player p : this.level().getEntitiesOfClass(Player.class, this.getBoundingBox().inflate(24.0D))) {
+                    p.sendSystemMessage(Component.literal(ChatFormatting.DARK_RED + "" + ChatFormatting.BOLD
+                            + "Duhl Wol: \"Yo, you got five minutes to bring me that " + want + ".\""));
+                }
+                playDialogueClip();
+                if (this.level() instanceof ServerLevel serverLevel) {
+                    // "demanding the money" flourish - a sharp point-and-jab gesture, faked with particles
+                    serverLevel.sendParticles(net.minecraft.core.particles.ParticleTypes.ANGRY_VILLAGER,
+                            this.getX(), this.getY() + 2.2, this.getZ(), 3, 0.2, 0.1, 0.2, 0.0);
+                }
+                playSound(SoundEvents.IRON_GOLEM_ATTACK, 1.0F, 1.4F);
+                introBeat = 0;
+                pendingWantedName = null;
+            }
+        }
+
         // aggro near players if hostile
         if (isHostileMode()) {
             Player nearest = this.level().getNearestPlayer(this, 30.0D);
@@ -208,6 +252,18 @@ public class DuhlWol extends PathfinderMob {
             }
         }
         return InteractionResult.sidedSuccess(this.level().isClientSide);
+    }
+
+    // A handful of the unlabeled clips extracted from the source video,
+    // used as a rotating "he said something" voice pool for his arrival.
+    // These are NOT verified to be his actual lines yet - just real speech
+    // audio pulled from the video, picked at random for flavor until
+    // someone identifies which clip is which real line.
+    private static final int[] ARRIVAL_CLIP_INDICES = { 0, 2, 5, 8, 11 };   // dialogue_01, 03, 06, 09, 12
+
+    private void playDialogueClip() {
+        int idx = ARRIVAL_CLIP_INDICES[this.random.nextInt(ARRIVAL_CLIP_INDICES.length)];
+        playSound(ModSounds.DIALOGUE[idx].get(), 1.0F, 1.0F);
     }
 
     private void pay(Player player) {

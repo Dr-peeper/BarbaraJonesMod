@@ -276,12 +276,15 @@ public class EventHandler {
                     level.addFreshEntity(car);
                     level.playSound(null, player.blockPosition(), SoundEvents.GENERIC_EXPLODE,
                             SoundSource.MASTER, 1.2F, 0.5F);   // car horn sound
+                    // "rap music playing" - loop one of the raw extracted clips from the
+                    // car itself while it rolls up, since we can't stream licensed music
+                    level.playSound(null, car.blockPosition(), com.barbarajones.content.ModSounds.DIALOGUE[15].get(),
+                            SoundSource.RECORDS, 1.0F, 1.0F);   // dialogue_16
                 }
 
                 player.sendSystemMessage(Component.literal(ChatFormatting.DARK_RED + "" + ChatFormatting.BOLD
                         + "Duhl Wol pulls up in his car, jumps out, and looks you dead in the eyes."));
-                player.sendSystemMessage(Component.literal(ChatFormatting.GRAY
-                        + "Duhl Wol: \"Yo, where's my " + duhl.getWantedItem().getHoverName().getString() + "? You got 5 minutes.\""));
+                duhl.startArrivalIntro(duhl.getWantedItem().getHoverName().getString());
             }
         } catch (Throwable err) {
             LOGGER.error("Failed to spawn Duhl Wol", err);
