@@ -27,6 +27,8 @@ public final class ModNetwork {
                 PacketCaydenStatus::encode, PacketCaydenStatus::decode, PacketCaydenStatus::handle);
         CHANNEL.registerMessage(2, PacketKraveHit.class,
                 PacketKraveHit::encode, PacketKraveHit::decode, PacketKraveHit::handle);
+        CHANNEL.registerMessage(3, PacketKraveLevel.class,
+                PacketKraveLevel::encode, PacketKraveLevel::decode, PacketKraveLevel::handle);
     }
 
     /** Send Cayden's vitals to his owner alone. */

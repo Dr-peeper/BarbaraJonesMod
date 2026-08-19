@@ -32,7 +32,9 @@ public class SsjAuraLayer extends RenderLayer<CaydenCobb, CaydenModel> {
     public void render(PoseStack pose, MultiBufferSource buffers, int light, CaydenCobb entity,
                        float limbSwing, float limbSwingAmount, float partial,
                        float ageInTicks, float netHeadYaw, float headPitch) {
-        if (!entity.isSuperSaiyan()) {
+        boolean full = entity.isSuperSaiyan();
+        boolean half = !full && entity.isDesperate();
+        if (!full && !half) {
             return;
         }
         // The aura is drawn in world space around the entity, so undo the model's
@@ -46,10 +48,17 @@ public class SsjAuraLayer extends RenderLayer<CaydenCobb, CaydenModel> {
         // billboard the flat effects toward the camera
         float camYaw = Minecraft.getInstance().gameRenderer.getMainCamera().getYRot();
 
-        flameColumn(pose, buf, t, camYaw);
-        hairSpikes(pose, buf, t);
-        arcs(pose, buf, entity, t);
-        shockwave(pose, buf, entity, t);
+        if (full) {
+            flameColumn(pose, buf, t, camYaw, 1.0F, false);
+            hairSpikes(pose, buf, t);
+            arcs(pose, buf, entity, t);
+            shockwave(pose, buf, entity, t);
+        } else {
+            // Half-ascension: a low, angry fire around the legs and chest only.
+            // No hair, no shockwave - he has not transformed, he is just refusing
+            // to die, and it should read as clearly lesser than the real thing.
+            flameColumn(pose, buf, t, camYaw, 0.45F, true);
+        }
 
         pose.popPose();
     }
@@ -57,7 +66,8 @@ public class SsjAuraLayer extends RenderLayer<CaydenCobb, CaydenModel> {
     // ---- the flame column ---------------------------------------------------
 
     /** Tapering tongues of gold licking upward, each on its own cycle. */
-    private void flameColumn(PoseStack pose, VertexConsumer buf, float t, float camYaw) {
+    private void flameColumn(PoseStack pose, VertexConsumer buf, float t, float camYaw,
+                             float scale, boolean ember) {
         pose.pushPose();
         pose.mulPose(Axis.YP.rotationDegrees(-camYaw));   // face the camera
         Matrix4f m = pose.last().pose();
@@ -68,14 +78,15 @@ public class SsjAuraLayer extends RenderLayer<CaydenCobb, CaydenModel> {
             float phase = ((t * 0.09F) + i / (float) TONGUES) % 1.0F;
             float life = 1.0F - phase;                       // 1 at birth, 0 at the top
             float x = ((i % 3) - 1) * 0.24F + Mth.sin(t * 0.21F + i) * 0.07F;
-            float baseY = -0.05F + phase * 2.05F;
-            float height = 0.55F * life + 0.18F;
-            float halfW = (0.30F * life + 0.04F) * (1.0F - phase * 0.45F);
+            float baseY = -0.05F + phase * 2.05F * scale;
+            float height = (0.55F * life + 0.18F) * scale;
+            float halfW = (0.30F * life + 0.04F) * (1.0F - phase * 0.45F) * (0.6F + scale * 0.4F);
 
             // white-hot at the base, deep amber as it burns out
+            // Gold for the full transformation; a dirtier orange-red for the half.
             float r = 1.0F;
-            float g = 0.72F + 0.28F * life;
-            float b = 0.10F + 0.55F * life * life;
+            float g = ember ? (0.34F + 0.22F * life) : (0.72F + 0.28F * life);
+            float b = ember ? (0.04F + 0.10F * life * life) : (0.10F + 0.55F * life * life);
             float a = 0.55F * life * life;
             if (a <= 0.01F) {
                 continue;

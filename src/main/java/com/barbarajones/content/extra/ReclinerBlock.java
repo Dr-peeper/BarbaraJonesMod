@@ -82,7 +82,7 @@ public class ReclinerBlock extends HorizontalDirectionalBlock {
             return InteractionResult.CONSUME;
         }
 
-        SeatEntity seat = new SeatEntity(ExtraRegistry.RECLINER_SEAT, level);
+        SeatEntity seat = new SeatEntity(ExtraRegistry.RECLINER_SEAT.get(), level);
         seat.moveTo(pos.getX() + 0.5D, pos.getY() + 0.35D, pos.getZ() + 0.5D,
                 state.getValue(FACING).toYRot(), 0.0F);
         level.addFreshEntity(seat);

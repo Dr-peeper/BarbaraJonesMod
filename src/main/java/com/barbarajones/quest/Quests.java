@@ -219,9 +219,10 @@ public final class Quests {
 
         // ---- GRASS branch ---------------------------------------------------
         collect(GRASS_HARVEST, B_GRASS, "Touch Grass",
-                "Get a HANDFUL OF GRASS and some GRASS SEEDS. It all starts in the dirt.",
+                "Shear any grass or fern and craft a HANDFUL OF GRASS (3 of them, shapeless). "
+                        + "It all starts in the dirt.",
                 pre(START),
-                ModItems.HANDFUL_OF_GRASS, ModItems.GRASS_SEEDS);
+                ModItems.HANDFUL_OF_GRASS);
         collect(GRASS_PREP, B_GRASS, "Mise en Place",
                 "Craft a GRASS KNIFE and dice the grass down to DICED GRASS.",
                 pre(GRASS_HARVEST),
@@ -346,6 +347,29 @@ public final class Quests {
     // ---- lookups ------------------------------------------------------------
 
     @Nullable
+    /**
+     * Titles of the prerequisites still outstanding, so the book can say what is
+     * blocking a quest rather than just greying it out with no explanation.
+     */
+    public static java.util.List<String> missingPrereqTitles( ItemStack book, Quest q) {
+        java.util.List<String> missing = new java.util.ArrayList<>();
+        if (q.finale) {
+            for (Quest other : ALL) {
+                if (!other.finale && !isDone(book, other.id)) {
+                    missing.add(other.title);
+                }
+            }
+            return missing;
+        }
+        for (String p : q.prereqs) {
+            if (!isDone(book, p)) {
+                Quest pq = byId(p);
+                missing.add(pq == null ? p : pq.title);
+            }
+        }
+        return missing;
+    }
+
     public static Quest byId(String id) {
         return BY_ID.get(id);
     }

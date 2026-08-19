@@ -31,6 +31,7 @@ public class BarbaraJonesMod {
         ModItems.ITEMS.register(bus);
         ModSounds.SOUNDS.register(bus);
         ModEntities.ENTITIES.register(bus);
+        com.barbarajones.content.extra.ExtraRegistry.ENTITIES.register(bus);
         ModFeatures.FEATURES.register(bus);
         ModTabs.TABS.register(bus);
 

@@ -18,6 +18,8 @@ import net.minecraft.server.level.ServerLevel;
 import net.minecraft.sounds.SoundEvent;
 import net.minecraft.sounds.SoundEvents;
 import net.minecraft.sounds.SoundSource;
+import net.minecraft.world.effect.MobEffectInstance;
+import net.minecraft.world.effect.MobEffects;
 import net.minecraft.world.damagesource.DamageSource;
 import net.minecraft.world.entity.AgeableMob;
 import net.minecraft.world.entity.EntityType;
@@ -66,10 +68,25 @@ public class CaydenCobb extends TamableAnimal {
             SynchedEntityData.defineId(CaydenCobb.class, EntityDataSerializers.BOOLEAN);
     private static final EntityDataAccessor<Boolean> SSJ =
             SynchedEntityData.defineId(CaydenCobb.class, EntityDataSerializers.BOOLEAN);
+    /** Half-ascension: cornered and fighting for his life. Synced for the aura. */
+    private static final EntityDataAccessor<Boolean> DESPERATE =
+            SynchedEntityData.defineId(CaydenCobb.class, EntityDataSerializers.BOOLEAN);
 
     public static final int RAGE_THRESHOLD = 25;
     /** How long a transformation lasts before powering down on its own. */
     private static final int SSJ_DURATION_TICKS = 6000;
+    /** Below this fraction of max health he half-ascends to save himself. */
+    private static final float DESPERATE_AT = 0.40F;
+    /** He must climb back above this to calm down - hysteresis stops it flickering. */
+    private static final float DESPERATE_OFF = 0.70F;
+    /** Odds of a raw power flash on any given hit: 1 in this. */
+    private static final int FLASH_ODDS = 10;
+    /** Odds of a meteor answering a desperate punch: 1 in this. */
+    private static final int METEOR_ODDS = 3;
+    /** Heal a point this often, once out of combat. */
+    private static final int REGEN_INTERVAL = 60;
+    /** How long since being hit before he starts healing again. */
+    private static final int OUT_OF_COMBAT_TICKS = 100;
     private static final double BASE_SPEED = 0.5D;
     private static final double BASE_DAMAGE = 3.0D;
     /** How far he'll wander from a claimed home before heading back. */
@@ -130,6 +147,7 @@ public class CaydenCobb extends TamableAnimal {
         this.entityData.define(RAGE, false);
         this.entityData.define(HOUSED, false);
         this.entityData.define(SSJ, false);
+        this.entityData.define(DESPERATE, false);
     }
 
     // ---- krave state -------------------------------------------------------
@@ -347,6 +365,9 @@ public class CaydenCobb extends TamableAnimal {
             }
         }
 
+        regenerate();
+        updateDesperation();
+
         if (isSuperSaiyan()) {
             // Linked to the boss fight, the transformation has no clock on it -
             // it lasts exactly as long as the Krave Monster does.
@@ -447,6 +468,167 @@ public class CaydenCobb extends TamableAnimal {
     @Nullable
     public AgeableMob getBreedOffspring(ServerLevel level, AgeableMob other) {
         return null;
+    }
+
+    /**
+     * Heals like a well-fed player: a point every few seconds, but only once he
+     * has been left alone for a moment. Without this he accumulated every scrape
+     * from every fight until something trivial finished him off - and his death
+     * is the one thing this mod is built around avoiding.
+     */
+    private void regenerate() {
+        if (getHealth() >= getMaxHealth() || !isAlive()) {
+            return;
+        }
+        // hurtTime is set on every hit; use the vanilla last-hurt clock so he
+        // does not heal through a fight he is currently losing.
+        if (getLastHurtByMob() != null
+                && this.tickCount - getLastHurtByMobTimestamp() < OUT_OF_COMBAT_TICKS) {
+            return;
+        }
+        if (this.tickCount % REGEN_INTERVAL == 0) {
+            heal(1.0F);
+            if (level() instanceof ServerLevel sl && getHealth() < getMaxHealth()) {
+                sl.sendParticles(ParticleTypes.HEART,
+                        getX(), getY() + getBbHeight() + 0.2D, getZ(),
+                        1, 0.25D, 0.1D, 0.25D, 0.0D);
+            }
+        }
+    }
+
+    // ---- flashes of the real thing -----------------------------------------
+
+    public boolean isDesperate() {
+        return this.entityData.get(DESPERATE);
+    }
+
+    /**
+     * Cornered, he half-ascends. Not the full transformation - no flight, no
+     * invulnerability - but enough to fight his way out: damage resistance,
+     * fists that burn, and the occasional meteor.
+     *
+     * <p>Entering and leaving use different thresholds on purpose. A single
+     * threshold makes him strobe in and out of the state while he trades blows
+     * around that health value.
+     */
+    private void updateDesperation() {
+        float frac = getMaxHealth() <= 0.0F ? 1.0F : getHealth() / getMaxHealth();
+        boolean now = isDesperate();
+
+        if (!now && !isSuperSaiyan() && frac <= DESPERATE_AT && getTarget() != null) {
+            this.entityData.set(DESPERATE, true);
+            addEffect(new MobEffectInstance(MobEffects.DAMAGE_RESISTANCE, 400, 1, false, false));
+            addEffect(new MobEffectInstance(MobEffects.FIRE_RESISTANCE, 400, 0, false, false));
+            playSound(ModSounds.KRAVE_ROAR.get(), 1.3F, 1.35F);
+            if (level() instanceof ServerLevel sl) {
+                sl.sendParticles(ParticleTypes.FLASH, getX(), getY() + getBbHeight() * 0.6D, getZ(),
+                        1, 0.0D, 0.0D, 0.0D, 0.0D);
+                sl.sendParticles(ParticleTypes.FLAME, getX(), getY() + getBbHeight() * 0.5D, getZ(),
+                        40, 0.5D, 0.7D, 0.5D, 0.06D);
+            }
+            for (Player p : level().getEntitiesOfClass(Player.class, getBoundingBox().inflate(32.0D))) {
+                p.sendSystemMessage(Component.literal(ChatFormatting.GOLD
+                        + "Cayden is cornered - he is not going down like this."));
+            }
+        } else if (now && (frac >= DESPERATE_OFF || getTarget() == null || isSuperSaiyan())) {
+            this.entityData.set(DESPERATE, false);
+        }
+
+        // top the effects up while it lasts, so a long fight does not run them out
+        if (isDesperate() && this.tickCount % 100 == 0) {
+            addEffect(new MobEffectInstance(MobEffects.DAMAGE_RESISTANCE, 400, 1, false, false));
+            addEffect(new MobEffectInstance(MobEffects.FIRE_RESISTANCE, 400, 0, false, false));
+        }
+        if (isDesperate() && this.tickCount % 3 == 0 && level() instanceof ServerLevel sl) {
+            sl.sendParticles(ParticleTypes.FLAME, getX(), getY() + getBbHeight() * 0.55D, getZ(),
+                    2, 0.32D, 0.45D, 0.32D, 0.01D);
+        }
+    }
+
+    /**
+     * Every punch is a chance for the power to show through: a one-in-ten
+     * launch, and while desperate, burning fists and a one-in-five meteor.
+     */
+    @Override
+    public boolean doHurtTarget(net.minecraft.world.entity.Entity target) {
+        boolean hit = super.doHurtTarget(target);
+        if (!hit || level().isClientSide) {
+            return hit;
+        }
+
+        // 1-in-10: a flash of the full thing. Ten times the shove.
+        if (this.random.nextInt(FLASH_ODDS) == 0) {
+            double yaw = Math.toRadians(getYRot());
+            target.push(-Math.sin(yaw) * 3.4D, 0.85D, Math.cos(yaw) * 3.4D);
+            target.hurtMarked = true;   // without this the client never sees the launch
+            playSound(ModSounds.KRAVE_BOOM.get(), 1.1F, 1.6F);
+            if (level() instanceof ServerLevel sl) {
+                sl.sendParticles(ParticleTypes.SWEEP_ATTACK,
+                        target.getX(), target.getY() + target.getBbHeight() * 0.5D, target.getZ(),
+                        3, 0.3D, 0.3D, 0.3D, 0.0D);
+                sl.sendParticles(ParticleTypes.END_ROD,
+                        target.getX(), target.getY() + 0.4D, target.getZ(),
+                        18, 0.2D, 0.3D, 0.2D, 0.22D);
+            }
+        }
+
+        if (isDesperate()) {
+            target.setSecondsOnFire(4);          // fire aspect, near enough
+            if (this.random.nextInt(METEOR_ODDS) == 0) {
+                callMeteor(target);
+            }
+        }
+        return hit;
+    }
+
+    /**
+     * Drops one meteor on whatever he just hit. KraveMeteor already refuses to
+     * damage Cayden, Barbara or players, and attributing it to him means the
+     * Krave Monster's damage gate does not shrug it off - but the crater still
+     * sets fires, which is why the desperate state carries fire resistance.
+     */
+    private void callMeteor(net.minecraft.world.entity.Entity target) {
+        if (!(level() instanceof ServerLevel sl)) {
+            return;
+        }
+        com.barbarajones.entity.KraveMeteor m =
+                com.barbarajones.content.ModEntities.METEOR.get().create(sl);
+        if (m == null) {
+            return;
+        }
+        double ox = (this.random.nextDouble() - 0.5D) * 3.0D;
+        double oz = (this.random.nextDouble() - 0.5D) * 3.0D;
+
+        // Drop from as high as there is actually room for. Spawning at a fixed
+        // 34 blocks put the meteor inside the rock whenever the fight was in a
+        // cave or indoors, where it collided on its first tick and "landed"
+        // somewhere nobody could see. Walk up from the target instead and stop
+        // under whatever ceiling is there.
+        BlockPos scan = BlockPos.containing(target.getX() + ox, target.getY() + 1.0D, target.getZ() + oz);
+        int clear = 0;
+        for (int i = 0; i < 34; i++) {
+            BlockPos above = scan.above(i + 1);
+            if (!sl.getBlockState(above).isAir()) {
+                break;
+            }
+            clear = i + 1;
+        }
+        if (clear < 3) {
+            return;   // pinned against a low ceiling: no room for a meteor at all
+        }
+
+        double spawnY = target.getY() + clear;
+        m.saiyanStrike(this);
+        m.setPos(target.getX() + ox, spawnY, target.getZ() + oz);
+        m.aim(-ox * 0.06D, -oz * 0.06D);
+        sl.addFreshEntity(m);
+
+        // Telegraph it, so the strike reads as his doing rather than random noise.
+        playSound(ModSounds.KRAVE_SCREECH.get(), 1.2F, 1.5F);
+        sl.sendParticles(ParticleTypes.SMALL_FLAME,
+                target.getX(), target.getY() + target.getBbHeight() + 0.4D, target.getZ(),
+                14, 0.35D, 0.2D, 0.35D, 0.02D);
+
     }
 
     @Override

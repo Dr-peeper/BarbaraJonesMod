@@ -6,6 +6,7 @@ import com.barbarajones.block.KraveDoorBlock;
 import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.LiquidBlock;
 import net.minecraft.world.level.block.SoundType;
+import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.level.block.state.BlockBehaviour;
 import net.minecraft.world.level.block.state.properties.BlockSetType;
 import com.barbarajones.content.extra.BoomboxBlock;
@@ -104,4 +105,9 @@ public final class ModBlocks {
                     .mapColor(MapColor.WOOD)
                     .strength(2.0F)
                     .sound(SoundType.WOOD)));
+
+    /** Barbara's crop - plant Grass Seeds on dirt or farmland. */
+    public static final RegistryObject<Block> GRASS_CROP = BLOCKS.register("grass_crop",
+            () -> new com.barbarajones.block.GrassCropBlock(
+                    BlockBehaviour.Properties.copy(Blocks.WHEAT).noOcclusion()));
 }

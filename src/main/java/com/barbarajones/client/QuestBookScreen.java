@@ -100,6 +100,25 @@ public class QuestBookScreen extends Screen {
                         y += 9;
                     }
                     y += 1;
+                } else if (!qDone) {
+                    // A locked quest used to show nothing at all, which reads as a bug.
+                    // Say what it wants and what is standing in the way.
+                    for (var line : this.font.split(
+                            Component.literal(ChatFormatting.DARK_GRAY + q.objective), colW - 14)) {
+                        gfx.drawString(this.font, line, x + 12, y, 0x666666);
+                        y += 9;
+                    }
+                    java.util.List<String> need = Quests.missingPrereqTitles(book, q);
+                    if (!need.isEmpty()) {
+                        String txt = ChatFormatting.DARK_RED + "Locked - first: "
+                                + String.join(", ", need.size() > 3 ? need.subList(0, 3) : need)
+                                + (need.size() > 3 ? " (+" + (need.size() - 3) + " more)" : "");
+                        for (var line : this.font.split(Component.literal(txt), colW - 14)) {
+                            gfx.drawString(this.font, line, x + 12, y, 0x884444);
+                            y += 9;
+                        }
+                    }
+                    y += 1;
                 }
             }
             y += 6;

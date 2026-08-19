@@ -255,7 +255,7 @@ public class KraveManualScreen extends Screen {
         // ==================================================================
         new Chapter("RECIPES: THE GRASS PIPELINE", new String[][] {
             { Y + B + "FROM THE GROUND TO THE JOINT",
-              G + "Handful of Grass" + W + " = 3x Tall Grass",
+              G + "Handful of Grass" + W + " = 3x any grass or fern",
               G + "Grass Knife" + W + " = Iron + Stick",
               G + "Diced Grass x2" + W + " = Handful + Grass Knife",
               G + "Burnt Grass" + W + " = Diced + Blowtorch",

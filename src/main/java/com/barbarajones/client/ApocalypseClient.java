@@ -59,6 +59,9 @@ public final class ApocalypseClient {
     private ApocalypseClient() { }
 
     public static void handle(PacketApocalypse msg) {
+        // The keyframe director owns the 3D staging and the camera from here.
+        // This class keeps the fullscreen face and the blood sky, which work.
+        com.barbarajones.cinematic.CinematicDirector.handle(msg);
         stage = Math.max(1, Math.min(10, msg.stage));
         switch (msg.phase) {
             case PacketApocalypse.PHASE_ONSET -> {
@@ -134,7 +137,8 @@ public final class ApocalypseClient {
         // capture the starting orientation once and glide to the target along a
         // smoothstep curve - it eases in, eases out, and the client interpolates the
         // per-tick yaw/pitch between frames, so the whole move reads as one silky pan.
-        if (cinLockTimer > 0 && mc.player != null) {
+        if (cinLockTimer > 0 && mc.player != null
+                && !com.barbarajones.cinematic.CinematicDirector.isRunning()) {
             if (!swingCaptured) {
                 swingStartYaw = mc.player.getYRot();
                 swingStartPitch = mc.player.getXRot();
@@ -361,6 +365,9 @@ public final class ApocalypseClient {
                 // world rendering must never crash
             }
             return;
+        }
+        if (com.barbarajones.cinematic.CinematicDirector.isRunning()) {
+            return;   // the director stages its own actors; two sets would overlap
         }
         if (event.getStage() != RenderLevelStageEvent.Stage.AFTER_WEATHER
                 || wrathTimer <= 0 || stage < 6) {

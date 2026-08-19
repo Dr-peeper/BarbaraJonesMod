@@ -1,0 +1,4 @@
+{
+  "parent": "minecraft:block/crop",
+  "textures": { "crop": "barbarajones:block/grass_crop_stage3" }
+}

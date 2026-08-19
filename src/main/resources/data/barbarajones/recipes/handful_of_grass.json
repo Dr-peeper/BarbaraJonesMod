@@ -1,5 +1,24 @@
-﻿{
+{
   "type": "minecraft:crafting_shapeless",
-  "ingredients": [ { "item": "minecraft:tall_grass" }, { "item": "minecraft:tall_grass" }, { "item": "minecraft:tall_grass" } ],
+  "ingredients": [
+    [
+      { "item": "minecraft:grass" },
+      { "item": "minecraft:tall_grass" },
+      { "item": "minecraft:fern" },
+      { "item": "minecraft:large_fern" }
+    ],
+    [
+      { "item": "minecraft:grass" },
+      { "item": "minecraft:tall_grass" },
+      { "item": "minecraft:fern" },
+      { "item": "minecraft:large_fern" }
+    ],
+    [
+      { "item": "minecraft:grass" },
+      { "item": "minecraft:tall_grass" },
+      { "item": "minecraft:fern" },
+      { "item": "minecraft:large_fern" }
+    ]
+  ],
   "result": { "item": "barbarajones:handful_of_grass", "count": 1 }
 }

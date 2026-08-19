@@ -151,7 +151,8 @@ public final class ModItems {
     // ---- memorabilia --------------------------------------------------------
 
     public static final RegistryObject<Item> ASHTRAY        = plain("ashtray", 16);
-    public static final RegistryObject<Item> GRASS_SEEDS    = plain("grass_seeds", 64);
+    public static final RegistryObject<Item> GRASS_SEEDS = ITEMS.register("grass_seeds",
+            () -> new net.minecraft.world.item.ItemNameBlockItem(ModBlocks.GRASS_CROP.get(), props()));
     public static final RegistryObject<Item> BONG           = plain("bong", 1);
     public static final RegistryObject<Item> TOWEL          = plain("towel", 16);
     public static final RegistryObject<Item> SOAP           = plain("soap", 16);

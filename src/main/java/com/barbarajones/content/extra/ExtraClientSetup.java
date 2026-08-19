@@ -26,7 +26,7 @@ public final class ExtraClientSetup {
 
     @SubscribeEvent
     public static void registerRenderers(EntityRenderersEvent.RegisterRenderers event) {
-        event.registerEntityRenderer(ExtraRegistry.RECLINER_SEAT, SeatRenderer::new);
+        event.registerEntityRenderer(ExtraRegistry.RECLINER_SEAT.get(), SeatRenderer::new);
     }
 
     /**

@@ -16,7 +16,7 @@ public class RecipeBookScreen extends Screen {
 
     private static final String[][] PAGES = {
         { Y + "THE GRASS PIPELINE",
-          G + "Handful of Grass" + W + " = 3x Short Grass",
+          G + "Handful of Grass" + W + " = 3x any grass or fern",
           G + "Diced Grass x2" + W + " = Handful + Grass Knife",
           G + "Burnt Grass" + W + " = Diced + Blowtorch (or smelt)",
           G + "Rolling Paper" + W + " = 1x Paper",
