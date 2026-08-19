@@ -1,16 +1,16 @@
 {
   "variants": {
-    "age=0,facing=north": { "model": "deepslate_krave_ore deepslate_krave_ore/krave_pod_stage0" },
-    "age=0,facing=south": { "model": "deepslate_krave_ore deepslate_krave_ore/krave_pod_stage0", "y": 180 },
-    "age=0,facing=east": { "model": "deepslate_krave_ore deepslate_krave_ore/krave_pod_stage0", "y": 90 },
-    "age=0,facing=west": { "model": "deepslate_krave_ore deepslate_krave_ore/krave_pod_stage0", "y": 270 },
-    "age=1,facing=north": { "model": "deepslate_krave_ore deepslate_krave_ore/krave_pod_stage1" },
-    "age=1,facing=south": { "model": "deepslate_krave_ore deepslate_krave_ore/krave_pod_stage1", "y": 180 },
-    "age=1,facing=east": { "model": "deepslate_krave_ore deepslate_krave_ore/krave_pod_stage1", "y": 90 },
-    "age=1,facing=west": { "model": "deepslate_krave_ore deepslate_krave_ore/krave_pod_stage1", "y": 270 },
-    "age=2,facing=north": { "model": "deepslate_krave_ore deepslate_krave_ore/krave_pod_stage2" },
-    "age=2,facing=south": { "model": "deepslate_krave_ore deepslate_krave_ore/krave_pod_stage2", "y": 180 },
-    "age=2,facing=east": { "model": "deepslate_krave_ore deepslate_krave_ore/krave_pod_stage2", "y": 90 },
-    "age=2,facing=west": { "model": "deepslate_krave_ore deepslate_krave_ore/krave_pod_stage2", "y": 270 }
+    "age=0,facing=north": { "model": "barbarajones:block/krave_pod_stage0" },
+    "age=0,facing=south": { "model": "barbarajones:block/krave_pod_stage0", "y": 180 },
+    "age=0,facing=east": { "model": "barbarajones:block/krave_pod_stage0", "y": 90 },
+    "age=0,facing=west": { "model": "barbarajones:block/krave_pod_stage0", "y": 270 },
+    "age=1,facing=north": { "model": "barbarajones:block/krave_pod_stage1" },
+    "age=1,facing=south": { "model": "barbarajones:block/krave_pod_stage1", "y": 180 },
+    "age=1,facing=east": { "model": "barbarajones:block/krave_pod_stage1", "y": 90 },
+    "age=1,facing=west": { "model": "barbarajones:block/krave_pod_stage1", "y": 270 },
+    "age=2,facing=north": { "model": "barbarajones:block/krave_pod_stage2" },
+    "age=2,facing=south": { "model": "barbarajones:block/krave_pod_stage2", "y": 180 },
+    "age=2,facing=east": { "model": "barbarajones:block/krave_pod_stage2", "y": 90 },
+    "age=2,facing=west": { "model": "barbarajones:block/krave_pod_stage2", "y": 270 }
   }
 }

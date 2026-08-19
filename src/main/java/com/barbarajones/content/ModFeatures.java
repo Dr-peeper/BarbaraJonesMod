@@ -49,19 +49,4 @@ public final class ModFeatures {
     // world creation died rather than just missing a structure.
     public static final RegistryObject<Feature<NoneFeatureConfiguration>> KRAVE_TREE =
             FEATURES.register("krave_tree", () -> new KraveTreeFeature(NoneFeatureConfiguration.CODEC));
-
-    public static final RegistryObject<Feature<NoneFeatureConfiguration>> BARBARA_LAWN =
-            FEATURES.register("barbara_lawn", () -> new BarbaraLawnFeature(NoneFeatureConfiguration.CODEC));
-
-    public static final RegistryObject<Feature<NoneFeatureConfiguration>> SEWER_ENTRANCE =
-            FEATURES.register("sewer_entrance", () -> new SewerEntranceFeature(NoneFeatureConfiguration.CODEC));
-
-    public static final RegistryObject<Feature<NoneFeatureConfiguration>> BURNT_PATCH =
-            FEATURES.register("burnt_patch", () -> new BurntPatchFeature(NoneFeatureConfiguration.CODEC));
-
-    public static final RegistryObject<Feature<NoneFeatureConfiguration>> ABANDONED_CAR =
-            FEATURES.register("abandoned_car", () -> new AbandonedCarFeature(NoneFeatureConfiguration.CODEC));
-
-    public static final RegistryObject<Feature<NoneFeatureConfiguration>> CEREAL_SHRINE =
-            FEATURES.register("cereal_shrine", () -> new CerealShrineFeature(NoneFeatureConfiguration.CODEC));
 }

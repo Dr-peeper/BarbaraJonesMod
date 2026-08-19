@@ -1,4 +1,4 @@
 {
   "parent": "minecraft:block/cube_all",
-  "textures": { "all": "krave_ore krave_ore/krave_ore" }
+  "textures": { "all": "barbarajones:block/krave_ore" }
 }

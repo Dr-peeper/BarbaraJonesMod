@@ -1,4 +1,4 @@
 {
   "parent": "minecraft:item/generated",
-  "textures": { "layer0": "deepslate_krave_ore deepslate_krave_ore/krave_sapling" }
+  "textures": { "layer0": "barbarajones:block/krave_sapling" }
 }

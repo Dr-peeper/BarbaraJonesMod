@@ -136,7 +136,7 @@ foreach ($v in @(@('krave_ore','7A7A7A','6E6E6E'), @('deepslate_krave_ore','4A4A
 function WriteJson($path, $text) {
     [System.IO.File]::WriteAllText($path, $text, (New-Object System.Text.UTF8Encoding($false)))
 }
-$P = 'barbarajones:block'
+$BLK = 'barbarajones:block'
 
 # ---- blockstates + block models -------------------------------------------
 # pillar-shaped: log, wood, and their stripped forms
@@ -146,10 +146,10 @@ foreach ($p in @(
     @('krave_wood','krave_log','krave_log'),
     @('stripped_krave_wood','stripped_krave_log','stripped_krave_log'))) {
     $id = $p[0]
-    WriteJson "$bmod\$id.json" "{`n  `"parent`": `"minecraft:block/cube_column`",`n  `"textures`": { `"side`": `"$P/$($p[1])`", `"end`": `"$P/$($p[2])`" }`n}"
-    WriteJson "$bmod\${id}_horizontal.json" "{`n  `"parent`": `"minecraft:block/cube_column_horizontal`",`n  `"textures`": { `"side`": `"$P/$($p[1])`", `"end`": `"$P/$($p[2])`" }`n}"
-    WriteJson "$bs\$id.json" "{`n  `"variants`": {`n    `"axis=y`": { `"model`": `"$P/$id`" },`n    `"axis=z`": { `"model`": `"$P/${id}_horizontal`", `"x`": 90 },`n    `"axis=x`": { `"model`": `"$P/${id}_horizontal`", `"x`": 90, `"y`": 90 }`n  }`n}"
-    WriteJson "$imod\$id.json" "{ `"parent`": `"$P/$id`" }"
+    WriteJson "$bmod\$id.json" "{`n  `"parent`": `"minecraft:block/cube_column`",`n  `"textures`": { `"side`": `"$BLK/$($p[1])`", `"end`": `"$BLK/$($p[2])`" }`n}"
+    WriteJson "$bmod\${id}_horizontal.json" "{`n  `"parent`": `"minecraft:block/cube_column_horizontal`",`n  `"textures`": { `"side`": `"$BLK/$($p[1])`", `"end`": `"$BLK/$($p[2])`" }`n}"
+    WriteJson "$bs\$id.json" "{`n  `"variants`": {`n    `"axis=y`": { `"model`": `"$BLK/$id`" },`n    `"axis=z`": { `"model`": `"$BLK/${id}_horizontal`", `"x`": 90 },`n    `"axis=x`": { `"model`": `"$BLK/${id}_horizontal`", `"x`": 90, `"y`": 90 }`n  }`n}"
+    WriteJson "$imod\$id.json" "{ `"parent`": `"$BLK/$id`" }"
 }
 
 # simple full cubes
@@ -159,21 +159,21 @@ foreach ($p in @(
     @('krave_ore','krave_ore'),
     @('deepslate_krave_ore','deepslate_krave_ore'))) {
     $id = $p[0]
-    WriteJson "$bmod\$id.json" "{`n  `"parent`": `"minecraft:block/cube_all`",`n  `"textures`": { `"all`": `"$P/$($p[1])`" }`n}"
-    WriteJson "$bs\$id.json" "{`n  `"variants`": { `"`": { `"model`": `"$P/$id`" } }`n}"
-    WriteJson "$imod\$id.json" "{ `"parent`": `"$P/$id`" }"
+    WriteJson "$bmod\$id.json" "{`n  `"parent`": `"minecraft:block/cube_all`",`n  `"textures`": { `"all`": `"$BLK/$($p[1])`" }`n}"
+    WriteJson "$bs\$id.json" "{`n  `"variants`": { `"`": { `"model`": `"$BLK/$id`" } }`n}"
+    WriteJson "$imod\$id.json" "{ `"parent`": `"$BLK/$id`" }"
 }
 
 # sapling - a cross, and a flat inventory sprite
-WriteJson "$bmod\krave_sapling.json" "{`n  `"parent`": `"minecraft:block/cross`",`n  `"textures`": { `"cross`": `"$P/krave_sapling`" }`n}"
-WriteJson "$bs\krave_sapling.json" "{`n  `"variants`": { `"`": { `"model`": `"$P/krave_sapling`" } }`n}"
-WriteJson "$imod\krave_sapling.json" "{`n  `"parent`": `"minecraft:item/generated`",`n  `"textures`": { `"layer0`": `"$P/krave_sapling`" }`n}"
+WriteJson "$bmod\krave_sapling.json" "{`n  `"parent`": `"minecraft:block/cross`",`n  `"textures`": { `"cross`": `"$BLK/krave_sapling`" }`n}"
+WriteJson "$bs\krave_sapling.json" "{`n  `"variants`": { `"`": { `"model`": `"$BLK/krave_sapling`" } }`n}"
+WriteJson "$imod\krave_sapling.json" "{`n  `"parent`": `"minecraft:item/generated`",`n  `"textures`": { `"layer0`": `"$BLK/krave_sapling`" }`n}"
 
 # stairs
-WriteJson "$bmod\krave_stairs.json"       "{`n  `"parent`": `"minecraft:block/stairs`",`n  `"textures`": { `"bottom`": `"$P/krave_planks`", `"top`": `"$P/krave_planks`", `"side`": `"$P/krave_planks`" }`n}"
-WriteJson "$bmod\krave_stairs_inner.json" "{`n  `"parent`": `"minecraft:block/inner_stairs`",`n  `"textures`": { `"bottom`": `"$P/krave_planks`", `"top`": `"$P/krave_planks`", `"side`": `"$P/krave_planks`" }`n}"
-WriteJson "$bmod\krave_stairs_outer.json" "{`n  `"parent`": `"minecraft:block/outer_stairs`",`n  `"textures`": { `"bottom`": `"$P/krave_planks`", `"top`": `"$P/krave_planks`", `"side`": `"$P/krave_planks`" }`n}"
-WriteJson "$imod\krave_stairs.json" "{ `"parent`": `"$P/krave_stairs`" }"
+WriteJson "$bmod\krave_stairs.json"       "{`n  `"parent`": `"minecraft:block/stairs`",`n  `"textures`": { `"bottom`": `"$BLK/krave_planks`", `"top`": `"$BLK/krave_planks`", `"side`": `"$BLK/krave_planks`" }`n}"
+WriteJson "$bmod\krave_stairs_inner.json" "{`n  `"parent`": `"minecraft:block/inner_stairs`",`n  `"textures`": { `"bottom`": `"$BLK/krave_planks`", `"top`": `"$BLK/krave_planks`", `"side`": `"$BLK/krave_planks`" }`n}"
+WriteJson "$bmod\krave_stairs_outer.json" "{`n  `"parent`": `"minecraft:block/outer_stairs`",`n  `"textures`": { `"bottom`": `"$BLK/krave_planks`", `"top`": `"$BLK/krave_planks`", `"side`": `"$BLK/krave_planks`" }`n}"
+WriteJson "$imod\krave_stairs.json" "{ `"parent`": `"$BLK/krave_stairs`" }"
 
 $stairVars = New-Object System.Collections.Generic.List[string]
 $yawOf = @{ north = 180; south = 0; west = 90; east = 270 }
@@ -181,9 +181,9 @@ foreach ($facing in @('north','south','west','east')) {
     foreach ($half in @('bottom','top')) {
         foreach ($shape in @('straight','inner_left','inner_right','outer_left','outer_right')) {
             $model = switch -Wildcard ($shape) {
-                'inner*' { "$P/krave_stairs_inner" }
-                'outer*' { "$P/krave_stairs_outer" }
-                default  { "$P/krave_stairs" }
+                'inner*' { "$BLK/krave_stairs_inner" }
+                'outer*' { "$BLK/krave_stairs_outer" }
+                default  { "$BLK/krave_stairs" }
             }
             $y = $yawOf[$facing]
             if ($shape -like '*_left') { $y = ($y + 270) % 360 }
@@ -198,34 +198,34 @@ foreach ($facing in @('north','south','west','east')) {
 WriteJson "$bs\krave_stairs.json" "{`n  `"variants`": {`n$($stairVars -join ",`n")`n  }`n}"
 
 # slab
-WriteJson "$bmod\krave_slab.json"     "{`n  `"parent`": `"minecraft:block/slab`",`n  `"textures`": { `"bottom`": `"$P/krave_planks`", `"top`": `"$P/krave_planks`", `"side`": `"$P/krave_planks`" }`n}"
-WriteJson "$bmod\krave_slab_top.json" "{`n  `"parent`": `"minecraft:block/slab_top`",`n  `"textures`": { `"bottom`": `"$P/krave_planks`", `"top`": `"$P/krave_planks`", `"side`": `"$P/krave_planks`" }`n}"
-WriteJson "$bs\krave_slab.json" "{`n  `"variants`": {`n    `"type=bottom`": { `"model`": `"$P/krave_slab`" },`n    `"type=top`": { `"model`": `"$P/krave_slab_top`" },`n    `"type=double`": { `"model`": `"$P/krave_planks`" }`n  }`n}"
-WriteJson "$imod\krave_slab.json" "{ `"parent`": `"$P/krave_slab`" }"
+WriteJson "$bmod\krave_slab.json"     "{`n  `"parent`": `"minecraft:block/slab`",`n  `"textures`": { `"bottom`": `"$BLK/krave_planks`", `"top`": `"$BLK/krave_planks`", `"side`": `"$BLK/krave_planks`" }`n}"
+WriteJson "$bmod\krave_slab_top.json" "{`n  `"parent`": `"minecraft:block/slab_top`",`n  `"textures`": { `"bottom`": `"$BLK/krave_planks`", `"top`": `"$BLK/krave_planks`", `"side`": `"$BLK/krave_planks`" }`n}"
+WriteJson "$bs\krave_slab.json" "{`n  `"variants`": {`n    `"type=bottom`": { `"model`": `"$BLK/krave_slab`" },`n    `"type=top`": { `"model`": `"$BLK/krave_slab_top`" },`n    `"type=double`": { `"model`": `"$BLK/krave_planks`" }`n  }`n}"
+WriteJson "$imod\krave_slab.json" "{ `"parent`": `"$BLK/krave_slab`" }"
 
 # fence
 foreach ($n in @(@('krave_fence_post','fence_post'), @('krave_fence_side','fence_side'), @('krave_fence_inventory','fence_inventory'))) {
-    WriteJson "$bmod\$($n[0]).json" "{`n  `"parent`": `"minecraft:block/$($n[1])`",`n  `"textures`": { `"texture`": `"$P/krave_planks`" }`n}"
+    WriteJson "$bmod\$($n[0]).json" "{`n  `"parent`": `"minecraft:block/$($n[1])`",`n  `"textures`": { `"texture`": `"$BLK/krave_planks`" }`n}"
 }
 $fenceSides = @(
-    "    `"north`": { `"true`": { `"model`": `"$P/krave_fence_side`", `"uvlock`": true } }",
-    "    `"east`":  { `"true`": { `"model`": `"$P/krave_fence_side`", `"y`": 90, `"uvlock`": true } }",
-    "    `"south`": { `"true`": { `"model`": `"$P/krave_fence_side`", `"y`": 180, `"uvlock`": true } }",
-    "    `"west`":  { `"true`": { `"model`": `"$P/krave_fence_side`", `"y`": 270, `"uvlock`": true } }")
-WriteJson "$bs\krave_fence.json" "{`n  `"multipart`": [`n    { `"apply`": { `"model`": `"$P/krave_fence_post`" } },`n    { `"when`": { `"north`": `"true`" }, `"apply`": { `"model`": `"$P/krave_fence_side`", `"uvlock`": true } },`n    { `"when`": { `"east`": `"true`" }, `"apply`": { `"model`": `"$P/krave_fence_side`", `"y`": 90, `"uvlock`": true } },`n    { `"when`": { `"south`": `"true`" }, `"apply`": { `"model`": `"$P/krave_fence_side`", `"y`": 180, `"uvlock`": true } },`n    { `"when`": { `"west`": `"true`" }, `"apply`": { `"model`": `"$P/krave_fence_side`", `"y`": 270, `"uvlock`": true } }`n  ]`n}"
-WriteJson "$imod\krave_fence.json" "{ `"parent`": `"$P/krave_fence_inventory`" }"
+    "    `"north`": { `"true`": { `"model`": `"$BLK/krave_fence_side`", `"uvlock`": true } }",
+    "    `"east`":  { `"true`": { `"model`": `"$BLK/krave_fence_side`", `"y`": 90, `"uvlock`": true } }",
+    "    `"south`": { `"true`": { `"model`": `"$BLK/krave_fence_side`", `"y`": 180, `"uvlock`": true } }",
+    "    `"west`":  { `"true`": { `"model`": `"$BLK/krave_fence_side`", `"y`": 270, `"uvlock`": true } }")
+WriteJson "$bs\krave_fence.json" "{`n  `"multipart`": [`n    { `"apply`": { `"model`": `"$BLK/krave_fence_post`" } },`n    { `"when`": { `"north`": `"true`" }, `"apply`": { `"model`": `"$BLK/krave_fence_side`", `"uvlock`": true } },`n    { `"when`": { `"east`": `"true`" }, `"apply`": { `"model`": `"$BLK/krave_fence_side`", `"y`": 90, `"uvlock`": true } },`n    { `"when`": { `"south`": `"true`" }, `"apply`": { `"model`": `"$BLK/krave_fence_side`", `"y`": 180, `"uvlock`": true } },`n    { `"when`": { `"west`": `"true`" }, `"apply`": { `"model`": `"$BLK/krave_fence_side`", `"y`": 270, `"uvlock`": true } }`n  ]`n}"
+WriteJson "$imod\krave_fence.json" "{ `"parent`": `"$BLK/krave_fence_inventory`" }"
 
 # fence gate
 foreach ($n in @(@('krave_fence_gate','template_fence_gate'), @('krave_fence_gate_open','template_fence_gate_open'),
                  @('krave_fence_gate_wall','template_fence_gate_wall'), @('krave_fence_gate_wall_open','template_fence_gate_wall_open'))) {
-    WriteJson "$bmod\$($n[0]).json" "{`n  `"parent`": `"minecraft:block/$($n[1])`",`n  `"textures`": { `"texture`": `"$P/krave_planks`" }`n}"
+    WriteJson "$bmod\$($n[0]).json" "{`n  `"parent`": `"minecraft:block/$($n[1])`",`n  `"textures`": { `"texture`": `"$BLK/krave_planks`" }`n}"
 }
 $gateVars = New-Object System.Collections.Generic.List[string]
 $gateYaw = @{ north = 180; south = 0; west = 90; east = 270 }
 foreach ($facing in @('north','south','west','east')) {
     foreach ($inWall in @('false','true')) {
         foreach ($open in @('false','true')) {
-            $m = "$P/krave_fence_gate"
+            $m = "$BLK/krave_fence_gate"
             if ($inWall -eq 'true') { $m += '_wall' }
             if ($open -eq 'true') { $m += '_open' }
             $y = $gateYaw[$facing]
@@ -236,11 +236,11 @@ foreach ($facing in @('north','south','west','east')) {
     }
 }
 WriteJson "$bs\krave_fence_gate.json" "{`n  `"variants`": {`n$($gateVars -join ",`n")`n  }`n}"
-WriteJson "$imod\krave_fence_gate.json" "{ `"parent`": `"$P/krave_fence_gate`" }"
+WriteJson "$imod\krave_fence_gate.json" "{ `"parent`": `"$BLK/krave_fence_gate`" }"
 
 # door - registered as krave_door_block to avoid clashing with the portal item
 foreach ($n in @('top','top_hinge','bottom','bottom_hinge')) {
-    WriteJson "$bmod\krave_door_block_$n.json" "{`n  `"parent`": `"minecraft:block/door_$n`",`n  `"textures`": { `"top`": `"$P/krave_door_top`", `"bottom`": `"$P/krave_door_bottom`" }`n}"
+    WriteJson "$bmod\krave_door_block_$n.json" "{`n  `"parent`": `"minecraft:block/door_$n`",`n  `"textures`": { `"top`": `"$BLK/krave_door_top`", `"bottom`": `"$BLK/krave_door_bottom`" }`n}"
 }
 $doorVars = New-Object System.Collections.Generic.List[string]
 $doorYaw = @{ north = 180; south = 0; west = 90; east = 270 }
@@ -248,7 +248,7 @@ foreach ($facing in @('north','south','west','east')) {
     foreach ($half in @('lower','upper')) {
         foreach ($hinge in @('left','right')) {
             foreach ($open in @('false','true')) {
-                $m = "$P/krave_door_block_" + $(if ($half -eq 'upper') { 'top' } else { 'bottom' })
+                $m = "$BLK/krave_door_block_" + $(if ($half -eq 'upper') { 'top' } else { 'bottom' })
                 $flip = ($hinge -eq 'right')
                 if ($open -eq 'true') { $flip = -not $flip }
                 if ($flip) { $m += '_hinge' }
@@ -285,7 +285,7 @@ Save $b "$idir\krave_door_block.png"
 foreach ($n in @(@('krave_trapdoor_bottom','template_orientable_trapdoor_bottom'),
                  @('krave_trapdoor_top','template_orientable_trapdoor_top'),
                  @('krave_trapdoor_open','template_orientable_trapdoor_open'))) {
-    WriteJson "$bmod\$($n[0]).json" "{`n  `"parent`": `"minecraft:block/$($n[1])`",`n  `"textures`": { `"texture`": `"$P/krave_trapdoor`" }`n}"
+    WriteJson "$bmod\$($n[0]).json" "{`n  `"parent`": `"minecraft:block/$($n[1])`",`n  `"textures`": { `"texture`": `"$BLK/krave_trapdoor`" }`n}"
 }
 $b = NewImg
 Rct $b 0 0 16 16 (C '5C3F28')
@@ -298,9 +298,9 @@ $tdYaw = @{ north = 0; south = 180; west = 270; east = 90 }
 foreach ($facing in @('north','south','east','west')) {
     foreach ($half in @('bottom','top')) {
         foreach ($open in @('false','true')) {
-            $m = if ($open -eq 'true') { "$P/krave_trapdoor_open" }
-                 elseif ($half -eq 'top') { "$P/krave_trapdoor_top" }
-                 else { "$P/krave_trapdoor_bottom" }
+            $m = if ($open -eq 'true') { "$BLK/krave_trapdoor_open" }
+                 elseif ($half -eq 'top') { "$BLK/krave_trapdoor_top" }
+                 else { "$BLK/krave_trapdoor_bottom" }
             $y = $tdYaw[$facing]
             $parts = @("`"model`": `"$m`"")
             if ($y -ne 0) { $parts += "`"y`": $y" }
@@ -310,18 +310,18 @@ foreach ($facing in @('north','south','east','west')) {
     }
 }
 WriteJson "$bs\krave_trapdoor.json" "{`n  `"variants`": {`n$($tdVars -join ",`n")`n  }`n}"
-WriteJson "$imod\krave_trapdoor.json" "{ `"parent`": `"$P/krave_trapdoor_bottom`" }"
+WriteJson "$imod\krave_trapdoor.json" "{ `"parent`": `"$BLK/krave_trapdoor_bottom`" }"
 
 # button
 foreach ($n in @(@('krave_button','button'), @('krave_button_pressed','button_pressed'), @('krave_button_inventory','button_inventory'))) {
-    WriteJson "$bmod\$($n[0]).json" "{`n  `"parent`": `"minecraft:block/$($n[1])`",`n  `"textures`": { `"texture`": `"$P/krave_planks`" }`n}"
+    WriteJson "$bmod\$($n[0]).json" "{`n  `"parent`": `"minecraft:block/$($n[1])`",`n  `"textures`": { `"texture`": `"$BLK/krave_planks`" }`n}"
 }
 $btnVars = New-Object System.Collections.Generic.List[string]
 $btnYaw = @{ north = 180; south = 0; west = 90; east = 270 }
 foreach ($face in @('floor','wall','ceiling')) {
     foreach ($facing in @('north','south','east','west')) {
         foreach ($powered in @('false','true')) {
-            $m = if ($powered -eq 'true') { "$P/krave_button_pressed" } else { "$P/krave_button" }
+            $m = if ($powered -eq 'true') { "$BLK/krave_button_pressed" } else { "$BLK/krave_button" }
             $x = switch ($face) { 'ceiling' { 180 } 'wall' { 90 } default { 0 } }
             $y = $btnYaw[$facing]
             if ($face -eq 'ceiling') { $y = ($y + 180) % 360 }
@@ -334,30 +334,30 @@ foreach ($face in @('floor','wall','ceiling')) {
     }
 }
 WriteJson "$bs\krave_button.json" "{`n  `"variants`": {`n$($btnVars -join ",`n")`n  }`n}"
-WriteJson "$imod\krave_button.json" "{ `"parent`": `"$P/krave_button_inventory`" }"
+WriteJson "$imod\krave_button.json" "{ `"parent`": `"$BLK/krave_button_inventory`" }"
 
 # pressure plate
-WriteJson "$bmod\krave_pressure_plate.json"      "{`n  `"parent`": `"minecraft:block/pressure_plate_up`",`n  `"textures`": { `"texture`": `"$P/krave_planks`" }`n}"
-WriteJson "$bmod\krave_pressure_plate_down.json" "{`n  `"parent`": `"minecraft:block/pressure_plate_down`",`n  `"textures`": { `"texture`": `"$P/krave_planks`" }`n}"
-WriteJson "$bs\krave_pressure_plate.json" "{`n  `"variants`": {`n    `"powered=false`": { `"model`": `"$P/krave_pressure_plate`" },`n    `"powered=true`": { `"model`": `"$P/krave_pressure_plate_down`" }`n  }`n}"
-WriteJson "$imod\krave_pressure_plate.json" "{ `"parent`": `"$P/krave_pressure_plate`" }"
+WriteJson "$bmod\krave_pressure_plate.json"      "{`n  `"parent`": `"minecraft:block/pressure_plate_up`",`n  `"textures`": { `"texture`": `"$BLK/krave_planks`" }`n}"
+WriteJson "$bmod\krave_pressure_plate_down.json" "{`n  `"parent`": `"minecraft:block/pressure_plate_down`",`n  `"textures`": { `"texture`": `"$BLK/krave_planks`" }`n}"
+WriteJson "$bs\krave_pressure_plate.json" "{`n  `"variants`": {`n    `"powered=false`": { `"model`": `"$BLK/krave_pressure_plate`" },`n    `"powered=true`": { `"model`": `"$BLK/krave_pressure_plate_down`" }`n  }`n}"
+WriteJson "$imod\krave_pressure_plate.json" "{ `"parent`": `"$BLK/krave_pressure_plate`" }"
 
 # pod - CocoaBlock states: age 0-2 x facing
 foreach ($age in 0..2) {
-    WriteJson "$bmod\krave_pod_stage$age.json" "{`n  `"parent`": `"minecraft:block/cocoa_$age`",`n  `"textures`": { `"cocoa`": `"$P/krave_pod`" }`n}"
+    WriteJson "$bmod\krave_pod_stage$age.json" "{`n  `"parent`": `"minecraft:block/cocoa_$age`",`n  `"textures`": { `"cocoa`": `"$BLK/krave_pod`" }`n}"
 }
 $podVars = New-Object System.Collections.Generic.List[string]
 $podYaw = @{ north = 0; south = 180; west = 270; east = 90 }
 foreach ($age in 0..2) {
     foreach ($facing in @('north','south','east','west')) {
         $y = $podYaw[$facing]
-        $parts = @("`"model`": `"$P/krave_pod_stage$age`"")
+        $parts = @("`"model`": `"$BLK/krave_pod_stage$age`"")
         if ($y -ne 0) { $parts += "`"y`": $y" }
         $podVars.Add("    `"age=$age,facing=$facing`": { $($parts -join ', ') }")
     }
 }
 WriteJson "$bs\krave_pod.json" "{`n  `"variants`": {`n$($podVars -join ",`n")`n  }`n}"
-WriteJson "$imod\krave_pod.json" "{`n  `"parent`": `"minecraft:item/generated`",`n  `"textures`": { `"layer0`": `"$P/krave_pod`" }`n}"
+WriteJson "$imod\krave_pod.json" "{`n  `"parent`": `"minecraft:item/generated`",`n  `"textures`": { `"layer0`": `"$BLK/krave_pod`" }`n}"
 
 # ---- verify ----------------------------------------------------------------
 $ids = @('krave_log','krave_wood','stripped_krave_log','stripped_krave_wood','krave_leaves',
@@ -376,4 +376,20 @@ foreach ($t in @('krave_log','krave_log_top','stripped_krave_log','stripped_krav
     if (-not (Test-Path "$tdir\$t.png")) { "  MISSING  $tdir\$t.png"; $missing++ }
 }
 if ($missing -gt 0) { throw "make_krave_wood.ps1 did not write $missing file(s)." }
+# The old check only asserted each file EXISTED. That passed happily while every
+# model path inside was garbage, so it now reads the contents: every "model"
+# value must be a real barbarajones:block/... path naming a file on disk.
+$bad = 0
+foreach ($f in Get-ChildItem "$bs\*.json") {
+    foreach ($m in ([regex]'"model"\s*:\s*"([^"]*)"').Matches((Get-Content $f -Raw))) {
+        $v = $m.Groups[1].Value
+        if ($v -notmatch '^barbarajones:block/[a-z0-9_]+$') {
+            Write-Host "  BAD path in $($f.Name): '$v'"; $bad++
+        } elseif (-not (Test-Path "$bmod\$($v -replace '^barbarajones:block/','').json")) {
+            Write-Host "  MISSING model for $($f.Name): '$v'"; $bad++
+        }
+    }
+}
+if ($bad) { throw "$bad broken model reference(s) in the Krave blockstates." }
+
 "krave wood + ore: $($ids.Count) blockstates, $($ids.Count) item models, 13 textures - all present."

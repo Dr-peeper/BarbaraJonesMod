@@ -1,4 +1,4 @@
 {
   "parent": "minecraft:block/inner_stairs",
-  "textures": { "bottom": "deepslate_krave_ore deepslate_krave_ore/krave_planks", "top": "deepslate_krave_ore deepslate_krave_ore/krave_planks", "side": "deepslate_krave_ore deepslate_krave_ore/krave_planks" }
+  "textures": { "bottom": "barbarajones:block/krave_planks", "top": "barbarajones:block/krave_planks", "side": "barbarajones:block/krave_planks" }
 }

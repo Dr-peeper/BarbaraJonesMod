@@ -1,4 +1,4 @@
 {
   "parent": "minecraft:block/cube_column",
-  "textures": { "side": "krave_wood krave_log krave_log/krave_log", "end": "krave_wood krave_log krave_log/krave_log" }
+  "textures": { "side": "barbarajones:block/krave_log", "end": "barbarajones:block/krave_log" }
 }

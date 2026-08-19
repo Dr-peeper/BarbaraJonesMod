@@ -1,4 +1,4 @@
 {
   "parent": "minecraft:block/button_inventory",
-  "textures": { "texture": "deepslate_krave_ore deepslate_krave_ore/krave_planks" }
+  "textures": { "texture": "barbarajones:block/krave_planks" }
 }
