@@ -191,19 +191,32 @@ public class CaydenCobb extends TamableAnimal {
         }
         Vec3 to = targetPos.subtract(origin);
         double horiz = Math.sqrt(to.x * to.x + to.z * to.z);
-        double speed = Mth.clamp(horiz * 0.11D, 0.9D, 2.2D);
-        double lift = 0.55D + Math.min(1.0D, horiz / 16.0D) * 0.5D;
-        if (horiz > 0.01D) {
-            setDeltaMovement(to.x / horiz * speed, lift, to.z / horiz * speed);
-        } else {
-            setDeltaMovement(0.0D, lift, 0.0D);
-        }
+        // Fixed launch power, not scaled to how far the target actually is -
+        // this needs to read as "she just yeeted him twenty blocks," not a
+        // gentle toss that happens to stop near the enemy. 1.6 blocks/tick
+        // horizontal with a 1.15 lift clears roughly a 20-block arc before
+        // drag and gravity bring him down.
+        double speed = 1.6D;
+        double lift = 1.15D;
+        double dirX = horiz > 0.01D ? to.x / horiz : (this.random.nextDouble() - 0.5D);
+        double dirZ = horiz > 0.01D ? to.z / horiz : (this.random.nextDouble() - 0.5D);
+        setDeltaMovement(dirX * speed, lift, dirZ * speed);
         setNoAi(true);
-        this.throwTicks = 40;   // 2s hard cap in case he never lands (e.g. thrown over a cliff)
-        level().playSound(null, blockPosition(), SoundEvents.TRIDENT_THROW, getSoundSource(), 1.2F, 0.7F);
+        this.throwTicks = 60;   // 3s hard cap in case he never lands (e.g. thrown over a cliff)
+
+        // Loud and unmistakable: a windup grunt, a launch boom, and a
+        // dedicated chat callout, so nobody mistakes this for random ragdoll.
+        level().playSound(null, blockPosition(), SoundEvents.TRIDENT_THROW, getSoundSource(), 1.3F, 0.6F);
+        level().playSound(null, blockPosition(), ModSounds.KRAVE_BOOM.get(), getSoundSource(), 1.6F, 1.6F);
+        for (Player p : level().getEntitiesOfClass(Player.class, getBoundingBox().inflate(48.0D))) {
+            p.sendSystemMessage(Component.literal(ChatFormatting.LIGHT_PURPLE + "" + ChatFormatting.BOLD
+                    + "BARBARA HURLS CAYDEN LIKE A LAWN DART."));
+        }
         if (level() instanceof ServerLevel sl) {
+            sl.sendParticles(ParticleTypes.EXPLOSION, getX(), getY() + getBbHeight() * 0.5D, getZ(),
+                    1, 0.0D, 0.0D, 0.0D, 0.0D);
             sl.sendParticles(ParticleTypes.POOF, getX(), getY() + getBbHeight() * 0.5D, getZ(),
-                    12, 0.3D, 0.3D, 0.3D, 0.05D);
+                    20, 0.3D, 0.3D, 0.3D, 0.08D);
         }
     }
 
@@ -212,13 +225,20 @@ public class CaydenCobb extends TamableAnimal {
             return;
         }
         this.throwTicks--;
-        boolean landed = onGround() && this.throwTicks < 38;   // ignore the launch-frame's own ground flag
+        // A visible trail for the whole flight - this is the part that makes
+        // "he's flying twenty blocks" actually readable instead of a blink.
+        if (level() instanceof ServerLevel trailLevel && this.throwTicks % 2 == 0) {
+            trailLevel.sendParticles(ParticleTypes.CRIT, getX(), getY() + getBbHeight() * 0.5D, getZ(),
+                    3, 0.15D, 0.15D, 0.15D, 0.02D);
+        }
+        boolean landed = onGround() && this.throwTicks < 57;   // ignore the launch-frame's own ground flag
         if (landed || this.throwTicks <= 0) {
             setNoAi(false);
             this.throwTicks = 0;
             if (level() instanceof ServerLevel sl) {
                 sl.sendParticles(ParticleTypes.EXPLOSION, getX(), getY() + 0.2D, getZ(), 1, 0.0D, 0.0D, 0.0D, 0.0D);
-                for (LivingEntity nearby : sl.getEntitiesOfClass(LivingEntity.class, getBoundingBox().inflate(1.5D),
+                sl.playSound(null, blockPosition(), SoundEvents.GENERIC_BIG_FALL, getSoundSource(), 1.4F, 0.8F);
+                for (LivingEntity nearby : sl.getEntitiesOfClass(LivingEntity.class, getBoundingBox().inflate(3.0D),
                         e -> e != this && e.isAlive() && e instanceof Monster)) {
                     nearby.hurt(damageSources().mobAttack(this), 6.0F + getTier() * 2.0F);
                 }
