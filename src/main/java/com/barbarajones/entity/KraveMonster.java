@@ -108,9 +108,11 @@ public class KraveMonster extends Monster {
         }
     }
 
-    /** Highest Cayden tier this fight has seen, so he never shrinks mid-duel. */
     /** He cannot escalate past this. */
-    public static final int FINAL_FORM = 4;
+    // Six incarnations now, one per rung of Cayden's ladder (SSJ through
+    // Ultra Instinct - see KRAVE_FORM_DEMAND in CaydenCobb) instead of four,
+    // so nothing between SSJ2 and GOD gets skipped over.
+    public static final int FINAL_FORM = 6;
 
     private int matchedTier;
     private int duelBlink;
@@ -125,7 +127,11 @@ public class KraveMonster extends Monster {
      *
      * <p>Each form is a genuine step up rather than a health bar with a bigger
      * number: he hits harder, moves faster and is physically larger, so you can
-     * see across a field which one you are dealing with.
+     * see across a field which one you are dealing with. These are the
+     * standing/idle baseline numbers - matchRival() re-scales health and
+     * attack live once he's actually dueling a Cayden, sized off Cayden's
+     * real current DPS so every form is a genuine ~20-second fight regardless
+     * of how strong Cayden's build actually is.
      */
     public void setForm(int form) {
         this.formSettled = true;
@@ -133,21 +139,27 @@ public class KraveMonster extends Monster {
         this.entityData.set(FORM, f);
 
         double health = switch (f) {
-            case 4 -> 1600.0D;
-            case 3 -> 800.0D;
-            case 2 -> 380.0D;
-            default -> 160.0D;
+            case 6 -> 4200.0D;   // Ultra Instinct's answer: nightmare-scale
+            case 5 -> 3000.0D;   // Blue
+            case 4 -> 1900.0D;   // God
+            case 3 -> 1100.0D;   // SSJ3
+            case 2 -> 500.0D;    // SSJ2
+            default -> 200.0D;   // SSJ1
         };
         double attack = switch (f) {
-            case 4 -> 22.0D;
-            case 3 -> 15.0D;
-            case 2 -> 9.0D;
-            default -> 5.0D;
+            case 6 -> 46.0D;
+            case 5 -> 36.0D;
+            case 4 -> 28.0D;
+            case 3 -> 19.0D;
+            case 2 -> 12.0D;
+            default -> 6.0D;
         };
         double speed = switch (f) {
-            case 4 -> 0.62D;
-            case 3 -> 0.50D;
-            case 2 -> 0.40D;
+            case 6 -> 0.82D;
+            case 5 -> 0.74D;
+            case 4 -> 0.66D;
+            case 3 -> 0.55D;
+            case 2 -> 0.42D;
             default -> 0.32D;
         };
 
@@ -188,19 +200,46 @@ public class KraveMonster extends Monster {
         }
         double r = getBbWidth() * 0.6D;
         double h = getBbHeight();
-        for (int i = 0; i < (form == 4 ? 6 : 2); i++) {
+        int count = switch (form) {
+            case 6 -> 12;
+            case 5 -> 9;
+            case 4 -> 6;
+            default -> 2;
+        };
+        for (int i = 0; i < count; i++) {
             double ang = this.random.nextDouble() * Math.PI * 2.0D;
             double dist = this.random.nextDouble() * r;
             double x = getX() + Math.cos(ang) * dist;
             double z = getZ() + Math.sin(ang) * dist;
             double y = getY() + this.random.nextDouble() * h;
-            if (form == 4) {
-                sl.sendParticles(net.minecraft.core.particles.ParticleTypes.SOUL_FIRE_FLAME,
-                        x, y, z, 1, 0.02D, 0.05D, 0.02D, 0.01D);
-                sl.sendParticles(net.minecraft.core.particles.ParticleTypes.LARGE_SMOKE,
-                        x, y, z, 1, 0.03D, 0.06D, 0.03D, 0.005D);
-            } else {
-                sl.sendParticles(
+            switch (form) {
+                case 6 -> {
+                    // Ultra: a cold white-blue corona, sharp and constant -
+                    // the scariest of the set, and the quietest looking.
+                    sl.sendParticles(new net.minecraft.core.particles.DustParticleOptions(
+                                    new org.joml.Vector3f(0.85F, 0.92F, 1.0F), 2.0F),
+                            x, y, z, 1, 0.02D, 0.05D, 0.02D, 0.0D);
+                    if (this.random.nextInt(4) == 0) {
+                        sl.sendParticles(net.minecraft.core.particles.ParticleTypes.END_ROD,
+                                x, y, z, 1, 0.01D, 0.02D, 0.01D, 0.01D);
+                    }
+                }
+                case 5 -> {
+                    // Blue: a corrupted mirror of Cayden's own Blue - cold
+                    // flame instead of warm fire.
+                    sl.sendParticles(net.minecraft.core.particles.ParticleTypes.SOUL_FIRE_FLAME,
+                            x, y, z, 1, 0.02D, 0.05D, 0.02D, 0.01D);
+                    sl.sendParticles(new net.minecraft.core.particles.DustParticleOptions(
+                                    new org.joml.Vector3f(0.25F, 0.4F, 1.0F), 1.8F),
+                            x, y, z, 1, 0.02D, 0.05D, 0.02D, 0.0D);
+                }
+                case 4 -> {
+                    sl.sendParticles(net.minecraft.core.particles.ParticleTypes.SOUL_FIRE_FLAME,
+                            x, y, z, 1, 0.02D, 0.05D, 0.02D, 0.01D);
+                    sl.sendParticles(net.minecraft.core.particles.ParticleTypes.LARGE_SMOKE,
+                            x, y, z, 1, 0.03D, 0.06D, 0.03D, 0.005D);
+                }
+                default -> sl.sendParticles(
                         new net.minecraft.core.particles.DustParticleOptions(
                                 new org.joml.Vector3f(1.0F, 0.15F, 0.1F), 1.6F),
                         x, y, z, 1, 0.02D, 0.05D, 0.02D, 0.0D);
@@ -211,7 +250,9 @@ public class KraveMonster extends Monster {
     /** The name shown on the boss bar, so the escalation is legible. */
     public net.minecraft.network.chat.Component formTitle() {
         String suffix = switch (getForm()) {
-            case 4 -> " - FINAL FORM";
+            case 6 -> " - ULTRA FORM";
+            case 5 -> " - BLUE FORM";
+            case 4 -> " - GOD FORM";
             case 3 -> " - THIRD FORM";
             case 2 -> " - SECOND FORM";
             default -> "";
@@ -296,14 +337,14 @@ public class KraveMonster extends Monster {
             } else {
                 setDeltaMovement(getDeltaMovement().x, 0.95D, getDeltaMovement().z);
             }
-            playSound(ModSounds.KRAVE_ROAR.get(), 1.0F, 1.2F);
+            playSound(roarSound(), 1.0F, 1.2F);
         }
 
         // blink around constantly - the annoying part
         if (--this.teleportTimer <= 0) {
             this.teleportTimer = 30 + this.random.nextInt(40);
             if (target != null) {
-                KraveBlink.tryRandomBlink(this, this.random, 16.0D, 8, 20, 8, ModSounds.KRAVE_SCREECH.get());
+                KraveBlink.tryRandomBlink(this, this.random, 16.0D, 8, 20, 8, screechSound());
             }
         }
     }
@@ -356,73 +397,81 @@ public class KraveMonster extends Monster {
      * down for a tick.
      */
     private void matchRival() {
-        // The form ladder gives him a starting strength, but Cayden's own
-        // attackMul climbs as high as 30x at Ultra Instinct (see
-        // AscensionLadder) - a form-1 Monster's static 5 damage / 160 health
-        // means an ascended Cayden deletes him in one or two swings, no fight
-        // at all. So on top of the form baseline, we re-scale both combatants'
-        // numbers to whatever tier Cayden is CURRENTLY at: his hit lands
-        // roughly the same "hits to kill" regardless of how far up the ladder
-        // he's climbed, and the Monster's own attack is scaled by the same
-        // rung's damageTaken so Cayden takes a real but survivable beating
-        // rather than a guaranteed one-shot in either direction. Only applies
-        // during an active rival duel - a player poking him early is unaffected.
+        // The form ladder gives him a starting strength, but Cayden's real
+        // output at high tiers is nowhere near a flat "3.0 * attackMul" guess -
+        // fed multiplies melee damage directly (applyKraveStats) and the Krave
+        // lasers add a second damage stream on top, so the old estimate had
+        // him dying to Ultra Instinct in a couple of swings even after being
+        // "matched." Sized off CaydenCobb#estimatedDps() instead - his actual
+        // live damage-per-second, melee and lasers combined - targeting a
+        // floor of a genuine 20-second fight, not a guessed number.
         if (!this.bossFightActive) {
             return;
         }
-        int tier = 0;
-        if (getTarget() instanceof CaydenCobb c && c.isAlive()) {
-            tier = Math.max(c.getTier(), c.isSuperSaiyan() ? AscensionLadder.SSJ : 0);
+        if (!(getTarget() instanceof CaydenCobb c) || !c.isAlive() || !c.isSuperSaiyan()) {
+            return;
         }
-        if (tier <= this.matchedTier && this.matchedTier != 0) {
+        int tier = c.getTier();
+
+        // Recomputed on every tier-up, and also periodically mid-fight (every
+        // 3s) so a Cayden who eats more Krave and gets stronger DURING the
+        // duel doesn't suddenly start deleting a Monster sized for his damage
+        // at the moment the fight started.
+        boolean newTier = tier > this.matchedTier;
+        if (!newTier && this.matchedTier != 0 && this.tickCount % 60 != 0) {
             return;
         }
         this.matchedTier = Math.max(tier, this.matchedTier);
-        if (tier == 0) {
-            return;
+
+        double caydenDps = c.estimatedDps();
+        double targetHealth = Math.max(getMaxHealth(), caydenDps * 20.0D);
+
+        var maxHp = getAttribute(Attributes.MAX_HEALTH);
+        boolean healthRaised = false;
+        if (maxHp != null && targetHealth > maxHp.getBaseValue() + 0.5D) {
+            double added = targetHealth - maxHp.getBaseValue();
+            maxHp.setBaseValue(targetHealth);
+            if (newTier) {
+                setHealth(getMaxHealth());   // a real tier-up: fresh bar
+            } else {
+                setHealth((float) (getHealth() + added));   // headroom only - never free-heals existing damage
+            }
+            healthRaised = true;
         }
 
-        AscensionLadder.Rung rung = AscensionLadder.rung(tier);
-
-        // Target roughly 6 clean hits to kill him at this tier, from Cayden's
-        // fed-scaled attack (BASE_DAMAGE=3.0, ignoring the fed bonus here -
-        // close enough for a boss-scale number and keeps this self-contained).
-        double caydenHitDamage = 3.0D * rung.attackMul();
-        double health = Math.max(getMaxHealth(), caydenHitDamage * 6.0D);
-
+        AscensionLadder.Rung rung = AscensionLadder.rung(Math.max(AscensionLadder.SSJ, tier));
         // His own damage should land Cayden - base health 24 plus this rung's
         // bonusHealth, filtered through the rung's own damage-taken multiplier -
-        // in roughly 5 hits too, so it reads as a real duel both ways.
+        // in roughly a 20-second fight too, not the couple of seconds a "5
+        // hits" target worked out to. RivalDuelGoal strikes every 11 ticks
+        // (0.55s), so ~36 hits lands in 20 seconds if every one connects -
+        // in practice Cayden moves/dodges, so this is a floor, not a timer.
         double caydenEffectiveHealth = (24.0D + rung.bonusHealth()) / Math.max(0.2D, rung.damageTaken());
         double attack = Math.max(getAttribute(Attributes.ATTACK_DAMAGE) != null
                 ? getAttribute(Attributes.ATTACK_DAMAGE).getBaseValue() : 5.0D,
-                caydenEffectiveHealth / 5.0D);
+                caydenEffectiveHealth / 36.0D);
+        double speed = Math.min(0.85D, 0.32D + tier * 0.08D);
 
-        double speed = Math.min(0.75D, 0.32D + tier * 0.06D);
-
-        var maxHp = getAttribute(Attributes.MAX_HEALTH);
         var atk = getAttribute(Attributes.ATTACK_DAMAGE);
         var spd = getAttribute(Attributes.MOVEMENT_SPEED);
-        if (maxHp != null) {
-            maxHp.setBaseValue(health);
-        }
         if (atk != null) {
             atk.setBaseValue(attack);
         }
         if (spd != null) {
             spd.setBaseValue(speed);
         }
-        setHealth(getMaxHealth());
 
-        playSound(ModSounds.KRAVE_ROAR.get(), 2.0F, 0.6F);
-        if (level() instanceof ServerLevel sl) {
-            sl.sendParticles(net.minecraft.core.particles.ParticleTypes.EXPLOSION_EMITTER,
-                    getX(), getY() + 1.5D, getZ(), 1, 0.0D, 0.0D, 0.0D, 0.0D);
-        }
-        for (Player p : level().getEntitiesOfClass(Player.class, getBoundingBox().inflate(64.0D))) {
-            p.sendSystemMessage(net.minecraft.network.chat.Component.literal(
-                    net.minecraft.ChatFormatting.DARK_PURPLE + ""
-                    + net.minecraft.ChatFormatting.BOLD + "HE MATCHES HIM."));
+        if (newTier && healthRaised) {
+            playSound(roarSound(), 2.0F, 0.6F);
+            if (level() instanceof ServerLevel sl) {
+                sl.sendParticles(net.minecraft.core.particles.ParticleTypes.EXPLOSION_EMITTER,
+                        getX(), getY() + 1.5D, getZ(), 1, 0.0D, 0.0D, 0.0D, 0.0D);
+            }
+            for (Player p : level().getEntitiesOfClass(Player.class, getBoundingBox().inflate(64.0D))) {
+                p.sendSystemMessage(net.minecraft.network.chat.Component.literal(
+                        net.minecraft.ChatFormatting.DARK_PURPLE + ""
+                        + net.minecraft.ChatFormatting.BOLD + "HE MATCHES HIM."));
+            }
         }
     }
 
@@ -482,7 +531,7 @@ public class KraveMonster extends Monster {
             if (--this.strikeCooldown <= 0) {
                 this.strikeCooldown = 11;
                 this.boss.doHurtTarget(foe);
-                this.boss.playSound(ModSounds.KRAVE_BOOM.get(), 1.0F, 1.5F);
+                this.boss.playSound(ModSounds.COMBAT_HEAVY_HIT.get(), 1.2F, 0.9F);
                 // recoil apart so the duel keeps moving instead of grinding
                 Vec3 away = this.boss.position().subtract(foe.position());
                 double len = Math.max(0.5D, away.length());
@@ -494,7 +543,16 @@ public class KraveMonster extends Monster {
 
     /** Public wrapper so the duel goal can reposition him. */
     void blinkNear(double x, double y, double z) {
-        KraveBlink.blinkTo(this, x, y, z, ModSounds.KRAVE_SCREECH.get());
+        KraveBlink.blinkTo(this, x, y, z, screechSound());
+    }
+
+    /** Forms 4+ (the ones with no dedicated model/texture to lean on) get the newer, harsher variants instead of reusing what forms 1-3 already sound like. */
+    SoundEvent roarSound() {
+        return getForm() >= 4 ? ModSounds.MONSTER_ROAR_2.get() : ModSounds.KRAVE_ROAR.get();
+    }
+
+    SoundEvent screechSound() {
+        return getForm() >= 4 ? ModSounds.MONSTER_SCREECH_2.get() : ModSounds.KRAVE_SCREECH.get();
     }
 
     @Override
@@ -517,7 +575,7 @@ public class KraveMonster extends Monster {
     public boolean hurt(DamageSource source, float amount) {
         // blink away half the time you land a hit. rude.
         if (!level().isClientSide && source.getEntity() != null && this.random.nextBoolean()) {
-            KraveBlink.tryRandomBlink(this, this.random, 16.0D, 6, 6, 16, ModSounds.KRAVE_SCREECH.get());
+            KraveBlink.tryRandomBlink(this, this.random, 16.0D, 6, 6, 16, screechSound());
         }
         float applied = amount;
         if (this.bossFightActive
@@ -536,7 +594,7 @@ public class KraveMonster extends Monster {
 
     @Override
     protected SoundEvent getAmbientSound() {
-        return this.random.nextInt(3) == 0 ? ModSounds.KRAVE_LAUGH.get() : ModSounds.KRAVE_ROAR.get();
+        return this.random.nextInt(3) == 0 ? ModSounds.KRAVE_LAUGH.get() : roarSound();
     }
 
     @Override

@@ -156,16 +156,21 @@ public class EventHandler {
         // out makes the hand-off read as one boss, not two.
         fallen.discard();
 
-        level.playSound(null, fallen.blockPosition(), ModSounds.KRAVE_ROAR.get(),
+        level.playSound(null, fallen.blockPosition(),
+                nextForm >= 4 ? ModSounds.MONSTER_ROAR_2.get() : ModSounds.KRAVE_ROAR.get(),
                 SoundSource.HOSTILE, 2.4F, 0.45F);
         level.sendParticles(net.minecraft.core.particles.ParticleTypes.EXPLOSION_EMITTER,
                 fallen.getX(), fallen.getY() + 1.0D, fallen.getZ(), 2, 1.5D, 1.0D, 1.5D, 0.0D);
         level.sendParticles(net.minecraft.core.particles.ParticleTypes.SOUL_FIRE_FLAME,
                 fallen.getX(), fallen.getY() + 1.0D, fallen.getZ(), 120, 2.0D, 2.0D, 2.0D, 0.25D);
 
+        // One incarnation per rung now (SSJ through Ultra Instinct) instead
+        // of four - each line escalates the same way the Cayden fight does.
         String line = switch (nextForm) {
             case 2 -> "It gets back up. SECOND FORM.";
             case 3 -> "That was not all of it either. THIRD FORM.";
+            case 4 -> "It stops being an animal about it. GOD FORM.";
+            case 5 -> "Cold, and perfectly still. BLUE FORM.";
             default -> "FINAL FORM. There is nothing after this one.";
         };
         for (Player p : level.getEntitiesOfClass(Player.class,

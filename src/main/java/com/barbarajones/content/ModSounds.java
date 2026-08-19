@@ -62,6 +62,19 @@ public final class ModSounds {
     public static final RegistryObject<SoundEvent> EVT_ROLL     = reg("evt_roll");
     public static final RegistryObject<SoundEvent> EVT_NOTREADY = reg("evt_notready");
 
+    // second batch of synthesized cues (see tools/make_krave_audio2.ps1) -
+    // built because krave_roar/krave_boom/krave_screech were being reused
+    // for everything and combat + transformations needed real variety
+    public static final RegistryObject<SoundEvent> TRANSFORM_CHARGE   = reg("transform_charge");
+    public static final RegistryObject<SoundEvent> TRANSFORM_RELEASE  = reg("transform_release");
+    public static final RegistryObject<SoundEvent> TRANSFORM_GODPULSE = reg("transform_godpulse");
+    public static final RegistryObject<SoundEvent> TRANSFORM_ULTRA_HUM = reg("transform_ultra_hum");
+    public static final RegistryObject<SoundEvent> COMBAT_PUNCH       = reg("combat_punch");
+    public static final RegistryObject<SoundEvent> COMBAT_HEAVY_HIT   = reg("combat_heavy_hit");
+    public static final RegistryObject<SoundEvent> LIGHTNING_CRACK    = reg("lightning_crack");
+    public static final RegistryObject<SoundEvent> MONSTER_ROAR_2     = reg("monster_roar2");
+    public static final RegistryObject<SoundEvent> MONSTER_SCREECH_2  = reg("monster_screech2");
+
     // raw unlabeled speech clips extracted from the source video (see
     // tools; nobody has matched these to specific lines yet, they're a
     // generic voice-line pool used for Duhl Wol's arrival and Cayden's

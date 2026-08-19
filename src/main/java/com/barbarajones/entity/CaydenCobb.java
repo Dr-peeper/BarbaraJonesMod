@@ -396,6 +396,25 @@ public class CaydenCobb extends TamableAnimal {
         }
     }
 
+    /**
+     * Rough total damage-per-second across melee and Krave lasers combined,
+     * at whatever rung/fed level he's actually at right now. Used by
+     * KraveMonster's matchRival() to size the boss off what Cayden can
+     * ACTUALLY do this fight, rather than a fixed formula that ignores fed
+     * (which directly multiplies melee damage via applyKraveStats) and the
+     * lasers, both of which used to make the old estimate wildly low and the
+     * fight end in a couple of hits.
+     */
+    public double estimatedDps() {
+        double meleeDps = getAttributeValue(Attributes.ATTACK_DAMAGE);   // ~1 swing/sec baseline
+        double laserDps = 0.0D;
+        if (isSuperSaiyan()) {
+            int interval = Math.max(7, LASER_INTERVAL - getTier() * 4);
+            laserDps = (3 * 6.0D) / (interval / 20.0D);   // 3 bolts * KraveLaser.DAMAGE per fire, per fire cadence
+        }
+        return meleeDps + laserDps;
+    }
+
     // ---- the upgrade ladder --------------------------------------------------
 
     /** Bitmask of the forms he has been taught. See {@link AscensionLadder}. */
@@ -488,14 +507,22 @@ public class CaydenCobb extends TamableAnimal {
         this.spectacleTier = tier;
         this.spectacleTicks = 20 + tier * 22;   // SSJ1 ~1s punch -> ULTRA ~5.3s earthquake
 
-        // the very first instant hits hardest - a ground-zero flash strike
-        strikeLightning(sl, 1, 0.5D);
+        // the very first instant hits hardest - a charge-up hum, then the
+        // release burst and the first ring of the lightning wall
+        playSound(ModSounds.TRANSFORM_CHARGE.get(), 1.4F, 1.0F);
         groundCrack(sl, 14 + tier * 4, 2.0D + tier * 1.2D);
         sl.sendParticles(ParticleTypes.EXPLOSION_EMITTER, getX(), getY() + 0.5D, getZ(), 1, 0.0D, 0.0D, 0.0D, 0.0D);
-        playSound(SoundEvents.GENERIC_EXPLODE, 2.0F + tier * 0.3F, 0.5F);
+        playSound(ModSounds.TRANSFORM_RELEASE.get(), 2.0F + tier * 0.15F, 0.6F);
+        if (tier >= AscensionLadder.GOD) {
+            playSound(ModSounds.TRANSFORM_GODPULSE.get(), 1.5F, 1.0F);
+        }
+        if (tier >= AscensionLadder.ULTRA) {
+            playSound(ModSounds.TRANSFORM_ULTRA_HUM.get(), 1.3F, 1.0F);
+        }
+        lightningWall(sl, 3.0D + tier * 1.5D, 8 + tier * 2);
     }
 
-    /** Runs the sustained shake/lightning/crack sequence armed by transformationSpectacle. */
+    /** Runs the sustained ground-crack/lightning-wall sequence armed by transformationSpectacle. */
     private void tickSpectacle() {
         if (this.spectacleTicks <= 0 || !(level() instanceof ServerLevel sl)) {
             return;
@@ -509,23 +536,26 @@ public class CaydenCobb extends TamableAnimal {
         int period = Math.max(3, 9 - tier);
         if (this.spectacleTicks % period == 0) {
             groundCrack(sl, 6 + tier * 3, radius);
-            shakeAndFlinch(sl, radius, 0.06D + tier * 0.035D);
-            if (tier >= AscensionLadder.SSJ2 && this.random.nextInt(tier >= AscensionLadder.ULTRA ? 2 : 3) == 0) {
-                strikeLightning(sl, 1, radius);
-            }
-            if (this.spectacleTicks % (period * 3) == 0) {
-                sl.playSound(null, blockPosition(), ModSounds.KRAVE_BOOM.get(), getSoundSource(),
-                        1.2F + tier * 0.15F, 0.5F + tier * 0.05F);
+            flinchNearbyMobs(sl, radius, 0.06D + tier * 0.035D);
+            if (tier >= AscensionLadder.SSJ2 && this.spectacleTicks % (period * 4) == 0) {
+                // another ring of the wall, further out each time - a wall
+                // that expands outward instead of players getting shoved
+                lightningWall(sl, radius, 8 + tier * 2);
             }
         }
     }
 
-    private void strikeLightning(ServerLevel sl, int count, double radius) {
-        for (int i = 0; i < count; i++) {
-            double ang = this.random.nextDouble() * Math.PI * 2.0D;
-            double dist = 1.0D + this.random.nextDouble() * radius;
-            double lx = getX() + Math.cos(ang) * dist;
-            double lz = getZ() + Math.sin(ang) * dist;
+    /**
+     * A full ring of lightning bolts around him at a fixed radius - the
+     * "huge wall" the user asked for instead of pushing anyone away.
+     * Players and mobs can walk right up to him through it; it's a visual
+     * boundary, not a physical one.
+     */
+    private void lightningWall(ServerLevel sl, double radius, int bolts) {
+        for (int i = 0; i < bolts; i++) {
+            double ang = (i / (double) bolts) * Math.PI * 2.0D;
+            double lx = getX() + Math.cos(ang) * radius;
+            double lz = getZ() + Math.sin(ang) * radius;
             LightningBolt bolt = EntityType.LIGHTNING_BOLT.create(sl);
             if (bolt != null) {
                 bolt.moveTo(lx, sl.getHeight(net.minecraft.world.level.levelgen.Heightmap.Types.MOTION_BLOCKING, (int) lx, (int) lz), lz);
@@ -533,6 +563,7 @@ public class CaydenCobb extends TamableAnimal {
                 sl.addFreshEntity(bolt);
             }
         }
+        sl.playSound(null, blockPosition(), ModSounds.LIGHTNING_CRACK.get(), getSoundSource(), 1.6F, 0.9F);
     }
 
     /** Ground crack: block-particles pulled from what he's standing on. Cosmetic only - nothing is ever broken. */
@@ -548,20 +579,20 @@ public class CaydenCobb extends TamableAnimal {
         }
     }
 
-    /** Mobs flinch away, players get a screen-shake velocity punch. Both cosmetic, no real damage. */
-    private void shakeAndFlinch(ServerLevel sl, double radius, double strength) {
+    /**
+     * Hostile mobs flinch away from the shockwave - players are left
+     * entirely alone now. They used to get shoved back by the same pulse,
+     * which fought against anyone trying to walk up and watch (or fight)
+     * him mid-transformation; the lightning wall above is the "you can feel
+     * this happening" cue instead.
+     */
+    private void flinchNearbyMobs(ServerLevel sl, double radius, double strength) {
         for (LivingEntity mob : sl.getEntitiesOfClass(LivingEntity.class, getBoundingBox().inflate(radius),
                 e -> e != this && e.isAlive() && !(e instanceof Player))) {
             Vec3 away = mob.position().subtract(position());
             double len = Math.max(0.5D, away.length());
             mob.setDeltaMovement(mob.getDeltaMovement().add(away.scale(strength / len)).add(0.0D, 0.1D, 0.0D));
             mob.hurtMarked = true;
-        }
-        for (Player p : sl.getEntitiesOfClass(Player.class, getBoundingBox().inflate(radius + 10.0D))) {
-            double dx = p.getX() - getX(), dz = p.getZ() - getZ();
-            double len = Math.max(1.0D, Math.sqrt(dx * dx + dz * dz));
-            p.setDeltaMovement(p.getDeltaMovement().add(dx / len * strength, strength * 0.4D, dz / len * strength));
-            p.hurtMarked = true;
         }
     }
 
@@ -1057,12 +1088,14 @@ public class CaydenCobb extends TamableAnimal {
     }
 
     /**
-     * What the Krave Monster's four incarnations are each worth. The first one
-     * falls to a plain Super Saiyan; only the last demands Ultra Instinct, which
-     * is what makes reaching the top of the ladder mean anything.
+     * What the Krave Monster's six incarnations are each worth - one form
+     * per rung from Super Saiyan through Ultra Instinct, so every step of
+     * the ladder has a Monster form that actually demands it instead of
+     * jumping straight from SSJ2 to GOD.
      */
     private static final int[] KRAVE_FORM_DEMAND = {
-        AscensionLadder.SSJ, AscensionLadder.SSJ2, AscensionLadder.GOD, AscensionLadder.ULTRA
+        AscensionLadder.SSJ, AscensionLadder.SSJ2, AscensionLadder.SSJ3,
+        AscensionLadder.GOD, AscensionLadder.BLUE, AscensionLadder.ULTRA
     };
 
     /**
@@ -1629,6 +1662,8 @@ public class CaydenCobb extends TamableAnimal {
         if (!hit || level().isClientSide) {
             return hit;
         }
+
+        playSound(ModSounds.COMBAT_PUNCH.get(), 1.0F, 0.9F + this.random.nextFloat() * 0.3F);
 
         // 1-in-10: a flash of the full thing. Ten times the shove.
         if (this.random.nextInt(FLASH_ODDS) == 0) {

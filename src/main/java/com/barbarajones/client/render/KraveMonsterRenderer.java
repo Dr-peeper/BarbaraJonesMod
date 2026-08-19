@@ -39,9 +39,10 @@ public class KraveMonsterRenderer extends MobRenderer<KraveMonster, KraveMonster
     }
 
     // No new model or texture exists per form - that needs real art. Instead
-    // the escalation between forms reads through size and body-color tint:
-    // form 1 is barely bigger than a player, form 4 is gargantuan.
-    private static final float[] FORM_SCALE = { 1.2F, 1.8F, 2.4F, 3.4F };
+    // the escalation between all six forms (one per Cayden rung, SSJ through
+    // Ultra Instinct) reads through size and body-color tint: form 1 is
+    // barely bigger than a player, form 6 is a nightmare.
+    private static final float[] FORM_SCALE = { 1.1F, 1.5F, 2.0F, 2.6F, 3.2F, 4.0F };
 
     @Override
     protected void scale(KraveMonster entity, PoseStack pose, float partialTicks) {
@@ -54,15 +55,31 @@ public class KraveMonsterRenderer extends MobRenderer<KraveMonster, KraveMonster
                        MultiBufferSource buffers, int light) {
         renderGhosts(entity, partialTicks, pose, buffers, light);
 
-        // Form 3 reads red, form 4 goes near-black with a red core - "the
-        // scariest thing you've fought" through tint and size since there's
-        // no dedicated model per form.
+        // Forms 3-6 escalate through tint since there's no dedicated model
+        // per form: red (SSJ3-equivalent), pulsating near-black-red (God),
+        // a corrupted cold blue (Blue), then a stark near-white flicker for
+        // Ultra - the palette gets colder and stranger instead of just
+        // darker, so it doesn't read as "form 4 but bigger."
         int form = entity.getForm();
-        if (form == 3) {
-            com.mojang.blaze3d.systems.RenderSystem.setShaderColor(1.0F, 0.5F, 0.45F, 1.0F);
-        } else if (form == 4) {
-            float pulse = 0.55F + 0.15F * Mth.sin((entity.tickCount + partialTicks) * 0.15F);
-            com.mojang.blaze3d.systems.RenderSystem.setShaderColor(pulse, 0.12F, 0.12F, 1.0F);
+        float t = entity.tickCount + partialTicks;
+        boolean tinted = form >= 3;
+        if (tinted) {
+            switch (form) {
+                case 3 -> com.mojang.blaze3d.systems.RenderSystem.setShaderColor(1.0F, 0.5F, 0.45F, 1.0F);
+                case 4 -> {
+                    float pulse = 0.55F + 0.15F * Mth.sin(t * 0.15F);
+                    com.mojang.blaze3d.systems.RenderSystem.setShaderColor(pulse, 0.12F, 0.12F, 1.0F);
+                }
+                case 5 -> {
+                    float pulse = 0.5F + 0.15F * Mth.sin(t * 0.1F);
+                    com.mojang.blaze3d.systems.RenderSystem.setShaderColor(0.25F, pulse * 0.7F, pulse * 1.3F, 1.0F);
+                }
+                default -> {   // 6: Ultra - flickers toward near-white at random moments
+                    float flicker = (Mth.sin(t * 0.6F) > 0.85F) ? 1.6F : 0.6F;
+                    com.mojang.blaze3d.systems.RenderSystem.setShaderColor(
+                            0.85F * flicker, 0.9F * flicker, 1.0F * flicker, 1.0F);
+                }
+            }
         }
 
         pose.pushPose();
@@ -70,7 +87,7 @@ public class KraveMonsterRenderer extends MobRenderer<KraveMonster, KraveMonster
         super.render(entity, yaw, partialTicks, pose, buffers, light);
         pose.popPose();
 
-        if (form == 3 || form == 4) {
+        if (tinted) {
             com.mojang.blaze3d.systems.RenderSystem.setShaderColor(1.0F, 1.0F, 1.0F, 1.0F);
         }
     }
