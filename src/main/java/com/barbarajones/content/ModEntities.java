@@ -117,7 +117,7 @@ public final class ModEntities {
     public static final RegistryObject<EntityType<KraveHealingBox>> KRAVE_HEALING_BOX =
             ENTITIES.register("krave_healing_box", () -> EntityType.Builder
                     .of(KraveHealingBox::new, MobCategory.MISC)
-                    .sized(0.8F, 0.8F).clientTrackingRange(12)
+                    .sized(0.7F, 0.9F).clientTrackingRange(12)
                     .build("krave_healing_box"));
 
     public static final RegistryObject<EntityType<KraveLaser>> KRAVE_LASER =

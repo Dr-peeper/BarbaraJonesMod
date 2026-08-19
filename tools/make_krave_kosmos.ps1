@@ -283,6 +283,28 @@ Rct $beam 6 0 4 16 (C 'C8E0FF' 235)
 Save $beam "$edir\krave_beam.png"
 "  krave_beam: texture"
 
+# ---- Krave Healing Box: its own "cereal box" branded texture ----------------
+$boxBase = C '8A2CD0'; $boxDark = C '5A1CA0'; $boxLight = C 'C9A8FF'
+$box = NewImg 16 16
+Rct $box 0 0 16 16 $boxBase
+Rct $box 1 1 14 6 $boxDark          # label panel
+Rct $box 2 2 12 1 $boxLight         # text line
+Rct $box 2 4 9 1 $boxLight          # text line
+Rct $box 2 6 11 1 $boxLight         # text line
+Rct $box 11 9 3 3 (C 'FFE070')      # logo mark
+Rct $box 1 12 14 2 $boxDark         # bottom bar
+Save $box "$edir\krave_healing_box.png"
+"  krave_healing_box: texture"
+
+# ---- Krave Shield: translucent overlay tint ----------------------------------
+$shield = NewImg 16 16
+Rct $shield 0 0 16 16 (C 'B080FF' 160)
+for($x=0;$x -lt 16;$x++){ for($y=0;$y -lt 16;$y++){
+    if((($x+$y) % 5) -eq 0){ Rct $shield $x $y 1 1 (C 'E8D8FF' 200) }
+}}
+Save $shield "$edir\krave_shield.png"
+"  krave_shield: texture"
+
 # ---- recipes ------------------------------------------------------------------
 @"
 {

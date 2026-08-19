@@ -15,15 +15,18 @@ import net.minecraft.resources.ResourceLocation;
 import org.joml.Matrix4f;
 
 /**
- * A stationary Krave Box, reusing the giant falling box's texture/cube
- * technique (see GiantKraveBoxRenderer) but sitting still and small, with a
- * gentle bob instead of a wild tumble - it's a target to find and destroy,
- * not a falling hazard.
+ * A stationary, hand-drawn rectangular prism - a "giant cereal box" - with
+ * its own texture (no longer reusing the falling apocalypse box's look).
+ * Bobs gently and spins slowly, same as before. While the entity's shield is
+ * up, a larger translucent shell is drawn around it that fades as the
+ * shield depletes.
  */
 public class KraveHealingBoxRenderer extends EntityRenderer<KraveHealingBox> {
 
     private static final ResourceLocation TEXTURE =
-            new ResourceLocation(BarbaraJonesMod.MODID, "textures/entity/giant_krave_box.png");
+            new ResourceLocation(BarbaraJonesMod.MODID, "textures/entity/krave_healing_box.png");
+    private static final ResourceLocation SHIELD_TEXTURE =
+            new ResourceLocation(BarbaraJonesMod.MODID, "textures/entity/krave_shield.png");
 
     public KraveHealingBoxRenderer(EntityRendererProvider.Context ctx) {
         super(ctx);
@@ -38,10 +41,25 @@ public class KraveHealingBoxRenderer extends EntityRenderer<KraveHealingBox> {
         pose.translate(0.0D, 0.4D + Math.sin(age * 0.08D) * 0.05D, 0.0D);
         pose.mulPose(Axis.YP.rotationDegrees(age * 1.2F));
 
-        VertexConsumer buf = buffers.getBuffer(RenderType.entityCutoutNoCull(TEXTURE));
+        drawBox(pose, buffers.getBuffer(RenderType.entityCutoutNoCull(TEXTURE)), light,
+                0.3F, 0.5F, 0.18F, 255);
+
+        int shield = entity.getShield();
+        if (shield > 0) {
+            VertexConsumer shieldBuf = buffers.getBuffer(RenderType.entityTranslucent(SHIELD_TEXTURE));
+            float pulse = 0.55F + 0.15F * (float) Math.sin(age * 0.15D);
+            int alpha = (int) (pulse * 220 * (shield / 3.0F));
+            drawBox(pose, shieldBuf, light, 0.42F, 0.62F, 0.3F, alpha);
+        }
+
+        pose.popPose();
+        super.render(entity, yaw, partial, pose, buffers, light);
+    }
+
+    private void drawBox(PoseStack pose, VertexConsumer buf, int light,
+                         float hx, float hy, float hz, int alpha) {
         Matrix4f m = pose.last().pose();
         var normal = pose.last().normal();
-        float hx = 0.35F, hy = 0.45F, hz = 0.22F;
         float[][][] faces = {
             {{-hx,-hy, hz},{ hx,-hy, hz},{ hx, hy, hz},{-hx, hy, hz}},
             {{ hx,-hy,-hz},{-hx,-hy,-hz},{-hx, hy,-hz},{ hx, hy,-hz}},
@@ -54,13 +72,11 @@ public class KraveHealingBoxRenderer extends EntityRenderer<KraveHealingBox> {
         for (float[][] face : faces) {
             for (int i = 0; i < 4; i++) {
                 buf.vertex(m, face[i][0], face[i][1], face[i][2])
-                        .color(255, 255, 255, 255).uv(uv[i][0], uv[i][1])
+                        .color(255, 255, 255, alpha).uv(uv[i][0], uv[i][1])
                         .overlayCoords(OverlayTexture.NO_OVERLAY).uv2(light)
                         .normal(normal, 0.0F, 1.0F, 0.0F).endVertex();
             }
         }
-        pose.popPose();
-        super.render(entity, yaw, partial, pose, buffers, light);
     }
 
     @Override

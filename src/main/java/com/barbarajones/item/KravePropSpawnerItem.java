@@ -25,10 +25,11 @@ import java.util.function.Supplier;
  * Spawner for the prop entities that cannot have a spawn egg.
  *
  * A spawn egg has to be built around an {@code EntityType<? extends Mob>}, and
- * the car, the meteors, the tornado, the beams and the sky actors are all plain
- * Entities - they have no AI and never could be Mobs. This item stands in for
- * the seven eggs they cannot have: sneak-right-click in the air to cycle the
- * selection, right-click a block to place the selected prop.
+ * the car, the meteors, the tornado, the beams, the sky actors, and the Krave
+ * Healing Box (rebuilt End-Crystal-style - a plain Entity, no AI, never a Mob)
+ * are all plain Entities. This item stands in for the eggs they cannot have:
+ * sneak-right-click in the air to cycle the selection, right-click a block to
+ * place the selected prop.
  */
 public class KravePropSpawnerItem extends Item {
 
@@ -41,7 +42,8 @@ public class KravePropSpawnerItem extends Item {
             new Prop("Krave Tornado",   () -> ModEntities.TORNADO.get()),
             new Prop("Krave Laser",     () -> ModEntities.KRAVE_LASER.get()),
             new Prop("Krave Mouth Beam", () -> ModEntities.KRAVE_MOUTH_BEAM.get()),
-            new Prop("Sky Cinematic",   () -> ModEntities.SKY_CINEMATIC.get()));
+            new Prop("Sky Cinematic",   () -> ModEntities.SKY_CINEMATIC.get()),
+            new Prop("Krave Healing Box", () -> ModEntities.KRAVE_HEALING_BOX.get()));
 
     public KravePropSpawnerItem(Properties props) {
         super(props);

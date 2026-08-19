@@ -6,6 +6,7 @@ import com.mojang.serialization.Codec;
 import net.minecraft.core.BlockPos;
 import net.minecraft.util.RandomSource;
 import net.minecraft.world.level.WorldGenLevel;
+import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.levelgen.feature.Feature;
 import net.minecraft.world.level.levelgen.feature.FeaturePlaceContext;
@@ -129,6 +130,44 @@ public class KraveMountainFeature extends Feature<NoneFeatureConfiguration> {
             }
         }
 
+        // A hidden chamber inside the mountain's own body - "caves on
+        // mountains", distinct from the general island cave pockets
+        // (KraveCavePocketFeature) and the surface ruins/den. Leaves a
+        // BARRIER marker like every other hidden-healing-box spot in the
+        // Kosmos; KraveKosmosAmbience.scanForCaveMarkers picks it up
+        // generically regardless of which Feature placed it.
+        if (random.nextInt(10) < 4) {
+            carveMountainCave(level, origin, random, height);
+        }
+
         return true;
+    }
+
+    private void carveMountainCave(WorldGenLevel level, BlockPos origin, RandomSource random, int height) {
+        int dx = random.nextInt(5) - 2;
+        int dz = random.nextInt(5) - 2;
+        BlockPos.MutableBlockPos ground = origin.offset(dx, GROUND_SEARCH, dz).mutable();
+        int minY = origin.getY() - GROUND_SEARCH;
+        while (ground.getY() > minY && !level.getBlockState(ground).isSolid()) {
+            ground.move(0, -1, 0);
+        }
+        if (!level.getBlockState(ground).isSolid()) {
+            return;
+        }
+
+        int chamberHeight = Math.max(3, (int) (height * (0.25 + random.nextDouble() * 0.25)));
+        BlockPos floor = ground.above(chamberHeight);
+        if (!level.getBlockState(floor).isSolid() || !level.getBlockState(floor.above(2)).isSolid()) {
+            return;   // not solidly inside the mound's body here - skip, safe no-op
+        }
+
+        for (int cx = -1; cx <= 1; cx++) {
+            for (int cz = -1; cz <= 1; cz++) {
+                for (int cy = 0; cy <= 2; cy++) {
+                    level.setBlock(floor.offset(cx, cy, cz), Blocks.AIR.defaultBlockState(), 3);
+                }
+            }
+        }
+        level.setBlock(floor, Blocks.BARRIER.defaultBlockState(), 3);
     }
 }
