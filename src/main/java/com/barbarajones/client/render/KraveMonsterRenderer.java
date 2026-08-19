@@ -38,12 +38,15 @@ public class KraveMonsterRenderer extends MobRenderer<KraveMonster, KraveMonster
         super(ctx, new KraveMonsterModel(ctx.bakeLayer(KraveMonsterModel.LAYER_LOCATION)), 1.6F);
     }
 
-    // Bumped from 1.15 to read as clearly bigger than the player (roughly
-    // 3-3.5 blocks reared / 2.2-2.6 at the shoulder on all fours) - a first
-    // draft to hand-tune once actually visible in-game, not a final number.
+    // No new model or texture exists per form - that needs real art. Instead
+    // the escalation between forms reads through size and body-color tint:
+    // form 1 is barely bigger than a player, form 4 is gargantuan.
+    private static final float[] FORM_SCALE = { 1.2F, 1.8F, 2.4F, 3.4F };
+
     @Override
     protected void scale(KraveMonster entity, PoseStack pose, float partialTicks) {
-        pose.scale(1.8F, 1.8F, 1.8F);
+        float s = FORM_SCALE[Mth.clamp(entity.getForm() - 1, 0, FORM_SCALE.length - 1)];
+        pose.scale(s, s, s);
     }
 
     @Override
@@ -51,10 +54,25 @@ public class KraveMonsterRenderer extends MobRenderer<KraveMonster, KraveMonster
                        MultiBufferSource buffers, int light) {
         renderGhosts(entity, partialTicks, pose, buffers, light);
 
+        // Form 3 reads red, form 4 goes near-black with a red core - "the
+        // scariest thing you've fought" through tint and size since there's
+        // no dedicated model per form.
+        int form = entity.getForm();
+        if (form == 3) {
+            com.mojang.blaze3d.systems.RenderSystem.setShaderColor(1.0F, 0.5F, 0.45F, 1.0F);
+        } else if (form == 4) {
+            float pulse = 0.55F + 0.15F * Mth.sin((entity.tickCount + partialTicks) * 0.15F);
+            com.mojang.blaze3d.systems.RenderSystem.setShaderColor(pulse, 0.12F, 0.12F, 1.0F);
+        }
+
         pose.pushPose();
         pose.translate(0.0D, GROUND_CORRECTION, 0.0D);
         super.render(entity, yaw, partialTicks, pose, buffers, light);
         pose.popPose();
+
+        if (form == 3 || form == 4) {
+            com.mojang.blaze3d.systems.RenderSystem.setShaderColor(1.0F, 1.0F, 1.0F, 1.0F);
+        }
     }
 
     private void renderGhosts(KraveMonster e, float partial, PoseStack pose,

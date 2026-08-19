@@ -169,6 +169,45 @@ public class KraveMonster extends Monster {
         this.bossEvent.setName(formTitle());
     }
 
+    /**
+     * There is no per-form model or texture (that needs real art, not code),
+     * so the escalation between forms has to come from silhouette (see the
+     * per-form scale in KraveMonsterRenderer), a body-color tint (also in the
+     * renderer, via shader color) and this: a standing particle aura that
+     * gets heavier and nastier with each form. Form 1/2 have none - they're
+     * "just" a big monster. Form 3 wreathes him in red. Form 4 is supposed to
+     * be the scariest thing you've fought - thick soul-fire and smoke.
+     */
+    private void formAura() {
+        if (!(level() instanceof ServerLevel sl)) {
+            return;
+        }
+        int form = getForm();
+        if (form < 3 || this.tickCount % 3 != 0) {
+            return;
+        }
+        double r = getBbWidth() * 0.6D;
+        double h = getBbHeight();
+        for (int i = 0; i < (form == 4 ? 6 : 2); i++) {
+            double ang = this.random.nextDouble() * Math.PI * 2.0D;
+            double dist = this.random.nextDouble() * r;
+            double x = getX() + Math.cos(ang) * dist;
+            double z = getZ() + Math.sin(ang) * dist;
+            double y = getY() + this.random.nextDouble() * h;
+            if (form == 4) {
+                sl.sendParticles(net.minecraft.core.particles.ParticleTypes.SOUL_FIRE_FLAME,
+                        x, y, z, 1, 0.02D, 0.05D, 0.02D, 0.01D);
+                sl.sendParticles(net.minecraft.core.particles.ParticleTypes.LARGE_SMOKE,
+                        x, y, z, 1, 0.03D, 0.06D, 0.03D, 0.005D);
+            } else {
+                sl.sendParticles(
+                        new net.minecraft.core.particles.DustParticleOptions(
+                                new org.joml.Vector3f(1.0F, 0.15F, 0.1F), 1.6F),
+                        x, y, z, 1, 0.02D, 0.05D, 0.02D, 0.0D);
+            }
+        }
+    }
+
     /** The name shown on the boss bar, so the escalation is legible. */
     public net.minecraft.network.chat.Component formTitle() {
         String suffix = switch (getForm()) {
@@ -244,6 +283,7 @@ public class KraveMonster extends Monster {
         }
         this.bossEvent.setProgress(getHealth() / getMaxHealth());
         updateStance();
+        formAura();
 
         LivingEntity target = getTarget();
 
