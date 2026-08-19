@@ -1,0 +1,8 @@
+{
+  "type": "minecraft:crafting_shapeless",
+  "ingredients": [
+    { "item": "minecraft:cocoa_beans" },
+    { "item": "barbarajones:krave_dust" }
+  ],
+  "result": { "item": "barbarajones:krave_pod", "count": 1 }
+}

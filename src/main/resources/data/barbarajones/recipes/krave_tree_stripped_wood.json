@@ -1,0 +1,6 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "pattern": [ "##", "##" ],
+  "key": { "#": { "item": "barbarajones:stripped_krave_log" } },
+  "result": { "item": "barbarajones:stripped_krave_wood", "count": 3 }
+}

@@ -1,0 +1,6 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "pattern": [ "#  ", "## ", "###" ],
+  "key": { "#": { "item": "barbarajones:krave_planks" } },
+  "result": { "item": "barbarajones:krave_stairs", "count": 4 }
+}

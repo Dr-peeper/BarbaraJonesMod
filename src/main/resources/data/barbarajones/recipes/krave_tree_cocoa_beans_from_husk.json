@@ -1,0 +1,8 @@
+{
+  "type": "minecraft:crafting_shapeless",
+  "ingredients": [
+    { "item": "barbarajones:roasted_husk" },
+    { "item": "minecraft:sugar" }
+  ],
+  "result": { "item": "minecraft:cocoa_beans", "count": 2 }
+}

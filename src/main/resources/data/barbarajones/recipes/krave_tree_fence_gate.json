@@ -1,0 +1,9 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "pattern": [ "S#S", "S#S" ],
+  "key": {
+    "#": { "item": "barbarajones:krave_planks" },
+    "S": { "item": "minecraft:stick" }
+  },
+  "result": { "item": "barbarajones:krave_fence_gate", "count": 1 }
+}

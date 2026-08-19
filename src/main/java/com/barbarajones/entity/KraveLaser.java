@@ -5,6 +5,7 @@ import com.barbarajones.content.ModSounds;
 
 import net.minecraft.core.particles.ParticleTypes;
 import net.minecraft.world.entity.Entity;
+import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.entity.EntityType;
 import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.entity.MoverType;
@@ -28,8 +29,22 @@ public class KraveLaser extends Entity {
     @Nullable
     private LivingEntity owner;
 
+    /**
+     * Who the damage is credited to, when that differs from the shooter. The
+     * Ender Dragon refuses damage unless the causing entity is a Player, so a
+     * bolt fired by Cayden has to arrive on his owner's behalf.
+     */
+    @Nullable
+    private LivingEntity credit;
+
     public KraveLaser(EntityType<? extends KraveLaser> type, Level level) {
         super(type, level);
+    }
+
+    /** Credit this bolt's damage to someone else - see the credit field. */
+    public KraveLaser creditTo(LivingEntity who) {
+        this.credit = who;
+        return this;
     }
 
     public KraveLaser(Level level, LivingEntity owner, Vec3 from, Vec3 target) {
@@ -78,8 +93,15 @@ public class KraveLaser extends Entity {
         var box = getBoundingBox().expandTowards(getDeltaMovement()).inflate(0.6D);
         Entity found = null;
         double closest = Double.MAX_VALUE;
+        // It used to collide with the Krave Monster and nothing else, so a bolt
+        // aimed at any other boss passed straight through it. Hit anything alive
+        // and hostile, but never the shooter's own side.
         for (Entity candidate : level().getEntities(this, box,
-                e -> e instanceof KraveMonster && e.isAlive())) {
+                e -> e instanceof LivingEntity && e.isAlive()
+                        && e != this.owner
+                        && !(e instanceof Player)
+                        && !(e instanceof CaydenCobb)
+                        && !(e instanceof BarbaraJones))) {
             double d = candidate.getBoundingBox().inflate(0.4D).distanceToSqr(start);
             if (d < closest) {
                 closest = d;
@@ -90,8 +112,15 @@ public class KraveLaser extends Entity {
     }
 
     private void onHit(Entity target) {
-        if (target instanceof KraveMonster monster && this.owner != null) {
-            monster.hurt(level().damageSources().mobAttack(this.owner), DAMAGE);
+        // This used to damage the Krave Monster and nothing else, which made the
+        // bolt a no-op against every other boss it was ever fired at.
+        if (this.owner != null && target instanceof LivingEntity victim && victim.isAlive()) {
+            // The Ender Dragon discards damage unless the causing entity is a
+            // Player, so when a credit is set the shot arrives on their behalf.
+            var src = this.credit != null
+                    ? level().damageSources().indirectMagic(this, this.credit)
+                    : level().damageSources().mobAttack(this.owner);
+            victim.hurt(src, DAMAGE);
         }
         level().playSound(null, blockPosition(), ModSounds.KRAVE_HURT.get(), getSoundSource(), 1.0F, 1.6F);
         if (level() instanceof net.minecraft.server.level.ServerLevel sl) {

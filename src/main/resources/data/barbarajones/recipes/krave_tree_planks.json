@@ -1,0 +1,5 @@
+{
+  "type": "minecraft:crafting_shapeless",
+  "ingredients": [ { "tag": "barbarajones:krave_logs" } ],
+  "result": { "item": "barbarajones:krave_planks", "count": 4 }
+}

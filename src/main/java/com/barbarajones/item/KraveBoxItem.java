@@ -54,12 +54,15 @@ public class KraveBoxItem extends Item {
         if (monster == null) {
             monster = ModEntities.KRAVE_MONSTER.get().create(level);
             if (monster != null) {
-                monster.setForm(com.barbarajones.EventHandler.nextKraveForm(player));
-            }
-            if (monster != null) {
                 monster.moveTo(x, player.getY() + 1.0D, z, player.getYRot() + 180.0F, 0.0F);
                 level.addFreshEntity(monster);
             }
+        }
+        if (monster != null) {
+            // Applied on EVERY path. The pull-from-Kosmos branch above reuses an
+            // existing boss, so setting the form only in the fallback meant the
+            // usual summon never escalated at all.
+            monster.setForm(com.barbarajones.EventHandler.nextKraveForm(player));
         }
         if (monster != null) {
             monster.setTarget(player);

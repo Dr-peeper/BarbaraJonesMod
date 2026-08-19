@@ -3,8 +3,10 @@ package com.barbarajones.entity;
 import com.barbarajones.content.ModEntities;
 import com.barbarajones.content.ModFluids;
 import com.barbarajones.content.ModSounds;
+import com.barbarajones.dimension.KraveDimensions;
 import com.barbarajones.housing.HousingResult;
 import com.barbarajones.housing.HousingValidator;
+import com.barbarajones.progression.AscensionLadder;
 
 import net.minecraft.ChatFormatting;
 import net.minecraft.core.BlockPos;
@@ -49,6 +51,9 @@ import net.minecraft.world.phys.Vec3;
 import javax.annotation.Nullable;
 import java.util.EnumSet;
 import java.util.List;
+import java.util.Map;
+import java.util.UUID;
+import java.util.concurrent.ConcurrentHashMap;
 
 /**
  * Cayden Cobb - your Krave-addicted companion. He fights every hostile mob on
@@ -77,10 +82,21 @@ public class CaydenCobb extends TamableAnimal {
     private static final EntityDataAccessor<Boolean> DARK =
             SynchedEntityData.defineId(CaydenCobb.class, EntityDataSerializers.BOOLEAN);
     /**
-     * How far up the ladder he currently is: 0 none, 1 Super Saiyan, 2 SSJ2,
-     * 3 Ultra Instinct. Synced so the aura can render the right form.
+     * How far up the ladder he currently is. See {@link AscensionLadder}: 0 base,
+     * 1 Super Saiyan, 2 SSJ2, 3 SSJ3, 4 Super Saiyan God, 5 Super Saiyan Blue,
+     * 6 Ultra Instinct. Synced so the aura can render the right form.
      */
     private static final EntityDataAccessor<Integer> TIER =
+            SynchedEntityData.defineId(CaydenCobb.class, EntityDataSerializers.INT);
+    /**
+     * Bitmask of the forms he has actually been taught, bit N == rung N.
+     * Synced because the upgrade screen is drawn entirely from his entity data -
+     * there is no server-to-client packet behind that GUI at all.
+     */
+    private static final EntityDataAccessor<Integer> UNLOCKS =
+            SynchedEntityData.defineId(CaydenCobb.class, EntityDataSerializers.INT);
+    /** Spendable ki. Earned by feeding him and by things dying in front of him. */
+    private static final EntityDataAccessor<Integer> KI =
             SynchedEntityData.defineId(CaydenCobb.class, EntityDataSerializers.INT);
 
     public static final int RAGE_THRESHOLD = 25;
@@ -102,8 +118,6 @@ public class CaydenCobb extends TamableAnimal {
     private static final int BURST_INTERVAL = 55;
     /** Ticks between SSJ2 shockwaves. */
     private static final int WAVE_INTERVAL = 45;
-    /** Percentage chance Ultra Instinct simply refuses an incoming hit. */
-    private static final int DODGE_PERCENT = 70;
     /** Ticks between techniques at tier 1; higher tiers cut this down. */
     private static final int ARSENAL_INTERVAL = 90;
     /** How far he will look for something worth transforming for. */
@@ -114,6 +128,9 @@ public class CaydenCobb extends TamableAnimal {
     private static final int OUT_OF_COMBAT_TICKS = 100;
     private static final double BASE_SPEED = 0.5D;
     private static final double BASE_DAMAGE = 3.0D;
+    private static final double BASE_HEALTH = 24.0D;
+    /** Ticks between "he cannot reach that form yet" reminders. */
+    private static final int LOCKED_NAG_INTERVAL = 200;
     /** How far he'll wander from a claimed home before heading back. */
     private static final double HOME_LEASH = 22.0D;
 
@@ -139,6 +156,15 @@ public class CaydenCobb extends TamableAnimal {
     private int ssjTicks;
     /** While true the transformation has no timer: it ends when the boss does. */
     private boolean ssjUntilBossDies;
+    /**
+     * The foe his ki is currently riding on, and what rung it demanded. Held so
+     * the reward is paid when it dies even if he has already turned to swing at
+     * something else - and even if the player landed the killing blow.
+     */
+    @Nullable
+    private LivingEntity creditFoe;
+    private int creditDemand;
+    private int lockedNag;
 
     public CaydenCobb(EntityType<? extends TamableAnimal> type, Level level) {
         super(type, level);
@@ -183,6 +209,8 @@ public class CaydenCobb extends TamableAnimal {
         this.entityData.define(DESPERATE, false);
         this.entityData.define(DARK, false);
         this.entityData.define(TIER, 0);
+        this.entityData.define(UNLOCKS, 0);
+        this.entityData.define(KI, 0);
     }
 
     // ---- krave state -------------------------------------------------------
@@ -203,10 +231,35 @@ public class CaydenCobb extends TamableAnimal {
         return Math.min(2.4F, 1.0F + getKraveFed() * 0.03F);
     }
 
+    /**
+     * Ascension progress parked across one death, keyed by owner.
+     *
+     * <p>The apocalypse does not resurrect him, it builds a brand new Cayden and
+     * copies his Krave counters over. Without a place to hold the ladder, dying
+     * once wiped every form the player had paid for - and dying is a thing this
+     * mod is entirely built around happening.
+     */
+    private static final Map<UUID, int[]> ASCENSION_LEGACY = new ConcurrentHashMap<>();
+
+    @Override
+    public void die(DamageSource cause) {
+        UUID owner = getOwnerUUID();
+        if (!level().isClientSide && owner != null) {
+            ASCENSION_LEGACY.put(owner, new int[] { getUnlockMask(), getKi() });
+        }
+        super.die(cause);
+    }
+
     /** Used when he respawns from the Krave blast - keep his hard-won progress. */
     public void restoreKrave(int fed, boolean rage) {
         this.entityData.set(FED, fed);
         this.entityData.set(RAGE, rage);
+        UUID owner = getOwnerUUID();
+        int[] legacy = owner == null ? null : ASCENSION_LEGACY.remove(owner);
+        if (legacy != null) {
+            this.entityData.set(UNLOCKS, legacy[0]);
+            this.entityData.set(KI, legacy[1]);
+        }
         applyKraveStats();
     }
 
@@ -214,21 +267,16 @@ public class CaydenCobb extends TamableAnimal {
         int fed = getKraveFed();
         double atkBase = BASE_DAMAGE + fed / 5;
         double spdBase = Math.max(0.12D, BASE_SPEED - fed * 0.012D);
+        double hpBase = BASE_HEALTH;
         if (isSuperSaiyan()) {
-            // Each rung is a real step up, not a recolour.
-            int tier = Math.max(1, getTier());
-            atkBase *= switch (tier) {
-                case 4 -> 16.0D;
-                case 3 -> 11.0D;
-                case 2 -> 7.0D;
-                default -> 4.0D;
-            };
-            spdBase = BASE_SPEED * switch (tier) {
-                case 4 -> 2.6D;
-                case 3 -> 2.2D;
-                case 2 -> 1.9D;
-                default -> 1.6D;
-            };
+            // Each rung is a real step up, not a recolour. One table drives the
+            // numbers here and the prices in the upgrade screen, so a form can
+            // never advertise something it does not deliver.
+            AscensionLadder.Rung rung =
+                    AscensionLadder.rung(Math.max(AscensionLadder.SSJ, getTier()));
+            atkBase *= rung.attackMul();
+            spdBase = BASE_SPEED * rung.speedMul();
+            hpBase += rung.bonusHealth();
         }
         if (isDark()) {
             // Ruthless, not invulnerable: he hits far harder and closes faster,
@@ -238,12 +286,92 @@ public class CaydenCobb extends TamableAnimal {
         }
         var atk = getAttribute(Attributes.ATTACK_DAMAGE);
         var spd = getAttribute(Attributes.MOVEMENT_SPEED);
+        var hp = getAttribute(Attributes.MAX_HEALTH);
         if (atk != null) {
             atk.setBaseValue(atkBase);
         }
         if (spd != null) {
             spd.setBaseValue(spdBase);
         }
+        if (hp != null && hp.getBaseValue() != hpBase) {
+            hp.setBaseValue(hpBase);
+            // Powering down shrinks the bar. Left alone his current health would
+            // sit above the new maximum and the HUD would read as overfull.
+            if (getHealth() > getMaxHealth()) {
+                setHealth(getMaxHealth());
+            }
+        }
+    }
+
+    // ---- the upgrade ladder --------------------------------------------------
+
+    /** Bitmask of the forms he has been taught. See {@link AscensionLadder}. */
+    public int getUnlockMask() {
+        return this.entityData.get(UNLOCKS);
+    }
+
+    public boolean isFormUnlocked(int tier) {
+        return AscensionLadder.unlocked(getUnlockMask(), tier);
+    }
+
+    /** The highest rung he is allowed to reach, whatever he is fighting. */
+    public int highestUnlockedTier() {
+        return AscensionLadder.highest(getUnlockMask());
+    }
+
+    /** Spendable ki. */
+    public int getKi() {
+        return this.entityData.get(KI);
+    }
+
+    /** Ki is capped well above the top of the ladder so it can never overflow. */
+    public void addKi(int amount) {
+        if (amount <= 0 || level().isClientSide) {
+            return;
+        }
+        this.entityData.set(KI, Math.min(999_999, getKi() + amount));
+    }
+
+    /**
+     * The rung the upgrade screen wants to buy. Every price and prerequisite is
+     * re-checked here: the screen is a convenience, not the authority.
+     *
+     * @return true when the purchase went through
+     */
+    public boolean tryUnlock(int tier, @Nullable Player buyer) {
+        if (level().isClientSide) {
+            return false;
+        }
+        String blocker = AscensionLadder.blocker(tier, getUnlockMask(), getKi(), getKraveFed());
+        if (blocker != null) {
+            if (buyer != null) {
+                buyer.sendSystemMessage(Component.literal(ChatFormatting.RED + blocker));
+                playSound(SoundEvents.VILLAGER_NO, 1.0F, 1.3F);
+            }
+            return false;
+        }
+
+        AscensionLadder.Rung rung = AscensionLadder.rung(tier);
+        this.entityData.set(KI, getKi() - rung.kiCost());
+        this.entityData.set(UNLOCKS, AscensionLadder.withUnlocked(getUnlockMask(), tier));
+        applyKraveStats();
+
+        playSound(ModSounds.KRAVE_ROAR.get(), 1.5F, 0.9F + tier * 0.08F);
+        level().playSound(null, blockPosition(), ModSounds.CAYDEN_SHOUT.get(),
+                getSoundSource(), 1.2F, 1.0F);
+        if (level() instanceof ServerLevel sl) {
+            sl.sendParticles(ParticleTypes.FLASH, getX(), getY() + getBbHeight() * 0.6D, getZ(),
+                    1, 0.0D, 0.0D, 0.0D, 0.0D);
+            sl.sendParticles(ParticleTypes.TOTEM_OF_UNDYING,
+                    getX(), getY() + getBbHeight() * 0.5D, getZ(),
+                    90, 0.6D, 0.9D, 0.6D, 0.25D);
+        }
+        for (Player p : level().getEntitiesOfClass(Player.class, getBoundingBox().inflate(48.0D))) {
+            p.sendSystemMessage(Component.literal(ChatFormatting.GOLD + "" + ChatFormatting.BOLD
+                    + "CAYDEN LEARNS " + rung.name().toUpperCase(java.util.Locale.ROOT) + "."));
+            p.sendSystemMessage(Component.literal(ChatFormatting.GRAY + "  " + rung.edge()));
+        }
+        return true;
     }
 
     // ---- super saiyan --------------------------------------------------------
@@ -268,9 +396,20 @@ public class CaydenCobb extends TamableAnimal {
                 getSoundSource(), 1.6F, 1.0F);
     }
 
-    /** Liquid chocolate does this too - see EventHandler.onLivingTick. */
+    /**
+     * Liquid chocolate does this too - see EventHandler.onLivingTick.
+     *
+     * <p>Refuses outright when he has not been taught a single form. That gate is
+     * the point of the whole upgrade system: the chocolate, the Kosmos and the
+     * bosses can all demand an ascension, and none of them can hand him one he
+     * has not paid for.
+     */
     public void becomeSuperSaiyan() {
         if (isSuperSaiyan() || level().isClientSide) {
+            return;
+        }
+        if (highestUnlockedTier() < AscensionLadder.SSJ) {
+            nagLocked(AscensionLadder.SSJ);
             return;
         }
         this.entityData.set(SSJ, true);
@@ -290,10 +429,34 @@ public class CaydenCobb extends TamableAnimal {
         }
     }
 
+    /**
+     * Tells the owner what he is straining against, at most once every ten
+     * seconds - the alternative is a wall of chat during a boss fight.
+     */
+    private void nagLocked(int wanted) {
+        if (this.lockedNag > 0 || level().isClientSide) {
+            return;
+        }
+        this.lockedNag = LOCKED_NAG_INTERVAL;
+        playSound(ModSounds.CAYDEN_HURT.get(), 0.8F, 1.3F);
+        for (Player p : level().getEntitiesOfClass(Player.class, getBoundingBox().inflate(32.0D))) {
+            if (isOwnedBy(p)) {
+                p.sendSystemMessage(Component.literal(ChatFormatting.YELLOW
+                        + "Cayden reaches for " + AscensionLadder.nameOf(wanted)
+                        + " and finds nothing there."));
+                p.sendSystemMessage(Component.literal(ChatFormatting.GRAY
+                        + "  Open his ascension ledger and teach it to him."));
+            }
+        }
+    }
+
     /** Back to being a kid who eats too much cereal. */
     public void powerDown() {
         boolean was = isSuperSaiyan();
         this.entityData.set(SSJ, false);
+        // Tier drives his stats and his aura, so it must fall with the form. The
+        // fight-ended path already cleared it; the boss-death path did not.
+        this.entityData.set(TIER, 0);
         this.ssjTicks = 0;
         this.ssjUntilBossDies = false;
         setNoGravity(false);
@@ -424,6 +587,7 @@ public class CaydenCobb extends TamableAnimal {
         scanForBoss();
         updateTier();
         useArsenal();
+        collectKi();
 
         if (isSuperSaiyan()) {
             // Linked to the boss fight, the transformation has no clock on it -
@@ -474,6 +638,38 @@ public class CaydenCobb extends TamableAnimal {
     public net.minecraft.world.InteractionResult mobInteract(Player player, net.minecraft.world.InteractionHand hand) {
         var held = player.getItemInHand(hand);
 
+        // The ascension ledger, or the Cayden Compass as the always-available
+        // fallback: both open his upgrade screen. The screen is drawn purely from
+        // his synched data, so it opens client-side and only the buy button ever
+        // talks to the server.
+        if (isTame() && isOwnedBy(player)
+                && (AscensionLadder.isLedger(held)
+                    || held.is(com.barbarajones.content.ModItems.CAYDEN_COMPASS.get()))) {
+            if (level().isClientSide) {
+                net.minecraftforge.fml.DistExecutor.unsafeRunWhenOn(
+                        net.minecraftforge.api.distmarker.Dist.CLIENT,
+                        () -> () -> com.barbarajones.client.ui.CaydenUpgradeKeys.open(this));
+            } else {
+                playSound(SoundEvents.BOOK_PAGE_TURN, 1.0F, 1.1F);
+            }
+            return net.minecraft.world.InteractionResult.sidedSuccess(level().isClientSide);
+        }
+
+        // The one-in-a-hundred-thousand box is worth thirty ordinary ones. It is
+        // the only way to buy the first rung without a month of hand-feeding.
+        if (held.is(com.barbarajones.content.ModItems.GOLDEN_KRAVE.get())) {
+            if (!level().isClientSide) {
+                if (!isTame()) {
+                    tame(player);
+                }
+                feedGoldenKrave(player);
+            }
+            if (!player.getAbilities().instabuild) {
+                held.shrink(1);
+            }
+            return net.minecraft.world.InteractionResult.sidedSuccess(level().isClientSide);
+        }
+
         if (held.is(com.barbarajones.content.ModItems.KRAVE_CEREAL.get())) {
             if (!level().isClientSide) {
                 if (!isTame()) {
@@ -497,10 +693,29 @@ public class CaydenCobb extends TamableAnimal {
         return super.mobInteract(player, hand);
     }
 
+    /** The golden box: a full heal, thirty ki, and a great deal of noise. */
+    private void feedGoldenKrave(Player player) {
+        this.entityData.set(FED, getKraveFed() + 1);
+        heal(getMaxHealth());
+        addKi(AscensionLadder.KI_PER_GOLDEN_KRAVE);
+        applyKraveStats();
+        playSound(SoundEvents.GENERIC_EAT, 1.0F, 0.8F);
+        level().playSound(null, blockPosition(), ModSounds.CAYDEN_SHOUT.get(),
+                getSoundSource(), 1.4F, 0.9F);
+        if (level() instanceof ServerLevel sl) {
+            sl.sendParticles(ParticleTypes.HAPPY_VILLAGER,
+                    getX(), getY() + getBbHeight() * 0.7D, getZ(), 30, 0.5D, 0.6D, 0.5D, 0.0D);
+        }
+        player.sendSystemMessage(Component.literal(ChatFormatting.GOLD
+                + "The golden box. +" + AscensionLadder.KI_PER_GOLDEN_KRAVE + " Ki. ("
+                + getKi() + " banked)"));
+    }
+
     private void feedKrave(Player player) {
         this.entityData.set(FED, getKraveFed() + 1);
         int fed = getKraveFed();
         heal(4.0F);
+        addKi(AscensionLadder.KI_PER_KRAVE);
         applyKraveStats();
         playSound(SoundEvents.GENERIC_EAT, 1.0F, 1.2F);
         // he announces it. every single time.
@@ -511,6 +726,8 @@ public class CaydenCobb extends TamableAnimal {
             player.sendSystemMessage(Component.literal(ChatFormatting.GOLD
                     + "Cayden's attack rose to " + (int) getAttributeValue(Attributes.ATTACK_DAMAGE)
                     + "! (slower, and fatter...)"));
+            player.sendSystemMessage(Component.literal(ChatFormatting.GRAY
+                    + "  " + getKi() + " Ki banked, " + fed + " boxes eaten."));
         }
         if (fed >= RAGE_THRESHOLD && !isRageUnlocked()) {
             this.entityData.set(RAGE, true);
@@ -567,14 +784,14 @@ public class CaydenCobb extends TamableAnimal {
             return;
         }
         LivingEntity current = getTarget();
-        if (current != null && current.isAlive() && tierFor(current) > 0) {
+        if (current != null && current.isAlive() && demandFor(current) > 0) {
             return;                       // already committed to something worthy
         }
         AABB far = getBoundingBox().inflate(BOSS_SCAN_RANGE, BOSS_SCAN_RANGE, BOSS_SCAN_RANGE);
         LivingEntity best = null;
         int bestTier = 0;
         for (LivingEntity e : level().getEntitiesOfClass(LivingEntity.class, far)) {
-            int t = tierFor(e);
+            int t = demandFor(e);
             if (t > bestTier) {
                 bestTier = t;
                 best = e;
@@ -585,41 +802,110 @@ public class CaydenCobb extends TamableAnimal {
         }
     }
 
+    // ---- earning it ---------------------------------------------------------
+
+    /**
+     * Pays out ki when whatever he is fighting stops moving.
+     *
+     * <p>Tracked as a held reference rather than hooked off a death event because
+     * the reward has to survive him turning away mid-fight, and because the
+     * player is usually the one who lands the last hit on a boss - Cayden was
+     * still the reason it died.
+     *
+     * <p>The reference is only ever kept for something in this level, so it
+     * cannot pin an entity across a dimension change.
+     */
+    private void collectKi() {
+        LivingEntity target = getTarget();
+        if (target != null && target.isAlive() && target.level() == level()) {
+            int demand = demandFor(target);
+            if (this.creditFoe == null || !this.creditFoe.isAlive() || demand >= this.creditDemand) {
+                this.creditFoe = target;
+                this.creditDemand = demand;
+            }
+        }
+        if (this.creditFoe == null) {
+            return;
+        }
+        if (this.creditFoe.level() != level() || distanceToSqr(this.creditFoe) > 256.0D * 256.0D) {
+            this.creditFoe = null;                 // it walked out of the story
+            this.creditDemand = 0;
+            return;
+        }
+        if (this.creditFoe.isAlive() && !this.creditFoe.isRemoved()) {
+            return;
+        }
+
+        int reward = AscensionLadder.kiForKill(this.creditDemand);
+        int demand = this.creditDemand;
+        this.creditFoe = null;
+        this.creditDemand = 0;
+        addKi(reward);
+        if (demand > 0) {
+            for (Player p : level().getEntitiesOfClass(Player.class, getBoundingBox().inflate(48.0D))) {
+                if (isOwnedBy(p)) {
+                    p.sendSystemMessage(Component.literal(ChatFormatting.AQUA
+                            + "Cayden takes " + reward + " Ki off that. (" + getKi() + " banked)"));
+                }
+            }
+        }
+    }
+
     // ---- the ladder ---------------------------------------------------------
 
     public int getTier() {
         return this.entityData.get(TIER);
     }
 
+    /** True on the far side of the Krave Door. The Kosmos is divine ground. */
+    private boolean inKosmos() {
+        return level().dimension().equals(KraveDimensions.KRAVE_KOSMOS);
+    }
+
+    /**
+     * What the Krave Monster's four incarnations are each worth. The first one
+     * falls to a plain Super Saiyan; only the last demands Ultra Instinct, which
+     * is what makes reaching the top of the ladder mean anything.
+     */
+    private static final int[] KRAVE_FORM_DEMAND = {
+        AscensionLadder.SSJ, AscensionLadder.SSJ2, AscensionLadder.GOD, AscensionLadder.ULTRA
+    };
+
     /**
      * What he turns into is decided by what is in front of him. Fighting the
      * Wither is worth a transformation; fighting the Krave Monster is worth
      * everything he has.
      *
-     * <p>Returns the tier the opponent deserves, 0 for anything ordinary.
+     * <p>Returns the tier the opponent deserves, 0 for anything ordinary. Note
+     * this is what the fight <em>demands</em>, not what he can actually reach -
+     * {@link #updateTier()} clamps it to what he has been taught.
      */
-    private static int tierFor(@Nullable LivingEntity foe) {
+    private int demandFor(@Nullable LivingEntity foe) {
         if (foe == null || !foe.isAlive()) {
             return 0;
         }
+        int base;
         if (foe instanceof com.barbarajones.entity.KraveMonster monster) {
-            // Only as far as this incarnation demands. The first one falls to a
-            // plain Super Saiyan; it takes all four encounters before he ever
-            // needs Ultra Instinct, which is what makes reaching it mean
-            // anything.
-            return monster.getForm();
-        }
-        if (foe instanceof net.minecraft.world.entity.boss.enderdragon.EnderDragon) {
-            return 3;                                     // it flies, so he has to
-        }
-        if (foe instanceof net.minecraft.world.entity.monster.warden.Warden
+            int form = Math.max(1, Math.min(KRAVE_FORM_DEMAND.length, monster.getForm()));
+            base = KRAVE_FORM_DEMAND[form - 1];
+        } else if (foe instanceof net.minecraft.world.entity.boss.enderdragon.EnderDragon) {
+            base = AscensionLadder.SSJ3;                  // it flies, so he has to
+        } else if (foe instanceof net.minecraft.world.entity.monster.warden.Warden
                 || foe instanceof com.barbarajones.boss.manager.TheManager) {
-            return 2;                                     // above a Wither
+            base = AscensionLadder.SSJ2;                  // above a Wither
+        } else if (foe instanceof net.minecraft.world.entity.boss.wither.WitherBoss) {
+            base = AscensionLadder.SSJ;
+        } else {
+            return 0;
         }
-        if (foe instanceof net.minecraft.world.entity.boss.wither.WitherBoss) {
-            return 1;
+        if (inKosmos()) {
+            // Nothing is fought in the Kosmos below Super Saiyan God, and
+            // anything that already demanded God there demands Blue. This is the
+            // only place either of those two forms is ever required, which is
+            // what makes the dimension the back half of the ladder.
+            base = Math.max(base + 1, AscensionLadder.GOD);
         }
-        return 0;
+        return Math.min(base, AscensionLadder.MAX);
     }
 
     /**
@@ -628,7 +914,17 @@ public class CaydenCobb extends TamableAnimal {
      * to step out of range for a tick.
      */
     private void updateTier() {
-        int want = tierFor(getTarget());
+        if (this.lockedNag > 0) {
+            this.lockedNag--;
+        }
+        int demand = demandFor(getTarget());
+        int allowed = highestUnlockedTier();
+        // A form he has not been taught is not available to him, however badly
+        // the fight wants it. He fights the boss in the best thing he has.
+        int want = Math.min(demand, allowed);
+        if (demand > allowed) {
+            nagLocked(demand);
+        }
         int have = getTier();
 
         if (want > have) {
@@ -658,41 +954,64 @@ public class CaydenCobb extends TamableAnimal {
             this.tierIdle = 0;
         }
 
-        if (getTier() >= 2) {
+        if (getTier() >= AscensionLadder.SSJ2) {
             ssj2Shockwave();
         }
-        if (getTier() >= 1) {
+        if (getTier() >= AscensionLadder.SSJ) {
             // Without these he is a ground mob with a melee goal, which against
             // anything airborne means standing still and being shot.
             combatFlight();
             combatLasers();
         }
-        if (getTier() >= 4 && this.tickCount % 2 == 0 && level() instanceof ServerLevel sl) {
-            // Ultra Instinct trails silver rather than burning - it is meant to
-            // read as calm, not as effort.
-            sl.sendParticles(ParticleTypes.END_ROD, getX(), getY() + getBbHeight() * 0.5D, getZ(),
-                    2, 0.3D, 0.5D, 0.3D, 0.01D);
-        }
+        formTrail();
         if (this.dodgeFlash > 0) {
             this.dodgeFlash--;
         }
     }
 
+    /**
+     * The idle signature of the top three forms, so you can tell across a field
+     * which one he is standing in without waiting for him to swing.
+     *
+     * <p>The aura layer draws the shape; this draws the colour he leaves behind
+     * him, which is the part that survives being twenty blocks away.
+     */
+    private void formTrail() {
+        int tier = getTier();
+        if (tier < AscensionLadder.GOD || this.tickCount % 2 != 0
+                || !(level() instanceof ServerLevel sl)) {
+            return;
+        }
+        net.minecraft.core.particles.SimpleParticleType particle = switch (tier) {
+            case AscensionLadder.GOD -> ParticleTypes.FLAME;             // divine red
+            case AscensionLadder.BLUE -> ParticleTypes.SOUL_FIRE_FLAME;  // cold blue
+            default -> ParticleTypes.END_ROD;                            // silver, calm
+        };
+        sl.sendParticles(particle, getX(), getY() + getBbHeight() * 0.5D, getZ(),
+                2, 0.3D, 0.5D, 0.3D, 0.01D);
+    }
+
     private void announceTier(int tier) {
         String line = switch (tier) {
-            case 1 -> ChatFormatting.GOLD + "" + ChatFormatting.BOLD + "CAYDEN COBB HAS ASCENDED.";
-            case 2 -> ChatFormatting.YELLOW + "" + ChatFormatting.BOLD
+            case AscensionLadder.SSJ -> ChatFormatting.GOLD + "" + ChatFormatting.BOLD
+                    + "CAYDEN COBB HAS ASCENDED.";
+            case AscensionLadder.SSJ2 -> ChatFormatting.YELLOW + "" + ChatFormatting.BOLD
                     + "THAT WAS NOT ALL OF IT. SUPER SAIYAN 2.";
-            case 3 -> ChatFormatting.AQUA + "" + ChatFormatting.BOLD
+            case AscensionLadder.SSJ3 -> ChatFormatting.AQUA + "" + ChatFormatting.BOLD
                     + "IT FLIES. SO DOES HE. SUPER SAIYAN 3.";
-            case 4 -> ChatFormatting.WHITE + "" + ChatFormatting.BOLD
+            case AscensionLadder.GOD -> ChatFormatting.RED + "" + ChatFormatting.BOLD
+                    + "THE COLOUR GOES OUT OF HIM. SUPER SAIYAN GOD.";
+            case AscensionLadder.BLUE -> ChatFormatting.BLUE + "" + ChatFormatting.BOLD
+                    + "GOD POWER, HELD STILL. SUPER SAIYAN BLUE.";
+            case AscensionLadder.ULTRA -> ChatFormatting.WHITE + "" + ChatFormatting.BOLD
                     + "He stops trying. ULTRA INSTINCT.";
             default -> null;
         };
         if (line == null) {
             return;
         }
-        playSound(ModSounds.KRAVE_ROAR.get(), 1.6F, tier >= 4 ? 1.4F : 0.8F);
+        playSound(ModSounds.KRAVE_ROAR.get(), 1.6F,
+                tier >= AscensionLadder.GOD ? 1.4F : 0.8F);
         for (Player p : level().getEntitiesOfClass(Player.class, getBoundingBox().inflate(64.0D))) {
             p.sendSystemMessage(Component.literal(line));
         }
@@ -744,10 +1063,11 @@ public class CaydenCobb extends TamableAnimal {
             return;
         }
         // Higher forms cycle techniques faster - that escalation is most of what
-        // makes tier 3 feel different from tier 1 in play.
-        this.arsenalTimer = Math.max(28, ARSENAL_INTERVAL - (tier - 1) * 26);
+        // makes the top of the ladder feel different from the bottom in play.
+        // The step is per rung, so widening the ladder widened the ramp too.
+        this.arsenalTimer = Math.max(24, ARSENAL_INTERVAL - (tier - 1) * 13);
 
-        int moves = tier >= 4 ? 6 : tier >= 2 ? 4 : 2;
+        int moves = tier >= AscensionLadder.GOD ? 6 : tier >= AscensionLadder.SSJ2 ? 4 : 2;
         int move = this.random.nextInt(moves);
         if (move == this.lastMove) {                 // never the same trick twice running
             move = (move + 1) % moves;
@@ -939,8 +1259,11 @@ public class CaydenCobb extends TamableAnimal {
                 // Chase speed scales with the form. At the old flat rate an Ender
                 // Dragon simply outran him forever - it moves faster than he
                 // could close, so he trailed it and never arrived.
-                double pull = 0.22D + getTier() * 0.16D;
-                double lift = to.y > 0.5D ? 0.06D + getTier() * 0.05D : 0.0D;
+                // Capped at the old top rung: past that he overshoots the target
+                // every tick and orbits it instead of landing on it.
+                int chase = Math.min(getTier(), AscensionLadder.GOD);
+                double pull = 0.22D + chase * 0.16D;
+                double lift = to.y > 0.5D ? 0.06D + chase * 0.05D : 0.0D;
                 setDeltaMovement(getDeltaMovement().scale(0.72D)
                         .add(to.scale(pull / len))
                         .add(0.0D, lift, 0.0D));
@@ -957,7 +1280,7 @@ public class CaydenCobb extends TamableAnimal {
         // Anything airborne, or any boss at all, is pursued without pause. Bursts
         // are for closing on things that walk.
         boolean airborne = target.getY() - getY() > 3.0D || !target.onGround()
-                || tierFor(target) >= 3;
+                || demandFor(target) >= AscensionLadder.SSJ3;
         if (airborne && distanceToSqr(target) > 4.0D) {
             this.flightTicks = Math.max(this.flightTicks, 12);
             setNoGravity(true);
@@ -990,7 +1313,7 @@ public class CaydenCobb extends TamableAnimal {
         }
         // The higher forms fire noticeably faster - it is his main answer to
         // anything he cannot punch.
-        this.laserTimer = Math.max(8, LASER_INTERVAL - getTier() * 6);
+        this.laserTimer = Math.max(7, LASER_INTERVAL - getTier() * 4);
         if (!hasLineOfSight(target)) {
             return;
         }
@@ -1003,8 +1326,12 @@ public class CaydenCobb extends TamableAnimal {
                     (this.random.nextDouble() - 0.5D) * 0.8D,
                     target.getBbHeight() * 0.5D + (this.random.nextDouble() - 0.5D) * 0.6D,
                     (this.random.nextDouble() - 0.5D) * 0.8D);
-            level().addFreshEntity(
-                    new com.barbarajones.entity.KraveLaser(level(), this, from, aim));
+            com.barbarajones.entity.KraveLaser bolt =
+                    new com.barbarajones.entity.KraveLaser(level(), this, from, aim);
+            if (getOwner() instanceof Player owner) {
+                bolt.creditTo(owner);   // so the Ender Dragon does not discard it
+            }
+            level().addFreshEntity(bolt);
         }
         playSound(ModSounds.KRAVE_BOOM.get(), 1.0F, 1.8F);
     }
@@ -1059,12 +1386,47 @@ public class CaydenCobb extends TamableAnimal {
     }
 
     /**
+     * A damage source the target will actually accept.
+     *
+     * <p>{@code EnderDragon.hurt} throws damage away unless the source's causing
+     * entity is a Player or the damage type is tagged to always hurt dragons.
+     * Cayden is neither, so his every hit on one was silently discarded and the
+     * fight could not be won. Crediting his owner is both the fix and the honest
+     * attribution - he is their companion, fighting on their behalf.
+     */
+    private net.minecraft.world.damagesource.DamageSource sourceFor(net.minecraft.world.entity.Entity target) {
+        boolean dragonish = target instanceof net.minecraft.world.entity.boss.enderdragon.EnderDragon
+                || target instanceof net.minecraft.world.entity.boss.EnderDragonPart;
+        if (dragonish && getOwner() instanceof Player owner) {
+            return level().damageSources().indirectMagic(this, owner);
+        }
+        return level().damageSources().mobAttack(this);
+    }
+
+    /** True when vanilla's own melee path would have its damage thrown away. */
+    private static boolean needsOwnerCredit(net.minecraft.world.entity.Entity target) {
+        return target instanceof net.minecraft.world.entity.boss.enderdragon.EnderDragon
+                || target instanceof net.minecraft.world.entity.boss.EnderDragonPart;
+    }
+
+    /**
      * Every punch is a chance for the power to show through: a one-in-ten
      * launch, and while desperate, burning fists and a one-in-five meteor.
      */
     @Override
     public boolean doHurtTarget(net.minecraft.world.entity.Entity target) {
-        boolean hit = super.doHurtTarget(target);
+        boolean hit;
+        if (!level().isClientSide && needsOwnerCredit(target)) {
+            // Vanilla's melee would build a mobAttack source, which the dragon
+            // discards outright. Apply it ourselves with the owner credited.
+            float dmg = (float) getAttributeValue(Attributes.ATTACK_DAMAGE);
+            hit = target.hurt(sourceFor(target), dmg);
+            if (hit) {
+                swing(net.minecraft.world.InteractionHand.MAIN_HAND);
+            }
+        } else {
+            hit = super.doHurtTarget(target);
+        }
         if (!hit || level().isClientSide) {
             return hit;
         }
@@ -1146,9 +1508,12 @@ public class CaydenCobb extends TamableAnimal {
 
     @Override
     public boolean hurt(DamageSource source, float amount) {
+        AscensionLadder.Rung rung = AscensionLadder.rung(getTier());
         // Ultra Instinct: the body answers before he does. Most incoming damage
-        // is simply not there when it lands, and he slides out of the way.
-        if (getTier() >= 4 && !level().isClientSide && this.random.nextInt(100) < DODGE_PERCENT
+        // is simply not there when it lands, and he slides out of the way. Blue
+        // does a lesser version of the same trick; everything below just tanks.
+        if (rung.dodgePercent() > 0 && !level().isClientSide
+                && this.random.nextInt(100) < rung.dodgePercent()
                 && !source.is(net.minecraft.tags.DamageTypeTags.BYPASSES_INVULNERABILITY)) {
             if (level() instanceof ServerLevel sl) {
                 Vec3 side = new Vec3(this.random.nextDouble() - 0.5D, 0.0D, this.random.nextDouble() - 0.5D);
@@ -1180,7 +1545,10 @@ public class CaydenCobb extends TamableAnimal {
                 && com.barbarajones.apocalypse.KraveApocalypse.isActiveNear(level(), position())) {
             return false;
         }
-        return super.hurt(source, amount);
+        // The divine forms do not dodge - they simply refuse most of what lands.
+        // Applied as a multiplier rather than a resistance effect so it stacks
+        // predictably with the desperation resistance he may already be holding.
+        return super.hurt(source, (float) (amount * rung.damageTaken()));
     }
 
     /** Make him untouchable for a while (used on post-death respawn). */
@@ -1217,6 +1585,8 @@ public class CaydenCobb extends TamableAnimal {
         tag.putBoolean("Ssj", isSuperSaiyan());
         tag.putInt("SsjTicks", this.ssjTicks);
         tag.putBoolean("SsjBossLinked", this.ssjUntilBossDies);
+        tag.putInt("AscensionUnlocks", getUnlockMask());
+        tag.putInt("AscensionKi", getKi());
         if (this.home != null) {
             tag.putInt("HomeX", this.home.getX());
             tag.putInt("HomeY", this.home.getY());
@@ -1230,6 +1600,11 @@ public class CaydenCobb extends TamableAnimal {
         super.readAdditionalSaveData(tag);
         this.entityData.set(FED, tag.getInt("KraveFed"));
         this.entityData.set(RAGE, tag.getBoolean("KraveRage"));
+        // Masked to the rungs that actually exist, so a save written by a future
+        // wider ladder cannot hand this build a tier it has no stats for.
+        this.entityData.set(UNLOCKS,
+                tag.getInt("AscensionUnlocks") & ((1 << (AscensionLadder.MAX + 1)) - 1));
+        this.entityData.set(KI, Math.max(0, tag.getInt("AscensionKi")));
         if (tag.getBoolean("Ssj")) {
             this.entityData.set(SSJ, true);
             this.ssjTicks = Math.max(1, tag.getInt("SsjTicks"));

@@ -61,6 +61,9 @@ public class KraveMonster extends Monster {
      */
     private static final EntityDataAccessor<Float> DATA_REAR =
             SynchedEntityData.defineId(KraveMonster.class, EntityDataSerializers.FLOAT);
+    /** True once his form has been decided, so it is settled exactly once. */
+    private boolean formSettled;
+
     /** Which time round this is: 1 through 4. Synced so the renderer can grow him. */
     private static final EntityDataAccessor<Integer> FORM =
             SynchedEntityData.defineId(KraveMonster.class, EntityDataSerializers.INT);
@@ -124,6 +127,7 @@ public class KraveMonster extends Monster {
      * see across a field which one you are dealing with.
      */
     public void setForm(int form) {
+        this.formSettled = true;
         int f = Math.max(1, Math.min(FINAL_FORM, form));
         this.entityData.set(FORM, f);
 
@@ -159,6 +163,9 @@ public class KraveMonster extends Monster {
             spd.setBaseValue(speed);
         }
         setHealth(getMaxHealth());
+        // The bar is how the player reads the escalation, so it has to follow
+        // the form rather than staying on the name it was constructed with.
+        this.bossEvent.setName(formTitle());
     }
 
     /** The name shown on the boss bar, so the escalation is legible. */
@@ -217,6 +224,15 @@ public class KraveMonster extends Monster {
     @Override
     public void tick() {
         super.tick();
+        if (!level().isClientSide && !this.formSettled) {
+            // Decide his own incarnation the first time he ticks, from whoever is
+            // nearest. Spawn sites used to set this, but /summon and spawn eggs
+            // bypass every one of them, so a command-spawned Monster was always
+            // form 1 no matter how many had already been beaten.
+            Player near = level().getNearestPlayer(this, 128.0D);
+            setForm(com.barbarajones.EventHandler.nextKraveForm(near));
+            this.formSettled = true;
+        }
         if (!level().isClientSide) {
             matchRival();
         }
@@ -437,6 +453,8 @@ public class KraveMonster extends Monster {
         super.readAdditionalSaveData(tag);
         if (tag.contains("KraveForm")) {
             setForm(tag.getInt("KraveForm"));
+        } else {
+            this.formSettled = false;
         }
     }
 

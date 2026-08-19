@@ -4,6 +4,7 @@ import com.barbarajones.apocalypse.KraveApocalypse;
 import com.barbarajones.apocalypse.KraveKosmosAmbience;
 import com.barbarajones.apocalypse.KraveKosmosBattle;
 import com.barbarajones.content.ModEntities;
+import com.barbarajones.content.ModSounds;
 import com.barbarajones.content.ModFluids;
 import com.barbarajones.content.ModItems;
 import com.barbarajones.entity.BarbaraJones;
@@ -113,8 +114,10 @@ public class EventHandler {
         if (player == null) {
             return 1;
         }
-        return Math.min(com.barbarajones.entity.KraveMonster.FINAL_FORM,
-                kraveFormsBeaten(player) + 1);
+        // Always the first incarnation. The escalation happens WITHIN the fight
+        // now - he stands back up as the next form each time he falls - so a
+        // summon that started at form 3 would skip most of the gauntlet.
+        return 1;
     }
 
     /** Static twin of persisted(), for the spawn sites that have no handler instance. */
@@ -124,6 +127,43 @@ public class EventHandler {
             data.put(PERSIST, new CompoundTag());
         }
         return data.getCompound(PERSIST);
+    }
+
+    /**
+     * Stands the Krave Monster back up one incarnation stronger, where he fell.
+     *
+     * <p>Spawned on the spot rather than after a delay: a gap long enough to
+     * walk away from would let the player treat each form as a separate errand,
+     * and the escalation only lands if it is one continuous fight that keeps
+     * getting worse under them.
+     */
+    private void reviveNextForm(ServerLevel level, KraveMonster fallen, int nextForm) {
+        KraveMonster next = ModEntities.KRAVE_MONSTER.get().create(level);
+        if (next == null) {
+            return;
+        }
+        next.moveTo(fallen.getX(), fallen.getY(), fallen.getZ(), fallen.getYRot(), 0.0F);
+        next.setForm(nextForm);
+        next.setTarget(fallen.getTarget());
+        level.addFreshEntity(next);
+
+        level.playSound(null, fallen.blockPosition(), ModSounds.KRAVE_ROAR.get(),
+                SoundSource.HOSTILE, 2.4F, 0.45F);
+        level.sendParticles(net.minecraft.core.particles.ParticleTypes.EXPLOSION_EMITTER,
+                fallen.getX(), fallen.getY() + 1.0D, fallen.getZ(), 2, 1.5D, 1.0D, 1.5D, 0.0D);
+        level.sendParticles(net.minecraft.core.particles.ParticleTypes.SOUL_FIRE_FLAME,
+                fallen.getX(), fallen.getY() + 1.0D, fallen.getZ(), 120, 2.0D, 2.0D, 2.0D, 0.25D);
+
+        String line = switch (nextForm) {
+            case 2 -> "It gets back up. SECOND FORM.";
+            case 3 -> "That was not all of it either. THIRD FORM.";
+            default -> "FINAL FORM. There is nothing after this one.";
+        };
+        for (Player p : level.getEntitiesOfClass(Player.class,
+                fallen.getBoundingBox().inflate(72.0D))) {
+            p.sendSystemMessage(Component.literal(ChatFormatting.DARK_PURPLE + ""
+                    + ChatFormatting.BOLD + line));
+        }
     }
 
     /** Run the apocalypse cutscene. */
@@ -259,22 +299,26 @@ public class EventHandler {
             return;
         }
 
-        if (dead instanceof KraveMonster) {
-            if (event.getSource().getEntity() instanceof Player slayer
-                    || dead.getLastHurtByMob() instanceof CaydenCobb) {
+        if (dead instanceof KraveMonster fallen) {
+            int form = fallen.getForm();
+            for (Player p : level.getEntitiesOfClass(Player.class,
+                    dead.getBoundingBox().inflate(64.0D))) {
+                CompoundTag persist = persistedOf(p);
+                persist.putInt("KraveFormsBeaten",
+                        Math.max(persist.getInt("KraveFormsBeaten"), form));
+            }
+
+            if (form < KraveMonster.FINAL_FORM) {
+                // One summon is the whole gauntlet: he gets straight back up as
+                // the next incarnation, in the same spot, without the player
+                // having to go and fetch another Krave Box. Killing him is a
+                // four-round fight, not four separate errands.
+                reviveNextForm(level, fallen, form + 1);
+            } else {
                 for (Player p : level.getEntitiesOfClass(Player.class,
                         dead.getBoundingBox().inflate(64.0D))) {
-                    CompoundTag persist = persistedOf(p);
-                    int beaten = Math.max(persist.getInt("KraveFormsBeaten"),
-                            ((KraveMonster) dead).getForm());
-                    persist.putInt("KraveFormsBeaten", beaten);
-                    if (beaten < KraveMonster.FINAL_FORM) {
-                        p.sendSystemMessage(Component.literal(ChatFormatting.DARK_PURPLE + ""
-                                + ChatFormatting.BOLD + "It is not finished. It will come back worse."));
-                    } else {
-                        p.sendSystemMessage(Component.literal(ChatFormatting.GOLD + ""
-                                + ChatFormatting.BOLD + "THE KRAVE IS FINALLY DEAD."));
-                    }
+                    p.sendSystemMessage(Component.literal(ChatFormatting.GOLD + ""
+                            + ChatFormatting.BOLD + "THE KRAVE IS FINALLY DEAD."));
                 }
             }
             for (Player player : level.getEntitiesOfClass(Player.class,

@@ -2,6 +2,7 @@ package com.barbarajones.entity;
 
 import com.barbarajones.content.ModItems;
 import com.barbarajones.content.ModSounds;
+import com.barbarajones.entity.barbara.BarbaraCombat;
 import com.barbarajones.quest.Quests;
 
 import net.minecraft.ChatFormatting;
@@ -16,7 +17,10 @@ import net.minecraft.tags.DamageTypeTags;
 import net.minecraft.world.InteractionHand;
 import net.minecraft.world.InteractionResult;
 import net.minecraft.world.damagesource.DamageSource;
+import net.minecraft.world.effect.MobEffectInstance;
+import net.minecraft.world.effect.MobEffects;
 import net.minecraft.world.entity.EntityType;
+import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.entity.PathfinderMob;
 import net.minecraft.world.entity.ai.attributes.AttributeSupplier;
 import net.minecraft.world.entity.ai.attributes.Attributes;
@@ -41,6 +45,12 @@ import java.util.UUID;
  * Barbara Jones. Calm by default; goes PSYCHO when her stash runs dry or someone
  * waves grass at her; gets euphoric and blows the O's when handed a joint. Once
  * Krave Rage is unlocked she becomes a pet that fights hostiles at your side.
+ *
+ * <p>Her whole fighting kit lives in {@link BarbaraCombat} and every move in it
+ * is paid for out of the same stash that keeps her calm - so the bag the player
+ * keeps topping up is simultaneously her mood and her ammunition. Empty that
+ * bag and she has nothing left but her fists, which is exactly when she is
+ * angriest about it.
  */
 public class BarbaraJones extends PathfinderMob {
 
@@ -66,6 +76,8 @@ public class BarbaraJones extends PathfinderMob {
     private UUID petOwner;
     private boolean wasRaging;
     private double lastSpeed = SPEED_CALM;
+    /** The smoking kit. Server-side only; nothing in it runs on the client. */
+    private final BarbaraCombat combat = new BarbaraCombat(this);
     /** 30s of post-respawn immunity, in ticks - same reason as Cayden's. */
     public static final int GRACE_TICKS = 600;
 
@@ -130,6 +142,45 @@ public class BarbaraJones extends PathfinderMob {
     private void setHigh(int t)  { this.entityData.set(HIGH, Math.max(0, t)); }
 
     public void addGrassStash(int amount) { setStash(getStash() + amount); }
+
+    /** A full bag, for anything that wants to draw her supply as a fraction. */
+    public static int getStashCapacity() { return STASH_MAX; }
+
+    /** Nothing left to smoke, so nothing left to fight with but her hands. */
+    public boolean isDry() { return getStash() <= 0; }
+
+    public BarbaraCombat getCombat() { return this.combat; }
+
+    /**
+     * Burn stash on an ability. Refuses rather than part-paying, so a move never
+     * half-fires: either she had the grass for it or she did not.
+     */
+    public boolean spendStash(int amount) {
+        if (amount <= 0) {
+            return true;
+        }
+        if (getStash() < amount) {
+            return false;
+        }
+        setStash(getStash() - amount);
+        return true;
+    }
+
+    /** Top her high up to at least this long - never cuts an existing one short. */
+    public void makeHigh(int ticks) {
+        setHigh(Math.max(getHigh(), ticks));
+    }
+
+    /**
+     * Whether players are currently on the wrong side of her. The kit reads this
+     * to decide whether the person watching is a bystander or a target - wave
+     * grass at Barbara and the smoke screen is aimed at you.
+     */
+    public boolean isMadAtPlayers() {
+        return isRaging() && !isPet();
+    }
+
+    public boolean hasGrace() { return this.graceTicks > 0; }
 
     public void setPet(Player owner) {
         this.entityData.set(PET, true);
@@ -244,6 +295,14 @@ public class BarbaraJones extends PathfinderMob {
                 followOwner();
             }
         }
+
+        // With an empty bag there is no kit left to run, only the temper. She
+        // swings harder for it, so letting her supply die has a cost the player
+        // can feel from the other side of the fight as easily as from beside her.
+        if (isDry() && shouldRage && this.tickCount % 40 == 0) {
+            addEffect(new MobEffectInstance(MobEffects.DAMAGE_BOOST, 60, 0, false, false));
+        }
+        this.combat.tick();
     }
 
     private void updateSpeed(boolean raging) {
@@ -385,7 +444,13 @@ public class BarbaraJones extends PathfinderMob {
                 && com.barbarajones.apocalypse.KraveApocalypse.isActiveNear(level(), position())) {
             return false;
         }
-        return super.hurt(source, amount);
+        boolean took = super.hurt(source, amount);
+        // Blowback answers a thing that is standing right there and can still be
+        // smoked in the face - never a fall, a cactus or a stray arrow's owner.
+        if (took && !level().isClientSide && source.getDirectEntity() instanceof LivingEntity attacker) {
+            this.combat.onHurtBy(attacker);
+        }
+        return took;
     }
 
     /** Make her untouchable for a while (used on post-death respawn). */
@@ -399,9 +464,12 @@ public class BarbaraJones extends PathfinderMob {
     public boolean doHurtTarget(net.minecraft.world.entity.Entity target) {
         boolean hit = super.doHurtTarget(target);
         if (hit) {
-            // lots of shoving, not much harm
+            // lots of shoving, not much harm - unless she is dry, in which case
+            // the shove is all she has and it goes in with everything behind it
+            double shove = isDry() ? 0.8D : 0.35D;
             double yaw = Math.toRadians(getYRot());
-            target.push(-Math.sin(yaw) * 0.35D, 0.12D, Math.cos(yaw) * 0.35D);
+            target.push(-Math.sin(yaw) * shove, isDry() ? 0.3D : 0.12D, Math.cos(yaw) * shove);
+            target.hurtMarked = true;
         }
         return hit;
     }
@@ -437,6 +505,7 @@ public class BarbaraJones extends PathfinderMob {
         if (this.petOwner != null) {
             tag.putUUID("PetOwner", this.petOwner);
         }
+        this.combat.save(tag);
     }
 
     @Override
@@ -452,5 +521,6 @@ public class BarbaraJones extends PathfinderMob {
         if (tag.hasUUID("PetOwner")) {
             this.petOwner = tag.getUUID("PetOwner");
         }
+        this.combat.load(tag);
     }
 }

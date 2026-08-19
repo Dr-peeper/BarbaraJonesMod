@@ -180,4 +180,16 @@ public final class ModEntities {
                     .<FilingCabinet>of(FilingCabinet::new, MobCategory.MISC)
                     .sized(1.0F, 1.5F).clientTrackingRange(16).updateInterval(3)
                     .build("filing_cabinet"));
+
+    // ---- Barbara's kit ------------------------------------------------------
+    public static final RegistryObject<EntityType<com.barbarajones.entity.SmokeRing>> SMOKE_RING =
+            ENTITIES.register("smoke_ring", () -> EntityType.Builder
+                    .<com.barbarajones.entity.SmokeRing>of(com.barbarajones.entity.SmokeRing::new, MobCategory.MISC)
+                    .sized(1.2F, 1.2F).clientTrackingRange(16).updateInterval(1)
+                    .build("smoke_ring"));
+    public static final RegistryObject<EntityType<com.barbarajones.entity.EmberCherry>> EMBER_CHERRY =
+            ENTITIES.register("ember_cherry", () -> EntityType.Builder
+                    .<com.barbarajones.entity.EmberCherry>of(com.barbarajones.entity.EmberCherry::new, MobCategory.MISC)
+                    .sized(0.35F, 0.35F).clientTrackingRange(16).updateInterval(1)
+                    .build("ember_cherry"));
 }

@@ -1,0 +1,13 @@
+{
+  "feature": "barbarajones:krave_tree_single",
+  "placement": [
+    { "type": "minecraft:rarity_filter", "chance": 9 },
+    {
+      "type": "minecraft:count",
+      "count": { "type": "minecraft:uniform", "value": { "min_inclusive": 1, "max_inclusive": 3 } }
+    },
+    { "type": "minecraft:in_square" },
+    { "type": "minecraft:heightmap", "heightmap": "WORLD_SURFACE_WG" },
+    { "type": "minecraft:biome" }
+  ]
+}

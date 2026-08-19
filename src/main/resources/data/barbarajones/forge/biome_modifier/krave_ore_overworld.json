@@ -1,0 +1,8 @@
+{
+  "type": "forge:add_features",
+  "biomes": "#minecraft:is_overworld",
+  "features": [
+    "barbarajones:krave_ore_vein"
+  ],
+  "step": "underground_ores"
+}

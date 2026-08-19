@@ -49,6 +49,11 @@ public class SsjAuraLayer extends RenderLayer<CaydenCobb, CaydenModel> {
         // billboard the flat effects toward the camera
         float camYaw = Minecraft.getInstance().gameRenderer.getMainCamera().getYRot();
 
+        // The eruption plays over whatever form he settles into.
+        if (full) {
+            ascensionBurst(pose, buf, new CinematicAge(entity.ticksSinceAscension()), camYaw);
+        }
+
         if (dark) {
             // Dark Cayden reads as the inverse of the ascension: the column falls
             // INWARD and downward rather than licking up, in violet-black with a
@@ -101,15 +106,17 @@ public class SsjAuraLayer extends RenderLayer<CaydenCobb, CaydenModel> {
         pose.mulPose(Axis.YP.rotationDegrees(-camYaw));   // face the camera
         Matrix4f m = pose.last().pose();
 
-        final int TONGUES = 9;
+        // Raised from 9. The aura was reading as a candle next to a character
+        // who is supposed to be tearing the sky open.
+        final int TONGUES = 22;
         for (int i = 0; i < TONGUES; i++) {
             // each tongue climbs, then restarts - staggered so it never pulses as one
             float phase = ((t * 0.09F) + i / (float) TONGUES) % 1.0F;
             float life = 1.0F - phase;                       // 1 at birth, 0 at the top
-            float x = ((i % 3) - 1) * 0.24F + Mth.sin(t * 0.21F + i) * 0.07F;
-            float baseY = -0.05F + phase * 2.05F * scale;
-            float height = (0.55F * life + 0.18F) * scale;
-            float halfW = (0.30F * life + 0.04F) * (1.0F - phase * 0.45F) * (0.6F + scale * 0.4F);
+            float x = ((i % 5) - 2) * 0.30F + Mth.sin(t * 0.21F + i) * 0.12F;
+            float baseY = -0.05F + phase * 3.40F * scale;
+            float height = (0.95F * life + 0.30F) * scale;
+            float halfW = (0.46F * life + 0.07F) * (1.0F - phase * 0.45F) * (0.6F + scale * 0.4F);
 
             // white-hot at the base, deep amber as it burns out
             // Gold for the full transformation; a dirtier orange-red for the half.
@@ -132,9 +139,9 @@ public class SsjAuraLayer extends RenderLayer<CaydenCobb, CaydenModel> {
         // a squat, very bright core at his feet
         for (int i = 0; i < 3; i++) {
             float pulse = 0.75F + Mth.sin(t * 0.55F + i * 2.1F) * 0.25F;
-            float w = 0.34F * pulse;
-            tri(buf, m, -w, 0.0F, 0.0F, w, 0.0F, 0.0F, 0.0F, 0.95F * pulse, 0.0F,
-                    1.0F, 0.95F, 0.65F, 0.42F);
+            float w = 0.62F * pulse;
+            tri(buf, m, -w, 0.0F, 0.0F, w, 0.0F, 0.0F, 0.0F, 1.85F * pulse, 0.0F,
+                    1.0F, 0.96F, 0.70F, 0.50F);
         }
         pose.popPose();
     }
@@ -223,6 +230,67 @@ public class SsjAuraLayer extends RenderLayer<CaydenCobb, CaydenModel> {
         }
         pose.popPose();
     }
+
+    /**
+     * The moment of transformation.
+     *
+     * <p>A column of light erupts from him to the sky and collapses back over
+     * about a second and a half, with a ring racing outward along the ground
+     * underneath it. The steady aura is what he looks like; this is the event of
+     * becoming it, and it needs to be several times larger than the thing it
+     * settles into or the change reads as a texture swap.
+     */
+    private void ascensionBurst(PoseStack pose, VertexConsumer buf, CinematicAge age,
+                                float camYaw) {
+        int since = age.ticks;
+        if (since < 0 || since > 34) {
+            return;
+        }
+        float p = since / 34.0F;               // 0 -> 1 across the burst
+        float fade = 1.0F - p;
+
+        pose.pushPose();
+        pose.mulPose(Axis.YP.rotationDegrees(-camYaw));
+        Matrix4f m = pose.last().pose();
+
+        // the pillar: shoots up fast, then falls away
+        float rise = Mth.sin(Math.min(1.0F, p * 1.6F) * Mth.HALF_PI);
+        float top = 34.0F * rise;
+        float halfW = (1.5F + 2.6F * fade) * (0.35F + 0.65F * fade);
+        for (int i = 0; i < 5; i++) {
+            float w = halfW * (1.0F - i * 0.16F);
+            float a = 0.30F * fade * fade;
+            if (a <= 0.004F) {
+                continue;
+            }
+            tri(buf, m, -w, 0.0F, 0.0F, w, 0.0F, 0.0F, 0.0F, top, 0.0F,
+                    1.0F, 0.93F, 0.55F, a);
+        }
+        // a white-hot core inside it
+        tri(buf, m, -halfW * 0.30F, 0.0F, 0.0F, halfW * 0.30F, 0.0F, 0.0F,
+                0.0F, top * 0.92F, 0.0F, 1.0F, 1.0F, 0.92F, 0.45F * fade);
+        pose.popPose();
+
+        // and the ground ring, racing out much further than the settled one
+        Matrix4f gm = pose.last().pose();
+        float radius = 1.0F + p * 16.0F;
+        float inner = radius - (1.2F + 2.0F * fade);
+        float alpha = 0.75F * fade;
+        final int SEG = 40;
+        for (int i = 0; i < SEG; i++) {
+            float a0 = (i / (float) SEG) * Mth.TWO_PI;
+            float a1 = ((i + 1) / (float) SEG) * Mth.TWO_PI;
+            float c0 = Mth.cos(a0), s0 = Mth.sin(a0);
+            float c1 = Mth.cos(a1), s1 = Mth.sin(a1);
+            tri(buf, gm, c0 * inner, 0.03F, s0 * inner, c1 * inner, 0.03F, s1 * inner,
+                    c1 * radius, 0.03F, s1 * radius, 1.0F, 0.88F, 0.45F, alpha);
+            tri(buf, gm, c0 * inner, 0.03F, s0 * inner, c1 * radius, 0.03F, s1 * radius,
+                    c0 * radius, 0.03F, s0 * radius, 1.0F, 0.88F, 0.45F, alpha);
+        }
+    }
+
+    /** Tiny carrier so the burst reads its age without another entity lookup. */
+    private record CinematicAge(int ticks) { }
 
     // ---- upswept hair -------------------------------------------------------
 

@@ -43,7 +43,12 @@ public class Nugget extends Cat {
     }
 
     public static AttributeSupplier.Builder createAttributes() {
-        return Animal.createLivingAttributes()
+        // createMobAttributes, NOT createLivingAttributes: the former adds
+        // FOLLOW_RANGE and ATTACK_KNOCKBACK. Every PathfinderMob builds a
+        // GroundPathNavigation in its constructor, which reads FOLLOW_RANGE, so
+        // without it the entity cannot be constructed at all - it crashed the
+        // server the moment a Nugget was created.
+        return Animal.createMobAttributes()
                 .add(Attributes.MAX_HEALTH, 8.0D)
                 .add(Attributes.MOVEMENT_SPEED, 0.3D)
                 .add(Attributes.ATTACK_DAMAGE, 2.0D)

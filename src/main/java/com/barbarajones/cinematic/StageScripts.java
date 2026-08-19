@@ -1,10 +1,14 @@
 package com.barbarajones.cinematic;
 
 import com.barbarajones.cinematic.actor.BluntActor;
+import com.barbarajones.cinematic.actor.HellGateActor;
 import com.barbarajones.cinematic.actor.BoxTitanActor;
+import com.barbarajones.cinematic.actor.C4CableActor;
 import com.barbarajones.cinematic.actor.CleaverActor;
 import com.barbarajones.cinematic.actor.GrassBladeActor;
+import com.barbarajones.cinematic.actor.InternetManagerActor;
 import com.barbarajones.cinematic.actor.ManagerActor;
+import com.barbarajones.cinematic.actor.SkyTelevisionActor;
 import com.barbarajones.cinematic.actor.SmokerActor;
 import com.barbarajones.cinematic.actor.ThrowerActor;
 import com.barbarajones.cinematic.actor.TorchActor;
@@ -73,7 +77,7 @@ public final class StageScripts {
             case 5 -> theTorching(origin, playerEye);
             case 6 -> boxfall(origin, playerEye);
             case 7 -> ashfall(origin, playerEye);
-            case 8 -> theBarrage(origin, playerEye);
+            case 8 -> theBarrage(origin, playerEye);   // theInterview() is still unwritten - the agent that owned it was stopped
             case 9 -> theManager(origin, playerEye);
             default -> armageddon(origin, playerEye);
         };
@@ -1340,7 +1344,8 @@ public final class StageScripts {
         tl.cue(224, burst(o.add(0.0D, 1.0D, 0.0D), ParticleTypes.LARGE_SMOKE, 180, 20.0D, 0.6D));
         tl.cue(238, sound(farAt, ModSounds.KRAVE_LAUGH, 1.4F, 0.7F));
 
-        return new Scene("Ashfall", o, tl, rig, 34).add(blunt).add(far);
+        HellGateActor gate = hellGate(tl, o, 46.0F, 10, 60, 84, end);
+        return new Scene("Ashfall", o, tl, rig, 34).add(blunt).add(far).add(gate);
     }
 
     // ------------------------------------------------------------------------
@@ -1905,12 +1910,56 @@ public final class StageScripts {
         tl.cue(204, sound(o, ModSounds.EVT_HOUSE, 1.3F, 1.0F));
         tl.cue(272, sound(o, ModSounds.KRAVE_LAUGH, 1.2F, 0.7F));
 
+        // The full-size gates, over the biggest stage in the mod.
+        scene.add(hellGate(tl, o, 88.0F, 8, 44, 66, end));
         return scene;
     }
 
     // ---- authoring helpers -------------------------------------------------
 
     /** The yaw that turns an actor's front (+Z) toward a world point. */
+    /**
+     * Hangs the gates of hell over the death site and grinds them open.
+     *
+     * <p>These used to be one flat textured quad about a hundred blocks across,
+     * eighty blocks up. The transform was right, but a single sheet that size has
+     * nothing on it nearer the viewer than anything else, so no camera move
+     * changes its silhouette and the eye files it as an overlay stuck to the
+     * lens. {@link HellGateActor} is a real structure - frame, arch, a hanging
+     * colonnade - which is what gives the parallax that sells it as being up
+     * there in the world.
+     *
+     * <p>{@code open} is driven LINEAR on purpose: the leaves carry their own
+     * weight curve internally and are hinged on their outer edges, so the gap is
+     * already the versine of the swing. Easing this track as well double-eases it
+     * and the doors crawl.
+     */
+    private static HellGateActor hellGate(Timeline tl, Vec3 o, float span,
+                                          int arrive, int grind, int part, int end) {
+        HellGateActor gate = new HellGateActor(span);
+        Vec3 at = o.add(0.0D, 78.0D, 0.0D);
+        gate.bind(tl, "gate", at, 0.0F, 1.0F);
+
+        // It lowers into frame listing, and levels off as it settles.
+        tl.track("gate.descend", Track.from((float) arrive, 0.0F)
+                .key(arrive + 40.0F, 1.0F, Easing.QUINT_OUT)
+                .hold(end));
+        // The grind starts before anything moves - the sound of strain first.
+        tl.track("gate.shudder", Track.from((float) grind, 0.0F)
+                .key(grind + 10.0F, 1.0F, Easing.CUBIC_OUT)
+                .key(part + 70.0F, 0.35F, Easing.SINE_IN_OUT)
+                .hold(end));
+        tl.track("gate.open", Track.from((float) part, 0.0F)
+                .key(part + 74.0F, 1.0F, Easing.LINEAR)
+                .hold(end));
+        tl.track("gate.glow", Track.constant(1.0F));
+
+        tl.cue(grind, sound(at, ModSounds.KRAVE_RUMBLE, 2.0F, 0.5F));
+        tl.cue(part, sound(at, ModSounds.KRAVE_BOOM, 2.4F, 0.4F));
+        tl.cue(part + 74, sound(at, ModSounds.KRAVE_ROAR, 2.0F, 0.6F));
+        return gate;
+    }
+
     private static float facing(Vec3 from, Vec3 to) {
         return (float) Math.toDegrees(Math.atan2(to.x - from.x, to.z - from.z));
     }

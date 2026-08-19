@@ -164,8 +164,14 @@ public class KraveMeteor extends Entity {
                 continue;   // his own side never eats a meteor
             }
             // Attributed to Cayden: KraveMonster.hurt() cuts anything else to 5%.
-            victim.hurt(this.saiyanOwner != null
-                    ? sl.damageSources().indirectMagic(this, this.saiyanOwner)
+            // Credit Cayden's owner where there is one: the Ender Dragon throws
+            // away any damage whose causing entity is not a Player.
+            net.minecraft.world.entity.LivingEntity credited = this.saiyanOwner;
+            if (this.saiyanOwner != null && this.saiyanOwner.getOwner() instanceof net.minecraft.world.entity.player.Player p) {
+                credited = p;
+            }
+            victim.hurt(credited != null
+                    ? sl.damageSources().indirectMagic(this, credited)
                     : sl.damageSources().magic(), 14.0F);
         }
     }

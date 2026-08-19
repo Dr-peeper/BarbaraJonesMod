@@ -19,6 +19,7 @@ import com.barbarajones.entity.ThePlug;
 import net.minecraft.world.entity.EntityType;
 import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.entity.ai.attributes.AttributeSupplier;
+import net.minecraft.world.entity.ai.attributes.Attributes;
 import net.minecraftforge.event.entity.EntityAttributeCreationEvent;
 import net.minecraftforge.eventbus.api.SubscribeEvent;
 import net.minecraftforge.fml.common.Mod;
@@ -58,6 +59,10 @@ public final class ModEntityAttributes {
     /** Populated as we register, then checked against REQUIRED. */
     private static final Set<EntityType<?>> REGISTERED = new HashSet<>();
 
+    /** The built suppliers, so they can be inspected for required attributes. */
+    private static final java.util.Map<EntityType<?>, AttributeSupplier> SUPPLIERS =
+            new java.util.HashMap<>();
+
     private ModEntityAttributes() { }
 
     @SubscribeEvent
@@ -78,12 +83,49 @@ public final class ModEntityAttributes {
         put(event, ModEntities.MANAGER_MINION.get(),     ManagerMinion.createAttributes().build());
 
         verifyEveryMobRegistered();
+        verifyRequiredAttributes();
     }
 
     private static <T extends LivingEntity> void put(EntityAttributeCreationEvent event,
                                                      EntityType<T> type, AttributeSupplier attrs) {
         event.put(type, attrs);
         REGISTERED.add(type);
+        SUPPLIERS.put(type, attrs);
+    }
+
+    /**
+     * Every mob needs FOLLOW_RANGE and ATTACK_KNOCKBACK whether or not it looks
+     * like it wants them.
+     *
+     * <p>{@code Mob.createMobAttributes()} supplies both;
+     * {@code LivingEntity.createLivingAttributes()} supplies neither. Building
+     * from the latter produces a mob that compiles, registers, and then throws
+     * the instant anything constructs it - PathNavigation reads FOLLOW_RANGE in
+     * its own constructor, and MeleeAttackGoal reads ATTACK_KNOCKBACK on its
+     * first swing. Nugget shipped that way and crashed the server on sight, so
+     * the mistake is caught here at startup instead.
+     */
+    private static void verifyRequiredAttributes() {
+        List<String> broken = new ArrayList<>();
+        for (var entry : SUPPLIERS.entrySet()) {
+            AttributeSupplier supplier = entry.getValue();
+            List<String> missing = new ArrayList<>();
+            if (!supplier.hasAttribute(Attributes.FOLLOW_RANGE)) {
+                missing.add("FOLLOW_RANGE");
+            }
+            if (!supplier.hasAttribute(Attributes.ATTACK_KNOCKBACK)) {
+                missing.add("ATTACK_KNOCKBACK");
+            }
+            if (!missing.isEmpty()) {
+                broken.add(net.minecraftforge.registries.ForgeRegistries.ENTITY_TYPES
+                        .getKey(entry.getKey()) + " lacks " + String.join(" and ", missing));
+            }
+        }
+        if (!broken.isEmpty()) {
+            throw new IllegalStateException("Attribute suppliers are incomplete: "
+                    + String.join("; ", broken)
+                    + ". Build them from createMobAttributes(), not createLivingAttributes().");
+        }
     }
 
     /** Throws at startup rather than leaving a mob that dies the moment it spawns. */

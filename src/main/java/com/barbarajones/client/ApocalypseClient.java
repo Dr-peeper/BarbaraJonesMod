@@ -15,7 +15,6 @@ import net.minecraft.client.Minecraft;
 import net.minecraft.util.Mth;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.resources.ResourceLocation;
-import net.minecraft.world.entity.Entity;
 import net.minecraftforge.api.distmarker.Dist;
 import net.minecraftforge.client.event.RenderGuiOverlayEvent;
 import net.minecraftforge.client.event.RenderLevelStageEvent;
@@ -39,10 +38,6 @@ public final class ApocalypseClient {
             FACES[i] = new ResourceLocation(BarbaraJonesMod.MODID, "textures/gui/face_" + (i + 1) + ".png");
         }
     }
-    private static final ResourceLocation GATE_VOID =
-            new ResourceLocation(BarbaraJonesMod.MODID, "textures/gui/hellgate_void.png");
-    private static final ResourceLocation GATE_DOOR =
-            new ResourceLocation(BarbaraJonesMod.MODID, "textures/gui/hellgate_door.png");
 
     private static float redLevel = 0.0F;
     private static boolean active = false;
@@ -366,18 +361,10 @@ public final class ApocalypseClient {
             }
             return;
         }
-        if (com.barbarajones.cinematic.CinematicDirector.isRunning()) {
-            return;   // the director stages its own actors; two sets would overlap
-        }
-        if (event.getStage() != RenderLevelStageEvent.Stage.AFTER_WEATHER
-                || wrathTimer <= 0 || stage < 6) {
-            return;
-        }
-        try {
-            renderGates(event.getPoseStack(), event.getPartialTick());
-        } catch (Throwable ignored) {
-            // world rendering must never crash
-        }
+        // The gates used to be drawn here as a flat overhead plane. They are
+        // real articulated geometry now - see HellGateActor, staged by the
+        // cinematic director - so there is nothing left for this hook to do
+        // beyond the blood sky above.
     }
 
     /**
@@ -446,66 +433,4 @@ public final class ApocalypseClient {
         RenderSystem.disableBlend();
     }
 
-    private static void renderGates(PoseStack pose, float partial) {
-        Minecraft mc = Minecraft.getInstance();
-        Entity cam = mc.getCameraEntity();
-        if (cam == null || mc.level == null) {
-            return;
-        }
-        var camPos = mc.gameRenderer.getMainCamera().getPosition();
-
-        double gy = deathY + 80.0D;
-        float H = 50.0F + stage * 8.0F;
-        int elapsed = wrathMax - wrathTimer;
-        float open = Math.min(1.0F, elapsed / 45.0F);
-        if (wrathTimer < 35) {
-            open = Math.min(open, wrathTimer / 35.0F);
-        }
-        float appear = Math.min(1.0F, elapsed / 12.0F);
-        long time = mc.level.getGameTime();
-
-        pose.pushPose();
-        pose.translate(deathX - camPos.x, gy - camPos.y, deathZ - camPos.z);
-
-        RenderSystem.enableBlend();
-        RenderSystem.depthMask(false);
-        RenderSystem.disableCull();
-
-        // 1) churning hellfire void, additive, just above the doors
-        RenderSystem.setShaderColor(1.0F, 0.55F, 0.2F, appear);
-        RenderSystem.setShader(net.minecraft.client.renderer.GameRenderer::getPositionTexShader);
-        RenderSystem.setShaderTexture(0, GATE_VOID);
-        RenderSystem.blendFunc(com.mojang.blaze3d.platform.GlStateManager.SourceFactor.SRC_ALPHA,
-                com.mojang.blaze3d.platform.GlStateManager.DestFactor.ONE);
-        float vs = (time % 220L) / 220.0F;
-        quadXZ(pose, -H, -H, H, H, 0.6F, 0.0F, vs, 1.0F, 1.0F + vs);
-
-        // 2) the two gate doors, flat, sliding apart along X
-        RenderSystem.blendFunc(com.mojang.blaze3d.platform.GlStateManager.SourceFactor.SRC_ALPHA,
-                com.mojang.blaze3d.platform.GlStateManager.DestFactor.ONE_MINUS_SRC_ALPHA);
-        RenderSystem.setShaderColor(1.0F, 1.0F, 1.0F, appear);
-        RenderSystem.setShaderTexture(0, GATE_DOOR);
-        float slide = open * H * 1.05F;
-        quadXZ(pose, -H - slide, -H, -slide, H, 0.0F, 0.0F, 0.0F, 1.0F, 1.0F);
-        quadXZ(pose, slide, -H, H + slide, H, 0.0F, 1.0F, 0.0F, 0.0F, 1.0F);
-
-        RenderSystem.setShaderColor(1.0F, 1.0F, 1.0F, 1.0F);
-        RenderSystem.enableCull();
-        RenderSystem.depthMask(true);
-        RenderSystem.disableBlend();
-        pose.popPose();
-    }
-
-    /** A textured HORIZONTAL quad (constant local y). */
-    private static void quadXZ(PoseStack pose, float x0, float z0, float x1, float z1, float y,
-                               float u0, float v0, float u1, float v1) {
-        Matrix4f m = pose.last().pose();
-        var buf = Tesselator.getInstance().getBuilder();
-        buf.begin(VertexFormat.Mode.QUADS, DefaultVertexFormat.POSITION_TEX);
-        buf.vertex(m, x0, y, z0).uv(u0, v0).endVertex();
-        buf.vertex(m, x0, y, z1).uv(u0, v1).endVertex();
-        buf.vertex(m, x1, y, z1).uv(u1, v1).endVertex();
-        buf.vertex(m, x1, y, z0).uv(u1, v0).endVertex();
-        BufferUploader.drawWithShader(buf.end());
-    }
 }
