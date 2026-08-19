@@ -2,6 +2,7 @@ package com.barbarajones.entity;
 
 import com.barbarajones.content.ModItems;
 import com.barbarajones.content.ModSounds;
+import com.barbarajones.progression.AscensionLadder;
 
 import net.minecraft.network.chat.Component;
 import net.minecraft.nbt.CompoundTag;
@@ -315,35 +316,49 @@ public class KraveMonster extends Monster {
      * down for a tick.
      */
     private void matchRival() {
-        // Superseded by the form ladder: his strength now comes from which
-        // incarnation he is, not from what Cayden happens to have turned into.
-        if (true) {
+        // The form ladder gives him a starting strength, but Cayden's own
+        // attackMul climbs as high as 30x at Ultra Instinct (see
+        // AscensionLadder) - a form-1 Monster's static 5 damage / 160 health
+        // means an ascended Cayden deletes him in one or two swings, no fight
+        // at all. So on top of the form baseline, we re-scale both combatants'
+        // numbers to whatever tier Cayden is CURRENTLY at: his hit lands
+        // roughly the same "hits to kill" regardless of how far up the ladder
+        // he's climbed, and the Monster's own attack is scaled by the same
+        // rung's damageTaken so Cayden takes a real but survivable beating
+        // rather than a guaranteed one-shot in either direction. Only applies
+        // during an active rival duel - a player poking him early is unaffected.
+        if (!this.bossFightActive) {
             return;
         }
         int tier = 0;
         if (getTarget() instanceof CaydenCobb c && c.isAlive()) {
-            tier = Math.max(c.getTier(), c.isSuperSaiyan() ? 1 : 0);
+            tier = Math.max(c.getTier(), c.isSuperSaiyan() ? AscensionLadder.SSJ : 0);
         }
-        if (tier <= this.matchedTier) {
+        if (tier <= this.matchedTier && this.matchedTier != 0) {
             return;
         }
-        this.matchedTier = tier;
+        this.matchedTier = Math.max(tier, this.matchedTier);
+        if (tier == 0) {
+            return;
+        }
 
-        double health = switch (tier) {
-            case 3 -> 1800.0D;
-            case 2 -> 900.0D;
-            default -> 400.0D;
-        };
-        double attack = switch (tier) {
-            case 3 -> 24.0D;
-            case 2 -> 16.0D;
-            default -> 10.0D;
-        };
-        double speed = switch (tier) {
-            case 3 -> 0.70D;
-            case 2 -> 0.55D;
-            default -> 0.45D;
-        };
+        AscensionLadder.Rung rung = AscensionLadder.rung(tier);
+
+        // Target roughly 6 clean hits to kill him at this tier, from Cayden's
+        // fed-scaled attack (BASE_DAMAGE=3.0, ignoring the fed bonus here -
+        // close enough for a boss-scale number and keeps this self-contained).
+        double caydenHitDamage = 3.0D * rung.attackMul();
+        double health = Math.max(getMaxHealth(), caydenHitDamage * 6.0D);
+
+        // His own damage should land Cayden - base health 24 plus this rung's
+        // bonusHealth, filtered through the rung's own damage-taken multiplier -
+        // in roughly 5 hits too, so it reads as a real duel both ways.
+        double caydenEffectiveHealth = (24.0D + rung.bonusHealth()) / Math.max(0.2D, rung.damageTaken());
+        double attack = Math.max(getAttribute(Attributes.ATTACK_DAMAGE) != null
+                ? getAttribute(Attributes.ATTACK_DAMAGE).getBaseValue() : 5.0D,
+                caydenEffectiveHealth / 5.0D);
+
+        double speed = Math.min(0.75D, 0.32D + tier * 0.06D);
 
         var maxHp = getAttribute(Attributes.MAX_HEALTH);
         var atk = getAttribute(Attributes.ATTACK_DAMAGE);
