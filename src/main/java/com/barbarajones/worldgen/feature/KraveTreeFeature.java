@@ -1,5 +1,6 @@
 package com.barbarajones.worldgen.feature;
 
+import com.barbarajones.content.ModBlocks;
 import com.barbarajones.block.krave.KraveWood;
 
 import com.mojang.serialization.Codec;
@@ -109,7 +110,11 @@ public class KraveTreeFeature extends Feature<NoneFeatureConfiguration> {
         if (!isOpen(level, pos)) {
             return;
         }
-        level.setBlock(pos, KraveWood.LEAVES.defaultBlockState()
+        // The other branch registered its own krave_leaves, which won the id clash,
+
+        // so KraveWood.LEAVES is no longer registered and must not be placed here.
+
+        level.setBlock(pos, ModBlocks.KRAVE_LEAVES.get().defaultBlockState()
                 .setValue(LeavesBlock.DISTANCE, distance)
                 .setValue(LeavesBlock.PERSISTENT, Boolean.FALSE)
                 .setValue(LeavesBlock.WATERLOGGED, Boolean.FALSE), 3);

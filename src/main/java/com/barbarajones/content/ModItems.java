@@ -426,8 +426,6 @@ public final class ModItems {
             () -> new BlockItem(ModBlocks.STRIPPED_KRAVE_LOG.get(), props()));
     public static final RegistryObject<Item> STRIPPED_KRAVE_WOOD_ITEM = ITEMS.register("stripped_krave_wood",
             () -> new BlockItem(ModBlocks.STRIPPED_KRAVE_WOOD.get(), props()));
-    public static final RegistryObject<Item> KRAVE_LEAVES_ITEM = ITEMS.register("krave_leaves",
-            () -> new BlockItem(ModBlocks.KRAVE_LEAVES.get(), props()));
     public static final RegistryObject<Item> KRAVE_SAPLING_ITEM = ITEMS.register("krave_sapling",
             () -> new BlockItem(ModBlocks.KRAVE_SAPLING.get(), props()));
     public static final RegistryObject<Item> KRAVE_PLANKS_ITEM = ITEMS.register("krave_planks",

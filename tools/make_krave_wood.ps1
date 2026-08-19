@@ -88,7 +88,7 @@ for ($i=0; $i -lt 11; $i++) {
     Rct $b $x $y 2 2 (C '8A5A2A')
     Px $b $x $y (C 'B4783A')
 }
-Save $b "$tdir\krave_leaves.png"
+# krave_leaves.png intentionally not written: the other branch owns that block.
 
 # Sapling: a sprig with one cereal pip on it.
 $b = NewImg
@@ -154,7 +154,7 @@ foreach ($p in @(
 
 # simple full cubes
 foreach ($p in @(
-    @('krave_leaves','krave_leaves'),
+    # krave_leaves is owned by the other branch's LeavesBlock now - not ours to write.
     @('krave_planks','krave_planks'),
     @('krave_ore','krave_ore'),
     @('deepslate_krave_ore','deepslate_krave_ore'))) {
@@ -360,7 +360,7 @@ WriteJson "$bs\krave_pod.json" "{`n  `"variants`": {`n$($podVars -join ",`n")`n 
 WriteJson "$imod\krave_pod.json" "{`n  `"parent`": `"minecraft:item/generated`",`n  `"textures`": { `"layer0`": `"$BLK/krave_pod`" }`n}"
 
 # ---- verify ----------------------------------------------------------------
-$ids = @('krave_log','krave_wood','stripped_krave_log','stripped_krave_wood','krave_leaves',
+$ids = @('krave_log','krave_wood','stripped_krave_log','stripped_krave_wood',
          'krave_sapling','krave_planks','krave_stairs','krave_slab','krave_fence',
          'krave_fence_gate','krave_door_block','krave_trapdoor','krave_button',
          'krave_pressure_plate','krave_pod','krave_ore','deepslate_krave_ore')
@@ -371,7 +371,7 @@ foreach ($id in $ids) {
     }
 }
 foreach ($t in @('krave_log','krave_log_top','stripped_krave_log','stripped_krave_log_top',
-                 'krave_leaves','krave_sapling','krave_planks','krave_pod','krave_ore',
+                 'krave_sapling','krave_planks','krave_pod','krave_ore',
                  'deepslate_krave_ore','krave_door_top','krave_door_bottom','krave_trapdoor')) {
     if (-not (Test-Path "$tdir\$t.png")) { "  MISSING  $tdir\$t.png"; $missing++ }
 }
