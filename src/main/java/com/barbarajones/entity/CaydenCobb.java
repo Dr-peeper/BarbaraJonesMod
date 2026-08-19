@@ -27,6 +27,7 @@ import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.damagesource.DamageSource;
 import net.minecraft.world.entity.AgeableMob;
 import net.minecraft.world.entity.EntityType;
+import net.minecraft.world.entity.LightningBolt;
 import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.entity.ai.attributes.AttributeSupplier;
 import net.minecraft.world.entity.ai.attributes.Attributes;
@@ -387,7 +388,66 @@ public class CaydenCobb extends TamableAnimal {
                     + "CAYDEN LEARNS " + rung.name().toUpperCase(java.util.Locale.ROOT) + "."));
             p.sendSystemMessage(Component.literal(ChatFormatting.GRAY + "  " + rung.edge()));
         }
+        transformationSpectacle(tier);
         return true;
+    }
+
+    /**
+     * "The whole world reacts" - scaled by how far up the ladder this rung is.
+     * Low tiers (SSJ/SSJ2) just get the existing particle burst above; GOD and
+     * ULTRA add lightning, nearby mobs flinching, and a non-destructive
+     * ground-crack particle ring. No blocks are ever touched - this is a
+     * survival-safe cosmetic event, not terrain damage.
+     */
+    private void transformationSpectacle(int tier) {
+        if (!(level() instanceof ServerLevel sl) || tier < AscensionLadder.SSJ3) {
+            return;
+        }
+        int strikes = tier >= AscensionLadder.ULTRA ? 4 : tier >= AscensionLadder.GOD ? 2 : 1;
+        double radius = 4.0D + tier * 1.5D;
+        for (int i = 0; i < strikes; i++) {
+            double ang = this.random.nextDouble() * Math.PI * 2.0D;
+            double dist = 1.5D + this.random.nextDouble() * radius;
+            double lx = getX() + Math.cos(ang) * dist;
+            double lz = getZ() + Math.sin(ang) * dist;
+            LightningBolt bolt = EntityType.LIGHTNING_BOLT.create(sl);
+            if (bolt != null) {
+                bolt.moveTo(lx, sl.getHeight(net.minecraft.world.level.levelgen.Heightmap.Types.MOTION_BLOCKING, (int) lx, (int) lz), lz);
+                bolt.setVisualOnly(true);   // dramatic, not a fire hazard
+                sl.addFreshEntity(bolt);
+            }
+        }
+
+        // ground crack: a burst of block-particles pulled from whatever he's
+        // standing on, ringed around him - purely cosmetic, nothing is broken
+        var blockState = sl.getBlockState(blockPosition().below());
+        for (int i = 0; i < 10 + tier * 6; i++) {
+            double ang = this.random.nextDouble() * Math.PI * 2.0D;
+            double dist = this.random.nextDouble() * radius;
+            sl.sendParticles(new net.minecraft.core.particles.BlockParticleOption(
+                            net.minecraft.core.particles.ParticleTypes.BLOCK, blockState),
+                    getX() + Math.cos(ang) * dist, getY() + 0.1D, getZ() + Math.sin(ang) * dist,
+                    4, 0.15D, 0.05D, 0.15D, 0.02D);
+        }
+
+        // nearby mobs flinch and back off - a light knockback, not real damage
+        for (LivingEntity mob : sl.getEntitiesOfClass(LivingEntity.class, getBoundingBox().inflate(radius),
+                e -> e != this && e.isAlive() && !(e instanceof Player))) {
+            Vec3 away = mob.position().subtract(position());
+            double len = Math.max(0.5D, away.length());
+            mob.setDeltaMovement(mob.getDeltaMovement().add(away.scale(0.4D / len)).add(0.0D, 0.15D, 0.0D));
+            mob.hurtMarked = true;
+        }
+
+        // screen shake for nearby players: a brief, cheap knockback-free view
+        // punch via velocity nudge (the client resolves this as camera bob
+        // the same way vanilla explosion knockback does)
+        for (Player p : sl.getEntitiesOfClass(Player.class, getBoundingBox().inflate(radius + 8.0D))) {
+            double dx = p.getX() - getX(), dz = p.getZ() - getZ();
+            double len = Math.max(1.0D, Math.sqrt(dx * dx + dz * dz));
+            p.setDeltaMovement(p.getDeltaMovement().add(dx / len * 0.12D, 0.05D, dz / len * 0.12D));
+            p.hurtMarked = true;
+        }
     }
 
     // ---- super saiyan --------------------------------------------------------
