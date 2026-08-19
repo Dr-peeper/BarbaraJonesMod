@@ -1,6 +1,7 @@
 package com.barbarajones.client.render;
 
 import com.barbarajones.entity.CaydenCobb;
+import com.barbarajones.progression.AscensionLadder;
 
 import com.mojang.blaze3d.vertex.PoseStack;
 import com.mojang.blaze3d.vertex.VertexConsumer;
@@ -74,21 +75,72 @@ public class SsjAuraLayer extends RenderLayer<CaydenCobb, CaydenModel> {
         }
         com.mojang.blaze3d.systems.RenderSystem.setShaderColor(tr, tg, tb, 1.0F);
 
+        // Each rung reads as its own escalation, not a recolor of the same
+        // effect stack:
+        //  SSJ1        - aura only, no crackle at all (the "first time" should be quiet)
+        //  SSJ2        - aura + lightning starts
+        //  SSJ3        - huge aura, denser/crazier lightning, long swept-back hair
+        //  GOD / BLUE  - a different silhouette entirely: pulsating rings instead of hair spikes
+        //  ULTRA       - white, sparse, fast - reads as "stopped trying," not "biggest fire"
+        boolean isSsj1 = full && tier == AscensionLadder.SSJ;
+        boolean isSsj3Plus = full && tier >= AscensionLadder.SSJ3 && tier < AscensionLadder.GOD;
+        boolean isDivine = full && (tier == AscensionLadder.GOD || tier == AscensionLadder.BLUE);
+        boolean isUltra = full && tier == AscensionLadder.ULTRA;
+
         flameColumn(pose, buf, t, camYaw);
         skyBeam(pose, buf, t, camYaw);
-        hairSpikes(pose, buf, t);
-        arcs(pose, buf, entity, t);
-        orbitingSparks(pose, buf, t);
+
+        if (!isDivine) {
+            hairSpikes(pose, buf, t, isSsj3Plus || isUltra);
+        }
+        if (!isSsj1) {
+            int bolts = isSsj3Plus ? 14 : 7;
+            arcs(pose, buf, entity, t, bolts);
+        }
+        if (!isUltra) {
+            orbitingSparks(pose, buf, t);
+        }
         shockwave(pose, buf, entity, t);
         groundPulse(pose, buf, t);
 
+        if (isDivine) {
+            // "More pulsating energy" - the GOD/BLUE signature: the whole
+            // silhouette breathes instead of just flaring outward once.
+            pulsingCore(pose, buf, t);
+        }
+
         // Ultra Instinct gets a second, wider shockwave ring on top of the
         // normal one - the standout "this is the final form" flourish.
-        if (tier == 6) {
+        if (isUltra) {
             shockwave(pose, buf, entity, t + 40.0F);
         }
 
         com.mojang.blaze3d.systems.RenderSystem.setShaderColor(1.0F, 1.0F, 1.0F, 1.0F);
+        pose.popPose();
+    }
+
+    /** A slow breathing glow around the torso - GOD/BLUE's "pulsating energy" instead of hair spikes. */
+    private void pulsingCore(PoseStack pose, VertexConsumer buf, float t) {
+        pose.pushPose();
+        pose.translate(0.0D, 0.9D, 0.0D);
+        Matrix4f m = pose.last().pose();
+        for (int ring = 0; ring < 3; ring++) {
+            float phase = ((t * 0.045F) + ring / 3.0F) % 1.0F;
+            float r = 0.3F + phase * 1.1F;
+            float a = (1.0F - phase) * 0.5F;
+            if (a <= 0.02F) {
+                continue;
+            }
+            final int SEGS = 16;
+            for (int i = 0; i < SEGS; i++) {
+                float a0 = (i / (float) SEGS) * Mth.TWO_PI;
+                float a1 = ((i + 1) / (float) SEGS) * Mth.TWO_PI;
+                tri(buf, m, Mth.cos(a0) * r, Mth.sin(a0) * r * 0.5F, 0.0F,
+                        Mth.cos(a1) * r, Mth.sin(a1) * r * 0.5F, 0.0F,
+                        0.0F, 0.0F, 0.0F,
+                        1.0F, 0.95F, 0.9F, a);
+            }
+        }
         pose.popPose();
     }
 
@@ -167,11 +219,12 @@ public class SsjAuraLayer extends RenderLayer<CaydenCobb, CaydenModel> {
 
     // ---- upswept hair -------------------------------------------------------
 
-    /** Golden spikes fanning up and back off the crown - bigger, brighter, denser. */
-    private void hairSpikes(PoseStack pose, VertexConsumer buf, float t) {
+    /** Golden spikes fanning up and back off the crown - bigger, brighter, denser. SSJ3+ gets them longer, per the "long hair" ask. */
+    private void hairSpikes(PoseStack pose, VertexConsumer buf, float t, boolean longHair) {
         pose.pushPose();
         pose.translate(0.0D, 1.42D, 0.0D);       // crown of the head
         Matrix4f m = pose.last().pose();
+        float lenMul = longHair ? 1.7F : 1.0F;
 
         final int SPIKES = 11;
         for (int i = 0; i < SPIKES; i++) {
@@ -179,7 +232,7 @@ public class SsjAuraLayer extends RenderLayer<CaydenCobb, CaydenModel> {
             float flick = Mth.sin(t * 0.6F + i * 1.7F) * 0.05F;
             float baseX = spread * 0.48F;
             float baseZ = -0.06F + Math.abs(spread) * 0.12F;
-            float len = 0.62F - Math.abs(spread) * 0.2F;
+            float len = (0.62F - Math.abs(spread) * 0.2F) * lenMul;
 
             float tipX = baseX + spread * 0.4F + flick;
             float tipY = 0.12F + len;
@@ -202,13 +255,13 @@ public class SsjAuraLayer extends RenderLayer<CaydenCobb, CaydenModel> {
 
     // ---- crackling arcs -----------------------------------------------------
 
-    /** Jagged bolts that snap around him constantly, not occasionally. */
-    private void arcs(PoseStack pose, VertexConsumer buf, CaydenCobb entity, float t) {
+    /** Jagged bolts that snap around him constantly, not occasionally. boltCount lets SSJ3+ get "crazier lightning." */
+    private void arcs(PoseStack pose, VertexConsumer buf, CaydenCobb entity, float t, int boltCount) {
         Matrix4f m = pose.last().pose();
         // A deterministic pseudo-random keyed on the tick so every client draws
         // the same crackle without any of it needing to be networked.
         long tick = (long) t;
-        for (int bolt = 0; bolt < 7; bolt++) {
+        for (int bolt = 0; bolt < boltCount; bolt++) {
             long seed = tick / 2L * 31L + bolt * 977L + entity.getId() * 7919L;
             if (Math.floorMod(seed, 3L) == 0L) {
                 continue;                        // still flickers, but most bolts are now present most frames

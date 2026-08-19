@@ -444,26 +444,66 @@ public class CaydenCobb extends TamableAnimal {
                     + "CAYDEN LEARNS " + rung.name().toUpperCase(java.util.Locale.ROOT) + "."));
             p.sendSystemMessage(Component.literal(ChatFormatting.GRAY + "  " + rung.edge()));
         }
-        transformationSpectacle(tier);
         return true;
     }
 
+    /** Ticks left in the current transformation spectacle; drives tickSpectacle(). */
+    private int spectacleTicks = 0;
+    private int spectacleTier = 0;
+
     /**
-     * "The whole world reacts" - scaled by how far up the ladder this rung is.
-     * Low tiers (SSJ/SSJ2) just get the existing particle burst above; GOD and
-     * ULTRA add lightning, nearby mobs flinching, and a non-destructive
-     * ground-crack particle ring. No blocks are ever touched - this is a
-     * survival-safe cosmetic event, not terrain damage.
+     * "The whole world reacts" - THIS is the moment he actually transforms
+     * mid-fight (called from announceTier, not the upgrade-screen purchase),
+     * and it needs to feel like an event, not a sound effect. Rather than one
+     * instant particle burst, this arms a sustained multi-second sequence
+     * (see tickSpectacle) of repeated lightning claps, ground-crack waves and
+     * shake pulses - a real earthquake, not a flash. Every rung gets
+     * something; it escalates brutally from SSJ1's one quick punch up to
+     * Ultra Instinct's five-second, screen-shaking, sky-splitting event.
      */
     private void transformationSpectacle(int tier) {
-        if (!(level() instanceof ServerLevel sl) || tier < AscensionLadder.SSJ3) {
+        if (!(level() instanceof ServerLevel sl) || tier < AscensionLadder.SSJ) {
             return;
         }
-        int strikes = tier >= AscensionLadder.ULTRA ? 4 : tier >= AscensionLadder.GOD ? 2 : 1;
-        double radius = 4.0D + tier * 1.5D;
-        for (int i = 0; i < strikes; i++) {
+        this.spectacleTier = tier;
+        this.spectacleTicks = 20 + tier * 22;   // SSJ1 ~1s punch -> ULTRA ~5.3s earthquake
+
+        // the very first instant hits hardest - a ground-zero flash strike
+        strikeLightning(sl, 1, 0.5D);
+        groundCrack(sl, 14 + tier * 4, 2.0D + tier * 1.2D);
+        sl.sendParticles(ParticleTypes.EXPLOSION_EMITTER, getX(), getY() + 0.5D, getZ(), 1, 0.0D, 0.0D, 0.0D, 0.0D);
+        playSound(SoundEvents.GENERIC_EXPLODE, 2.0F + tier * 0.3F, 0.5F);
+    }
+
+    /** Runs the sustained shake/lightning/crack sequence armed by transformationSpectacle. */
+    private void tickSpectacle() {
+        if (this.spectacleTicks <= 0 || !(level() instanceof ServerLevel sl)) {
+            return;
+        }
+        this.spectacleTicks--;
+        int tier = this.spectacleTier;
+        double radius = 3.0D + tier * 2.2D;
+
+        // a pulse every few ticks - the "earthquake" cadence, faster and
+        // heavier at higher tiers
+        int period = Math.max(3, 9 - tier);
+        if (this.spectacleTicks % period == 0) {
+            groundCrack(sl, 6 + tier * 3, radius);
+            shakeAndFlinch(sl, radius, 0.06D + tier * 0.035D);
+            if (tier >= AscensionLadder.SSJ2 && this.random.nextInt(tier >= AscensionLadder.ULTRA ? 2 : 3) == 0) {
+                strikeLightning(sl, 1, radius);
+            }
+            if (this.spectacleTicks % (period * 3) == 0) {
+                sl.playSound(null, blockPosition(), ModSounds.KRAVE_BOOM.get(), getSoundSource(),
+                        1.2F + tier * 0.15F, 0.5F + tier * 0.05F);
+            }
+        }
+    }
+
+    private void strikeLightning(ServerLevel sl, int count, double radius) {
+        for (int i = 0; i < count; i++) {
             double ang = this.random.nextDouble() * Math.PI * 2.0D;
-            double dist = 1.5D + this.random.nextDouble() * radius;
+            double dist = 1.0D + this.random.nextDouble() * radius;
             double lx = getX() + Math.cos(ang) * dist;
             double lz = getZ() + Math.sin(ang) * dist;
             LightningBolt bolt = EntityType.LIGHTNING_BOLT.create(sl);
@@ -473,11 +513,12 @@ public class CaydenCobb extends TamableAnimal {
                 sl.addFreshEntity(bolt);
             }
         }
+    }
 
-        // ground crack: a burst of block-particles pulled from whatever he's
-        // standing on, ringed around him - purely cosmetic, nothing is broken
+    /** Ground crack: block-particles pulled from what he's standing on. Cosmetic only - nothing is ever broken. */
+    private void groundCrack(ServerLevel sl, int count, double radius) {
         var blockState = sl.getBlockState(blockPosition().below());
-        for (int i = 0; i < 10 + tier * 6; i++) {
+        for (int i = 0; i < count; i++) {
             double ang = this.random.nextDouble() * Math.PI * 2.0D;
             double dist = this.random.nextDouble() * radius;
             sl.sendParticles(new net.minecraft.core.particles.BlockParticleOption(
@@ -485,23 +526,21 @@ public class CaydenCobb extends TamableAnimal {
                     getX() + Math.cos(ang) * dist, getY() + 0.1D, getZ() + Math.sin(ang) * dist,
                     4, 0.15D, 0.05D, 0.15D, 0.02D);
         }
+    }
 
-        // nearby mobs flinch and back off - a light knockback, not real damage
+    /** Mobs flinch away, players get a screen-shake velocity punch. Both cosmetic, no real damage. */
+    private void shakeAndFlinch(ServerLevel sl, double radius, double strength) {
         for (LivingEntity mob : sl.getEntitiesOfClass(LivingEntity.class, getBoundingBox().inflate(radius),
                 e -> e != this && e.isAlive() && !(e instanceof Player))) {
             Vec3 away = mob.position().subtract(position());
             double len = Math.max(0.5D, away.length());
-            mob.setDeltaMovement(mob.getDeltaMovement().add(away.scale(0.4D / len)).add(0.0D, 0.15D, 0.0D));
+            mob.setDeltaMovement(mob.getDeltaMovement().add(away.scale(strength / len)).add(0.0D, 0.1D, 0.0D));
             mob.hurtMarked = true;
         }
-
-        // screen shake for nearby players: a brief, cheap knockback-free view
-        // punch via velocity nudge (the client resolves this as camera bob
-        // the same way vanilla explosion knockback does)
-        for (Player p : sl.getEntitiesOfClass(Player.class, getBoundingBox().inflate(radius + 8.0D))) {
+        for (Player p : sl.getEntitiesOfClass(Player.class, getBoundingBox().inflate(radius + 10.0D))) {
             double dx = p.getX() - getX(), dz = p.getZ() - getZ();
             double len = Math.max(1.0D, Math.sqrt(dx * dx + dz * dz));
-            p.setDeltaMovement(p.getDeltaMovement().add(dx / len * 0.12D, 0.05D, dz / len * 0.12D));
+            p.setDeltaMovement(p.getDeltaMovement().add(dx / len * strength, strength * 0.4D, dz / len * strength));
             p.hurtMarked = true;
         }
     }
@@ -681,6 +720,7 @@ public class CaydenCobb extends TamableAnimal {
         }
 
         tickThrow();
+        tickSpectacle();
 
         if (this.graceTicks > 0) {
             this.graceTicks--;
@@ -1149,6 +1189,11 @@ public class CaydenCobb extends TamableAnimal {
         for (Player p : level().getEntitiesOfClass(Player.class, getBoundingBox().inflate(64.0D))) {
             p.sendSystemMessage(Component.literal(line));
         }
+        // This is the ACTUAL transformation moment - he is standing in the
+        // fight becoming this form right now, not just learning it exists on
+        // an upgrade screen. Every tier gets a real spectacle; it scales up
+        // savagely from here.
+        transformationSpectacle(tier);
     }
 
     /** SSJ2: the air itself keeps detonating around him. */
