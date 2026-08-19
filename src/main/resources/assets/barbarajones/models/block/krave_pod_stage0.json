@@ -1,4 +1,4 @@
 {
-  "parent": "minecraft:block/cocoa_0",
+  "parent": "minecraft:block/cocoa_stage0",
   "textures": { "cocoa": "barbarajones:block/krave_pod" }
 }

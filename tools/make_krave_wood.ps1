@@ -239,21 +239,29 @@ WriteJson "$bs\krave_fence_gate.json" "{`n  `"variants`": {`n$($gateVars -join "
 WriteJson "$imod\krave_fence_gate.json" "{ `"parent`": `"$BLK/krave_fence_gate`" }"
 
 # door - registered as krave_door_block to avoid clashing with the portal item
-foreach ($n in @('top','top_hinge','bottom','bottom_hinge')) {
-    WriteJson "$bmod\krave_door_block_$n.json" "{`n  `"parent`": `"minecraft:block/door_$n`",`n  `"textures`": { `"top`": `"$BLK/krave_door_top`", `"bottom`": `"$BLK/krave_door_bottom`" }`n}"
-}
+#
+# The eight krave_door_{top,bottom}_{left,right}[_open] models are the correct
+# 1.20.1 set and already exist, so this only writes the blockstate that picks
+# between them. The four models this used to write pointed at 1.12-era vanilla
+# parents (door_top, door_bottom and their _hinge variants) which no longer
+# exist under those names, so every single door state resolved to the missing
+# model - and because there was no _open model at all, an open door was drawn
+# closed even when the parent did resolve.
 $doorVars = New-Object System.Collections.Generic.List[string]
-$doorYaw = @{ north = 180; south = 0; west = 90; east = 270 }
+# Vanilla's own table: a base yaw per facing, and an open door takes a further
+# quarter turn, whose direction depends on which side the hinge is on.
+$doorYaw = @{ east = 0; south = 90; west = 180; north = 270 }
 foreach ($facing in @('north','south','west','east')) {
     foreach ($half in @('lower','upper')) {
         foreach ($hinge in @('left','right')) {
             foreach ($open in @('false','true')) {
-                $m = "$BLK/krave_door_block_" + $(if ($half -eq 'upper') { 'top' } else { 'bottom' })
-                $flip = ($hinge -eq 'right')
-                if ($open -eq 'true') { $flip = -not $flip }
-                if ($flip) { $m += '_hinge' }
+                $part = $(if ($half -eq 'upper') { 'top' } else { 'bottom' })
+                $m = "$BLK/krave_door_${part}_$hinge"
                 $y = $doorYaw[$facing]
-                if ($open -eq 'true') { $y = ($y + $(if ($hinge -eq 'right') { 270 } else { 90 })) % 360 }
+                if ($open -eq 'true') {
+                    $m += '_open'
+                    $y = ($y + $(if ($hinge -eq 'left') { 90 } else { 270 })) % 360
+                }
                 $parts = @("`"model`": `"$m`"")
                 if ($y -ne 0) { $parts += "`"y`": $y" }
                 $doorVars.Add("    `"facing=$facing,half=$half,hinge=$hinge,open=$open`": { $($parts -join ', ') }")
@@ -344,7 +352,7 @@ WriteJson "$imod\krave_pressure_plate.json" "{ `"parent`": `"$BLK/krave_pressure
 
 # pod - CocoaBlock states: age 0-2 x facing
 foreach ($age in 0..2) {
-    WriteJson "$bmod\krave_pod_stage$age.json" "{`n  `"parent`": `"minecraft:block/cocoa_$age`",`n  `"textures`": { `"cocoa`": `"$BLK/krave_pod`" }`n}"
+    WriteJson "$bmod\krave_pod_stage$age.json" "{`n  `"parent`": `"minecraft:block/cocoa_stage$age`",`n  `"textures`": { `"cocoa`": `"$BLK/krave_pod`" }`n}"
 }
 $podVars = New-Object System.Collections.Generic.List[string]
 $podYaw = @{ north = 0; south = 180; west = 270; east = 90 }

@@ -63,19 +63,11 @@ public final class KraveWood {
     public static final RotatedPillarBlock WOOD =
             new KraveLogBlock(trunk(MapColor.COLOR_BROWN), () -> STRIPPED_WOOD);
 
-    public static final LeavesBlock LEAVES = new KraveLeavesBlock(BlockBehaviour.Properties.of()
-            .mapColor(MapColor.COLOR_BROWN)
-            .strength(0.2F)
-            .randomTicks()
-            .sound(SoundType.GRASS)
-            .noOcclusion()
-            .isValidSpawn((state, level, pos, type) -> false)
-            .isSuffocating((state, level, pos) -> false)
-            .isViewBlocking((state, level, pos) -> false)
-            .isRedstoneConductor((state, level, pos) -> false)
-            .ignitedByLava()
-            .pushReaction(PushReaction.DESTROY));
-
+    // No LEAVES block here on purpose. The other branch registers its own
+    // krave_leaves and that one won the id clash, so this class must not build
+    // a second leaves block: a Block that is constructed but never registered
+    // leaves an unregistered intrusive holder behind and crashes the game on
+    // load. Use ModBlocks.KRAVE_LEAVES.
     public static final SaplingBlock SAPLING = new SaplingBlock(new KraveTreeGrower(),
             BlockBehaviour.Properties.of()
                     .mapColor(MapColor.COLOR_BROWN)
