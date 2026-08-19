@@ -47,12 +47,13 @@ public class KraveHealingBox extends Entity {
     private static final int SHIELD_REGEN_TICKS = 100;
     private static final float ELITE_SCALE = 1.5F;
     /**
-     * Matches TNT exactly (power 4) - strong enough for a real launch, but
-     * not an unavoidable kill regardless of armor the way the earlier 8.0
-     * was. Real explosion damage already scales down with armor/protection
-     * through the normal entity.hurt() pipeline - no extra math needed here.
+     * TNT's own power (4.0) still hit too hard up close - explosion damage
+     * scales roughly with the square of power, so even with armor it was a
+     * serious chunk of a player's health. Dropped to 2.0 (a quarter of
+     * TNT's damage at the same distance) - still a real shove, not a
+     * near-guaranteed hit.
      */
-    private static final float EXPLOSION_POWER = 4.0F;
+    private static final float EXPLOSION_POWER = 2.0F;
 
     private static final EntityDataAccessor<Integer> DATA_SHIELD =
             SynchedEntityData.defineId(KraveHealingBox.class, EntityDataSerializers.INT);
