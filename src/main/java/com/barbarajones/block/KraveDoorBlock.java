@@ -167,9 +167,16 @@ public class KraveDoorBlock extends DoorBlock {
      * island players actually arrive on and explore - rather than the den,
      * which now has just its one elite guardian (see KraveDenBuilder). Same
      * one-time-authoring pattern as ensureBossExists: guarded by a flag in
-     * KraveKosmosData so re-entering the Kosmos never duplicates them, and
-     * each spot is independently ground-searched from the landing point
-     * since the island's shape isn't a fixed, authored platform like the den.
+     * KraveKosmosData so re-entering the Kosmos never duplicates them.
+     *
+     * <p>Each spot uses {@link KraveLanding#findOpenLanding}, not the plain
+     * search: it rejects candidates too close to a box already placed this
+     * pass (so they read as spread out instead of clustering wherever the
+     * spiral search happens to land first) and candidates boxed in against a
+     * wall or cliff (so nothing ends up half-buried in a mountainside). The
+     * cardinal offsets are just four different starting points to search
+     * outward from - the actual final spot is whatever passes both checks
+     * nearest that direction, not that exact point.
      */
     private void ensureLandingBoxesExist(ServerLevel kosmos, Vec3 landing) {
         KraveKosmosData data = KraveKosmosData.get(kosmos);
@@ -181,13 +188,16 @@ public class KraveDoorBlock extends DoorBlock {
         var bossId = data.getBossId();
         KraveMonster boss = bossId != null && kosmos.getEntity(bossId) instanceof KraveMonster m ? m : null;
 
-        int[][] offsets = { {12, 0}, {-12, 0}, {0, 12}, {0, -12} };
+        int[][] offsets = { {18, 0}, {-18, 0}, {0, 18}, {0, -18} };
+        java.util.List<Vec3> placed = new java.util.ArrayList<>();
         for (int[] off : offsets) {
             Vec3 seed = landing.add(off[0], 0.0D, off[1]);
-            var spot = KraveLanding.findLanding(kosmos, seed, 2);
+            var spot = KraveLanding.findOpenLanding(kosmos, seed, 4, placed, 14.0D);
             if (spot.isEmpty()) {
                 continue;
             }
+            placed.add(spot.get());
+
             KraveHealingBox box = ModEntities.KRAVE_HEALING_BOX.get().create(kosmos);
             if (box == null) {
                 continue;

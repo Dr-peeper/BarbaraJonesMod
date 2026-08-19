@@ -1,10 +1,12 @@
 package com.barbarajones.dimension;
 
 import net.minecraft.core.BlockPos;
+import net.minecraft.core.Direction;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.util.Mth;
 import net.minecraft.world.phys.Vec3;
 
+import java.util.List;
 import java.util.Optional;
 
 /**
@@ -52,6 +54,70 @@ public final class KraveLanding {
             }
         }
         return Optional.empty();
+    }
+
+    /**
+     * Same bounded spiral search as {@link #findLanding}, but rejects two
+     * kinds of bad candidate: anywhere too close to a spot already in
+     * {@code avoid} (so a batch of placements spreads out instead of
+     * bunching together near whichever chunk the search happens to hit
+     * first), and anywhere boxed in against a wall or cliff face on most
+     * sides (so nothing ends up half-buried in a mountain). Used for
+     * scattering healing boxes rather than the single-spot portal landing.
+     */
+    public static Optional<Vec3> findOpenLanding(ServerLevel kosmos, Vec3 center, int rings,
+                                                 List<Vec3> avoid, double minSeparation) {
+        int cx = Mth.floor(center.x) >> 4;
+        int cz = Mth.floor(center.z) >> 4;
+        int tried = 0;
+
+        for (int r = 0; r <= rings && tried < MAX_CHUNKS; r++) {
+            for (int dx = -r; dx <= r && tried < MAX_CHUNKS; dx++) {
+                for (int dz = -r; dz <= r && tried < MAX_CHUNKS; dz++) {
+                    if (Math.max(Math.abs(dx), Math.abs(dz)) != r) {
+                        continue;
+                    }
+                    tried++;
+                    int chunkX = cx + dx;
+                    int chunkZ = cz + dz;
+                    kosmos.getChunk(chunkX, chunkZ);
+
+                    double x = (chunkX << 4) + 8.0D;
+                    double z = (chunkZ << 4) + 8.0D;
+                    Optional<Vec3> found = scanColumn(kosmos, x, z);
+                    if (found.isEmpty()) {
+                        continue;
+                    }
+                    Vec3 spot = found.get();
+                    if (tooCloseToAny(spot, avoid, minSeparation) || !hasOpenSurroundings(kosmos, spot)) {
+                        continue;
+                    }
+                    return Optional.of(spot);
+                }
+            }
+        }
+        return Optional.empty();
+    }
+
+    private static boolean tooCloseToAny(Vec3 spot, List<Vec3> avoid, double minSeparation) {
+        for (Vec3 other : avoid) {
+            if (spot.distanceTo(other) < minSeparation) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    /** At least 3 of the 4 cardinal neighbors at ground level must be open - tolerates one adjacent wall, rejects a corner/crevice. */
+    private static boolean hasOpenSurroundings(ServerLevel level, Vec3 spot) {
+        BlockPos pos = BlockPos.containing(spot.x, spot.y, spot.z);
+        int open = 0;
+        for (Direction dir : Direction.Plane.HORIZONTAL) {
+            if (!level.getBlockState(pos.relative(dir)).blocksMotion()) {
+                open++;
+            }
+        }
+        return open >= 3;
     }
 
     private static Optional<Vec3> scanColumn(ServerLevel level, double x, double z) {

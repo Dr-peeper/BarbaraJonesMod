@@ -47,9 +47,12 @@ public final class ModEntities {
     public static final RegistryObject<EntityType<KraveMonster>> KRAVE_MONSTER =
             ENTITIES.register("krave_monster", () -> EntityType.Builder
                     .of(KraveMonster::new, MobCategory.MONSTER)
-                    // grown in step with the renderer's bigger scale so the
-                    // hitbox doesn't look absurdly undersized against the model
-                    .sized(1.5F, 3.0F).clientTrackingRange(16).fireImmune()
+                    // Sized against the model's own geometry at the renderer's
+                    // 1.8x scale (root-to-horn-tip / root-to-paw-bottom span,
+                    // see KraveMonsterModel), not just eyeballed to "look big
+                    // enough" - width already matched closely, height was the
+                    // real gap (his head was clearing the old 3.0 box).
+                    .sized(1.5F, 3.3F).clientTrackingRange(16).fireImmune()
                     .build("krave_monster"));
 
     public static final RegistryObject<EntityType<Nugget>> NUGGET =

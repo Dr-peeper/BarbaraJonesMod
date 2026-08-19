@@ -31,7 +31,9 @@ import java.util.UUID;
  *
  * <p>Protected by a small regenerating shield (see MAX_SHIELD) - it takes
  * several hits to bring down, not one, and left alone for a while it
- * recovers. One elite instance (see {@link #setElite}) - the boss's own
+ * recovers. Destroying one triggers a real (block-safe) explosion - a
+ * dramatic launch for whoever's standing close, not just a sound cue. One
+ * elite instance (see {@link #setElite}) - the boss's own
  * protector at the center of his den - is bigger, has double the shield
  * capacity, and never needs a distinct texture since size alone reads as
  * "the strong one" next to the four ordinary boxes on the landing island.
@@ -44,6 +46,8 @@ public class KraveHealingBox extends Entity {
     private static final int ELITE_MAX_SHIELD = 6;
     private static final int SHIELD_REGEN_TICKS = 100;
     private static final float ELITE_SCALE = 1.5F;
+    /** High enough to send anyone nearby flying, well past a normal TNT's power 4 - a deliberately dramatic exit. */
+    private static final float EXPLOSION_POWER = 8.0F;
 
     private static final EntityDataAccessor<Integer> DATA_SHIELD =
             SynchedEntityData.defineId(KraveHealingBox.class, EntityDataSerializers.INT);
@@ -126,6 +130,10 @@ public class KraveHealingBox extends Entity {
             return true;
         }
         level().playSound(null, blockPosition(), ModSounds.KRAVE_BOOM.get(), SoundSource.HOSTILE, 0.8F, 1.0F);
+        // NONE block interaction: real explosion knockback/damage and the
+        // vanilla explosion sound+particle, without cratering the terrain -
+        // this is a destroyed protector box, not a bomb.
+        level().explode(this, getX(), getY(), getZ(), EXPLOSION_POWER, false, Level.ExplosionInteraction.NONE);
         discard();
         return true;
     }

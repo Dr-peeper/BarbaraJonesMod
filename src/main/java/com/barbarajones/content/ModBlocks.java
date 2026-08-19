@@ -5,6 +5,7 @@ import com.barbarajones.block.KraveDoorBlock;
 import com.barbarajones.block.KraveGrassBlock;
 
 import net.minecraft.world.level.block.Block;
+import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.level.block.LiquidBlock;
 import net.minecraft.world.level.block.SoundType;
 import net.minecraft.world.level.block.state.BlockBehaviour;
@@ -46,19 +47,13 @@ public final class ModBlocks {
                             .lightLevel(state -> 6)
                             .sound(SoundType.HONEY_BLOCK)));
 
-    // ---- Krave Kosmos terrain: coherent grass/dirt pair, vanilla-style ------
+    // ---- Krave Kosmos terrain: literal reskins of vanilla dirt/grass, not an
+    // original block with its own feel - same hardness, sound, tool rules as
+    // the overworld blocks they're standing in for, just the Kosmos texture. ---
 
     public static final RegistryObject<Block> KRAVE_GRASS = BLOCKS.register("krave_grass",
-            () -> new KraveGrassBlock(BlockBehaviour.Properties.of()
-                    .mapColor(MapColor.COLOR_PURPLE)
-                    .strength(1.0F)
-                    .sound(SoundType.STONE)
-                    .randomTicks()
-                    .requiresCorrectToolForDrops()));
+            () -> new KraveGrassBlock(BlockBehaviour.Properties.copy(Blocks.GRASS_BLOCK).randomTicks()));
 
     public static final RegistryObject<Block> KRAVE_DIRT = BLOCKS.register("krave_dirt",
-            () -> new Block(BlockBehaviour.Properties.of()
-                    .mapColor(MapColor.COLOR_PURPLE)
-                    .strength(0.6F)
-                    .sound(SoundType.NETHERRACK)));
+            () -> new Block(BlockBehaviour.Properties.copy(Blocks.DIRT)));
 }
