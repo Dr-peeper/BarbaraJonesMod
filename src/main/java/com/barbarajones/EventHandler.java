@@ -167,9 +167,22 @@ public class EventHandler {
         }
     }
 
+    @SubscribeEvent
+    public void onServerStarted(net.minecraftforge.event.server.ServerStartedEvent event) {
+        com.barbarajones.diag.ServerStallWatchdog.start(event);
+    }
+
+    @SubscribeEvent
+    public void onServerStopping(net.minecraftforge.event.server.ServerStoppingEvent event) {
+        com.barbarajones.diag.ServerStallWatchdog.stop(event);
+    }
+
     /** Run the apocalypse cutscene. */
     @SubscribeEvent
     public void onServerTick(TickEvent.ServerTickEvent event) {
+        // Stamp first: if something below never returns, the watchdog needs the
+        // timestamp from BEFORE the stall, not after it.
+        com.barbarajones.diag.ServerStallWatchdog.heartbeat();
         if (event.phase == TickEvent.Phase.END) {
             KraveApocalypse.tickAll();
             KraveKosmosBattle.tickAll();
