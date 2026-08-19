@@ -7,7 +7,7 @@
         { "condition": "minecraft:survives_explosion" }
       ],
       "entries": [
-        { "type": "minecraft:item", "name": "barbarajones:krave_leaves" }
+        { "type": "minecraft:item", "name": "barbarajones:chocolate_planks" }
       ]
     }
   ]

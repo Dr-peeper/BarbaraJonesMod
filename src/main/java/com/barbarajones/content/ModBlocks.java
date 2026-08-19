@@ -1,7 +1,9 @@
 package com.barbarajones.content;
 
 import com.barbarajones.BarbaraJonesMod;
+import com.barbarajones.block.KraveDirtBlock;
 import com.barbarajones.block.KraveDoorBlock;
+import com.barbarajones.block.KraveGrassBlock;
 
 import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.LiquidBlock;
@@ -53,20 +55,19 @@ public final class ModBlocks {
                             .lightLevel(state -> 6)
                             .sound(SoundType.HONEY_BLOCK)));
 
-    // ---- Krave Kosmos terrain: coherent grass/dirt pair, vanilla-style ------
+    // ---- Krave Kosmos terrain: literal reskins of vanilla dirt/grass, not an
+    // original block with its own feel - same hardness, sound, tool rules as
+    // the overworld blocks they're standing in for, just the Kosmos texture.
+    // (This exact fix was lost once already in a merge that picked an older
+    // version of this file - KraveGrassBlock/KraveDirtBlock's growth-direction
+    // logic survived on disk unreferenced. If this regresses again, check
+    // here first before re-deriving the fix from scratch.) ---------------
 
     public static final RegistryObject<Block> KRAVE_GRASS = BLOCKS.register("krave_grass",
-            () -> new Block(BlockBehaviour.Properties.of()
-                    .mapColor(MapColor.COLOR_PURPLE)
-                    .strength(1.0F)
-                    .sound(SoundType.STONE)
-                    .requiresCorrectToolForDrops()));
+            () -> new KraveGrassBlock(BlockBehaviour.Properties.copy(Blocks.GRASS_BLOCK).randomTicks()));
 
     public static final RegistryObject<Block> KRAVE_DIRT = BLOCKS.register("krave_dirt",
-            () -> new Block(BlockBehaviour.Properties.of()
-                    .mapColor(MapColor.COLOR_PURPLE)
-                    .strength(0.6F)
-                    .sound(SoundType.NETHERRACK)));
+            () -> new KraveDirtBlock(BlockBehaviour.Properties.copy(Blocks.DIRT).randomTicks()));
 
     // ---- the house and the yard (behaviour in com.barbarajones.content.extra)
     public static final RegistryObject<Block> STASH_BOX = BLOCKS.register("stash_box",
@@ -160,6 +161,12 @@ public final class ModBlocks {
 
     public static final RegistryObject<Block> KRAVE_LEAVES = BLOCKS.register("krave_leaves",
             () -> new LeavesBlock(BlockBehaviour.Properties.copy(Blocks.OAK_LEAVES)));
+
+    public static final RegistryObject<Block> CHOCOLATE_PLANKS = BLOCKS.register("chocolate_planks",
+            () -> new Block(BlockBehaviour.Properties.copy(Blocks.OAK_PLANKS)));
+
+    public static final RegistryObject<Block> CHOCOLATE_FENCE = BLOCKS.register("chocolate_fence",
+            () -> new net.minecraft.world.level.block.FenceBlock(BlockBehaviour.Properties.copy(Blocks.OAK_FENCE)));
 
     public static final RegistryObject<Block> KRAFTING_BENCH = BLOCKS.register("krafting_bench",
             () -> new KraftingBenchBlock(BlockBehaviour.Properties.of()

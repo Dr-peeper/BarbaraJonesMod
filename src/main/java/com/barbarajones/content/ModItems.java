@@ -241,6 +241,10 @@ public final class ModItems {
             ITEMS.register("chocolate_log", () -> new BlockItem(ModBlocks.CHOCOLATE_LOG.get(), props()));
     public static final RegistryObject<Item> KRAVE_LEAVES_ITEM =
             ITEMS.register("krave_leaves", () -> new BlockItem(ModBlocks.KRAVE_LEAVES.get(), props()));
+    public static final RegistryObject<Item> CHOCOLATE_PLANKS_ITEM =
+            ITEMS.register("chocolate_planks", () -> new BlockItem(ModBlocks.CHOCOLATE_PLANKS.get(), props()));
+    public static final RegistryObject<Item> CHOCOLATE_FENCE_ITEM =
+            ITEMS.register("chocolate_fence", () -> new BlockItem(ModBlocks.CHOCOLATE_FENCE.get(), props()));
 
     // ---- liquid chocolate ------------------------------------------------------
 

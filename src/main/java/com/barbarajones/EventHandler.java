@@ -191,9 +191,12 @@ public class EventHandler {
     }
 
     /**
-     * Liquid chocolate is hot and burns like lava. Cayden reacts differently
-     * (see CaydenCobb.tick(), which checks the same fluid type) so he's
-     * excluded here rather than taking damage on top of transforming.
+     * Liquid chocolate hurts like lava but deliberately doesn't set anything
+     * ablaze - no setSecondsOnFire() call here. It's hot, not literally fire;
+     * the visible burning overlay would look wrong on something brown. Cayden
+     * reacts differently (see CaydenCobb.tick(), which checks the same fluid
+     * type) so he's excluded here rather than taking damage on top of
+     * transforming.
      */
     @SubscribeEvent
     public void onLivingTick(LivingEvent.LivingTickEvent event) {
@@ -202,7 +205,6 @@ public class EventHandler {
             return;
         }
         if (entity.getFluidTypeHeight(ModFluids.CHOCOLATE_TYPE.get()) > 0.0D) {
-            entity.setSecondsOnFire(1);
             entity.hurt(ModDamageTypes.of(entity.level(), ModDamageTypes.CHOCOLATE), 2.0F);
         }
     }

@@ -2,6 +2,8 @@ package com.barbarajones.content;
 
 import com.barbarajones.BarbaraJonesMod;
 
+import net.minecraft.client.Camera;
+import net.minecraft.client.multiplayer.ClientLevel;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.level.material.Fluid;
@@ -12,6 +14,7 @@ import net.minecraftforge.fluids.ForgeFlowingFluid;
 import net.minecraftforge.registries.DeferredRegister;
 import net.minecraftforge.registries.ForgeRegistries;
 import net.minecraftforge.registries.RegistryObject;
+import org.joml.Vector3f;
 
 import java.util.function.Consumer;
 
@@ -46,8 +49,14 @@ public final class ModFluids {
                     .canDrown(false)
                     .canExtinguish(false)
                     .canConvertToSource(false)
-                    .density(1400)
-                    .viscosity(1400)
+                    // Real lava's own values (Forge's ForgeMod.LAVA_TYPE) - density
+                    // and viscosity are what actually make wading through it feel
+                    // slow, not a MobEffect; motionScale is the third piece of
+                    // that, and was never set at all before (defaulted to water's
+                    // free-flowing feel despite the high density/viscosity).
+                    .density(3000)
+                    .viscosity(6000)
+                    .motionScale(0.0023000000569969416D)
                     .temperature(1000)
                     .lightLevel(6)) {
                 @Override
@@ -66,6 +75,22 @@ public final class ModFluids {
                         @Override
                         public int getTintColor() {
                             return 0xFF3A2412;
+                        }
+
+                        /** Thick brown murk instead of the default fog color - "hard to see when submerged." */
+                        @Override
+                        public Vector3f modifyFogColor(Camera camera, float partialTick, ClientLevel level,
+                                                       int renderDistance, float darkenWorldAmount, Vector3f fluidFogColor) {
+                            return new Vector3f(0.22F, 0.12F, 0.06F);
+                        }
+
+                        /** Vision cut down to a few blocks, same as lava - not just tinted, genuinely hard to see. */
+                        @Override
+                        public void modifyFogRender(Camera camera, net.minecraft.client.renderer.FogRenderer.FogMode mode,
+                                                    float renderDistance, float partialTick, float nearDistance,
+                                                    float farDistance, com.mojang.blaze3d.shaders.FogShape shape) {
+                            com.mojang.blaze3d.systems.RenderSystem.setShaderFogStart(0.0F);
+                            com.mojang.blaze3d.systems.RenderSystem.setShaderFogEnd(4.0F);
                         }
                     });
                 }

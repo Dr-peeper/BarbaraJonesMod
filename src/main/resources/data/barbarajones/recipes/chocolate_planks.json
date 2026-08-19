@@ -1,0 +1,9 @@
+{
+  "type": "minecraft:crafting_shapeless",
+  "category": "misc",
+  "group": "planks",
+  "ingredients": [
+    { "item": "barbarajones:chocolate_log" }
+  ],
+  "result": { "item": "barbarajones:chocolate_planks", "count": 2 }
+}

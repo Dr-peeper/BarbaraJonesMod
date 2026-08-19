@@ -1,0 +1,14 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "category": "misc",
+  "group": "wooden_fence",
+  "key": {
+    "#": { "item": "minecraft:stick" },
+    "W": { "item": "barbarajones:chocolate_planks" }
+  },
+  "pattern": [
+    "W#W",
+    "W#W"
+  ],
+  "result": { "item": "barbarajones:chocolate_fence", "count": 3 }
+}

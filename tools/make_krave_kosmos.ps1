@@ -186,17 +186,48 @@ $json | Set-Content "$bsdir\krave_door.json" -Encoding utf8
 "  krave_door: textures + blockstate + $($variants.Count) model variants"
 
 # ---- liquid chocolate --------------------------------------------------------
-$choc = NewImg 16 16
-Rct $choc 0 0 16 16 (C '3A2412')
-for($i=0;$i -lt 40;$i++){ Rct $choc (Rnd 16) (Rnd 16) 1 1 (C '5A3A22') }
-for($i=0;$i -lt 15;$i++){ Rct $choc (Rnd 16) (Rnd 16) 1 1 (C '241408') }
-Save $choc "$bdir\chocolate_still.png"
+# Animated liquid chocolate - a slow rolling swirl for the still texture, a
+# downward-scrolling streaked version for the flow texture. Minecraft fluid
+# animation is a vertical strip of square frames (16 wide x 16*frameCount
+# tall) plus a .png.mcmeta naming the frame order/speed - same mechanism as
+# tv_front.png.mcmeta elsewhere in this mod, just a new strip instead of a
+# hand-authored frame list.
+$chocDark = C '3A2412'; $chocMid = C '5A3A22'; $chocLight = C '8B5A2B'; $chocHi = C 'A87040'
 
-$chocF = NewImg 16 16
-Rct $chocF 0 0 16 16 (C '3A2412')
-for($y=0;$y -lt 16;$y++){ for($x=0;$x -lt 16;$x++){
-    if((($x+$y) % 4) -eq 0){ Rct $chocF $x $y 1 1 (C '5A3A22') } } }
-Save $chocF "$bdir\chocolate_flow.png"
+function ChocFrame($size,$frame,$totalFrames,$flowing){
+    $img = NewImg $size $size
+    Rct $img 0 0 $size $size $chocDark
+    $phase = ($frame / [double]$totalFrames) * 2 * [Math]::PI
+    for($x=0; $x -lt $size; $x++){ for($y=0; $y -lt $size; $y++){
+        $fy = $y
+        if($flowing){ $fy = ($y + $frame * 2) % $size }
+        $wave = [Math]::Sin(($x * 0.5) + $phase) * [Math]::Cos(($fy * 0.4) + $phase * 1.3)
+        if($wave -gt 0.55){ Rct $img $x $y 1 1 $chocHi }
+        elseif($wave -gt 0.15){ Rct $img $x $y 1 1 $chocLight }
+        elseif($wave -lt -0.5){ Rct $img $x $y 1 1 $chocMid }
+    }}
+    return $img
+}
+
+$chocFrames = 8
+$still = NewImg 16 (16 * $chocFrames)
+for($f=0; $f -lt $chocFrames; $f++){
+    $fr = ChocFrame 16 $f $chocFrames $false
+    for($x=0;$x -lt 16;$x++){ for($y=0;$y -lt 16;$y++){ $still.SetPixel($x, $y + $f*16, $fr.GetPixel($x,$y)) } }
+    $fr.Dispose()
+}
+Save $still "$bdir\chocolate_still.png"
+'{ "animation": { "frametime": 4, "frames": [0,1,2,3,4,5,6,7] } }' | Set-Content "$bdir\chocolate_still.png.mcmeta" -Encoding utf8 -NoNewline
+
+$flow = NewImg 16 (16 * $chocFrames)
+for($f=0; $f -lt $chocFrames; $f++){
+    $fr = ChocFrame 16 $f $chocFrames $true
+    for($x=0;$x -lt 16;$x++){ for($y=0;$y -lt 16;$y++){ $flow.SetPixel($x, $y + $f*16, $fr.GetPixel($x,$y)) } }
+    $fr.Dispose()
+}
+Save $flow "$bdir\chocolate_flow.png"
+'{ "animation": { "frametime": 3, "frames": [0,1,2,3,4,5,6,7] } }' | Set-Content "$bdir\chocolate_flow.png.mcmeta" -Encoding utf8 -NoNewline
+"  chocolate: animated still/flow textures (8 frames each)"
 
 $bucket = NewImg 16 16
 Rct $bucket 3 3 10 1 (C 'A0A0A0'); Rct $bucket 3 4 1 9 (C 'A0A0A0'); Rct $bucket 12 4 1 9 (C 'A0A0A0')

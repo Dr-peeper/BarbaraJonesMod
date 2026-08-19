@@ -83,4 +83,7 @@ $logTopOut.Save("$bdir\chocolate_log_top.png", [System.Drawing.Imaging.ImageForm
 $leavesOut = Recolor (Load 'oak_leaves.png') $leafTint
 $leavesOut.Save("$bdir\krave_leaves.png", [System.Drawing.Imaging.ImageFormat]::Png)
 
-Write-Output "wrote krave_dirt, krave_grass_top, krave_grass_side, chocolate_log(+top), krave_leaves (recolored from vanilla art)"
+$planksOut = Recolor (Load 'oak_planks.png') $logTint
+$planksOut.Save("$bdir\chocolate_planks.png", [System.Drawing.Imaging.ImageFormat]::Png)
+
+Write-Output "wrote krave_dirt, krave_grass_top, krave_grass_side, chocolate_log(+top), krave_leaves, chocolate_planks (recolored from vanilla art)"
