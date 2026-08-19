@@ -77,7 +77,7 @@ public final class StageScripts {
             case 5 -> theTorching(origin, playerEye);
             case 6 -> boxfall(origin, playerEye);
             case 7 -> ashfall(origin, playerEye);
-            case 8 -> theBarrage(origin, playerEye);   // theInterview() is still unwritten - the agent that owned it was stopped
+            case 8 -> theInterview(origin, playerEye);
             case 9 -> theManager(origin, playerEye);
             default -> armageddon(origin, playerEye);
         };
@@ -1079,126 +1079,161 @@ public final class StageScripts {
     // squash, flaps past their stop, and a real spray of Krave.
     // ------------------------------------------------------------------------
 
+    // ------------------------------------------------------------------------
+    // STAGE 6: BOXFALL
+    //
+    // The old version dropped a carton and let it sit there, which is why it
+    // read as the weakest of the ten. The carton is no longer the event - the
+    // POUR is. It hangs in the sky, tips, and empties itself over the world,
+    // and every piece that comes out of it is on fire and goes off where it
+    // lands. The box is a delivery mechanism, not the payload.
+    // ------------------------------------------------------------------------
     private static Scene boxfall(Vec3 o, Vec3 eye) {
-        final int end = 212;
+        final int end = 420;
         Timeline tl = new Timeline(end);
         CameraRig rig = new CameraRig(70.0F);
 
-        Vec3 rim = o.add(0.0D, 40.0D, 0.0D);
+        // High enough that it reads against sky rather than against terrain,
+        // and offset so the pour arcs across the frame instead of down the lens.
+        Vec3 hang = ring(o, 40.0F, 26.0D, 74.0D);
+        Vec3 mouth = hang.add(0.0D, 18.0D, 0.0D);
 
-        // --- camera ---------------------------------------------------------
-        rig.dolly(0, 52, 0, eye, o.add(-16.0D, 2.2D, -26.0D), o.add(0.0D, 4.0D, 0.0D),
-                o.add(0.0D, 72.0D, 0.0D), Easing.CUBIC_IN_OUT);
-        // The camera deliberately LAGS the fall. Letting the carton outrun the
-        // frame is what makes forty blocks of cardboard feel fast.
-        rig.dolly(52, 26, 5, o.add(-16.0D, 2.2D, -26.0D), o.add(-19.0D, 3.0D, -30.0D),
-                o.add(0.0D, 72.0D, 0.0D), o.add(0.0D, 20.0D, 0.0D), Easing.QUINT_IN);
-        rig.dolly(78, 5, 2, o.add(-19.0D, 3.0D, -30.0D), o.add(-19.0D, 0.6D, -29.0D),
-                o.add(0.0D, 10.0D, 0.0D), Easing.QUINT_IN);
-        rig.dolly(83, 26, 6, o.add(-19.0D, 0.6D, -29.0D), o.add(-20.0D, 5.5D, -32.0D),
-                o.add(0.0D, 17.0D, 0.0D), Easing.SPRING_OUT);
-        rig.orbit(109, 68, 14, o, 34.0D, 27.0D, 5.0D, 22.0D, 240.0F, 372.0F,
-                o.add(0.0D, 20.0D, 0.0D), Easing.SINE_IN_OUT);
-        rig.dolly(177, 35, 12, o.add(26.4D, 22.0D, 5.6D), o.add(35.0D, 27.0D, -41.0D),
-                o.add(0.0D, 20.0D, 0.0D), o.add(0.0D, 12.0D, 0.0D), Easing.CUBIC_IN_OUT);
-
-        rig.roll(Track.from(0.0F, 0.0F)
-                .key(60.0F, -2.2F)
-                .key(78.0F, 0.0F, Easing.STEP)
-                .key(81.0F, 11.5F, Easing.CUBIC_IN)
-                .key(106.0F, 0.0F, Easing.SPRING_OUT)
-                .hold(end));
-        rig.fov(Track.from(0.0F, 70.0F)
-                .key(50.0F, 64.0F)
-                .key(77.0F, 60.0F, Easing.CUBIC_IN)
-                .key(81.0F, 102.0F, Easing.EXPO_OUT)
-                .key(102.0F, 73.0F, Easing.SPRING_OUT)
-                .key(150.0F, 75.0F)
-                .key(end, 70.0F));
-
-        rig.shake(44, 26, 0.34F, 1.5F, null, 0.0D);
-        rig.shake(79, 42, 4.2F, 2.2F, o, 40.0D);
-        rig.shake(87, 24, 1.15F, 1.8F, o, 55.0D);
-        rig.shake(120, 60, 0.20F, 1.4F, null, 0.0D);
-
-        // --- the carton -----------------------------------------------------
         BoxTitanActor box = new BoxTitanActor();
-        box.bind(tl, "box", o, 18.0F, 17.0F);
-        box.groundY = o.y;
+        box.bind(tl, "box", hang, facing(hang, o) + 18.0F, 14.0F);
 
-        tl.track("box.dy", Track.from(0.0F, 98.0F)
-                .key(30.0F, 93.0F, Easing.SINE_IN_OUT)
-                // It RISES before it drops. Nine blocks of wind-up.
-                .key(46.0F, 102.0F, Easing.BACK_IN)
-                .key(79.0F, 0.0F, Easing.EXPO_IN)
-                .hold(end));
-        tl.track("box.spin", Track.from(0.0F, 0.0F)
-                .key(46.0F, 26.0F, Easing.SINE_IN_OUT)
-                .key(79.0F, 194.0F, Easing.EXPO_IN)
-                .key(98.0F, 203.0F, Easing.SPRING_OUT)
+        Scene scene = new Scene("Boxfall", o, tl, rig, 36).add(box);
+
+        // --- 1. it arrives, sealed ------------------------------------------
+        // Falls in from above the sky limit and stops dead. A carton that
+        // decelerates smoothly reads as weightless, so it overshoots and rebounds.
+        final int settle = 54;
+        tl.track("box.dy", Track.from(0.0F, 190.0F)
+                .key(settle, -6.0F, Easing.QUINT_IN)
+                .key(settle + 14, 3.0F, Easing.CUBIC_OUT)
+                .key(settle + 30, 0.0F, Easing.SPRING_OUT)
                 .hold(end));
         tl.track("box.squash", Track.from(0.0F, 1.0F)
-                .hold(78.0F)
-                .key(79.0F, 1.0F, Easing.STEP)
-                .key(82.0F, 0.60F, Easing.QUINT_OUT)
-                .key(88.0F, 1.15F, Easing.BACK_OUT)
-                .key(99.0F, 0.97F, Easing.SPRING_OUT)
-                .key(116.0F, 1.0F, Easing.SPRING_OUT)
+                .key(settle, 1.0F)
+                .key(settle + 6, 0.62F, Easing.CUBIC_OUT)
+                .key(settle + 26, 1.08F, Easing.CUBIC_IN_OUT)
+                .key(settle + 44, 1.0F, Easing.SPRING_OUT)
                 .hold(end));
-        tl.track("box.flap", Track.from(0.0F, 2.0F)
-                .hold(79.0F)
-                // Past the stop, then back: flaps have no brakes.
-                .key(86.0F, 126.0F, Easing.BACK_OUT)
-                .key(97.0F, 86.0F, Easing.SPRING_OUT)
-                .key(114.0F, 97.0F, Easing.SINE_IN_OUT)
+        tl.track("box.spin", Track.from(0.0F, -140.0F)
+                .key(settle, 0.0F, Easing.QUINT_OUT)
+                .key(end, 26.0F, Easing.SINE_IN_OUT));
+        tl.cue(settle, sound(hang, ModSounds.KRAVE_BOOM, 1.7F, 0.7F));
+        tl.cue(settle, burst(hang, ParticleTypes.EXPLOSION, 10, 8.0D, 0.2D));
+        rig.shake(settle, 20, 2.0F, 2.6F, hang, 90.0D);
+
+        rig.dolly(0, settle + 30, 0, eye, ring(o, 150.0F, 74.0D, 40.0D),
+                o.add(0.0D, 30.0D, 0.0D), hang, Easing.CUBIC_IN_OUT);
+
+        // --- 2. the flaps go ------------------------------------------------
+        // They burst well past their stop and settle back, so the top opens like
+        // something gave way rather than like a lid being lifted.
+        final int open = settle + 40;
+        tl.track("box.flap", Track.from(0.0F, 0.0F)
+                .key(open, 0.0F)
+                .key(open + 10, 146.0F, Easing.QUINT_OUT)
+                .key(open + 24, 112.0F, Easing.CUBIC_IN_OUT)
+                .key(open + 40, 126.0F, Easing.SPRING_OUT)
                 .hold(end));
+        tl.cue(open, sound(hang, ModSounds.KRAVE_SCREECH, 1.4F, 0.8F));
+        tl.cue(open + 2, burst(mouth, ParticleTypes.LARGE_SMOKE, 40, 9.0D, 0.4D));
+
+        rig.dolly(open, 30, 10, ring(o, 150.0F, 74.0D, 40.0D), ring(o, 96.0F, 52.0D, 62.0D),
+                hang, mouth, Easing.CUBIC_IN_OUT);
+
+        // --- 3. THE POUR ----------------------------------------------------
+        // It tips over and empties. The spill track is the actor's own ballistic
+        // spray; everything below is the world catching what comes out.
+        final int tip = open + 34;
+        final int pourEnd = tip + 210;
+
+        tl.track("box.spin", Track.from(0.0F, -140.0F)
+                .key(settle, 0.0F, Easing.QUINT_OUT)
+                .key(tip, 12.0F, Easing.SINE_IN_OUT)
+                // The roll onto its side IS the pour starting - it leads the
+                // cereal by a few ticks so the tipping causes the fall.
+                .key(tip + 26, 104.0F, Easing.CUBIC_IN_OUT)
+                .key(pourEnd, 128.0F, Easing.SINE_IN_OUT)
+                .key(end, 96.0F, Easing.CUBIC_IN_OUT));
         tl.track("box.spill", Track.from(0.0F, 0.0F)
-                .hold(82.0F)
-                .key(83.0F, 0.02F, Easing.STEP)
-                .key(184.0F, 1.0F, Easing.CUBIC_OUT)
+                .key(tip + 8, 0.0F)
+                .key(tip + 34, 1.0F, Easing.CUBIC_IN)
+                .key(pourEnd - 30, 1.0F)
+                .key(pourEnd, 0.35F, Easing.CUBIC_OUT)
+                .hold(end));
+        // The carton lightens as it empties, so it rides up as the load leaves.
+        tl.track("box.dy", Track.from(0.0F, 190.0F)
+                .key(settle, -6.0F, Easing.QUINT_IN)
+                .key(settle + 14, 3.0F, Easing.CUBIC_OUT)
+                .key(settle + 30, 0.0F, Easing.SPRING_OUT)
+                .key(tip, 0.0F)
+                .key(pourEnd, 22.0F, Easing.SINE_IN_OUT)
+                .hold(end));
+        tl.cue(tip + 8, sound(mouth, ModSounds.KRAVE_RUMBLE, 1.8F, 0.8F));
+
+        // Each piece that clears the mouth lands somewhere and goes off. They
+        // spiral outward rather than landing in a ring, so the destruction
+        // spreads across the ground instead of drawing a circle on it.
+        final int impacts = 46;
+        for (int i = 0; i < impacts; i++) {
+            float u = i / (float) (impacts - 1);
+            int at = tip + 20 + Math.round(u * 190.0F);
+            // 137.5 degrees per piece: the angle that never repeats a spoke.
+            Vec3 where = ring(o, i * 137.5F, 8.0D + u * 62.0D, 0.0D);
+
+            tl.cue(at, burst(where.add(0.0D, 1.0D, 0.0D), ParticleTypes.EXPLOSION, 6, 2.5D, 0.25D));
+            tl.cue(at, burst(where.add(0.0D, 1.2D, 0.0D), ParticleTypes.FLAME, 30, 3.0D, 0.55D));
+            tl.cue(at, burst(where.add(0.0D, 0.8D, 0.0D), ParticleTypes.LAVA, 8, 2.0D, 0.3D));
+            // Pitched by distance so the far ones read as further away, and only
+            // every third piece is heard - forty-six overlapping booms is mud.
+            if (i % 3 == 0) {
+                tl.cue(at, sound(where, ModSounds.KRAVE_BOOM, 1.5F, 1.35F - u * 0.5F));
+            }
+            rig.shake(at, 10, 0.8F + u * 1.1F, 2.4F, where, 50.0D);
+        }
+
+        // Camera rides down with the pour, then orbits the field while it burns.
+        rig.dolly(tip, 46, 10, ring(o, 96.0F, 52.0D, 62.0D), ring(o, 62.0F, 60.0D, 30.0D),
+                mouth, o.add(0.0D, 6.0D, 0.0D), Easing.CUBIC_IN_OUT);
+        rig.orbit(tip + 50, 150, 16, o, 66.0D, 48.0D, 26.0D, 14.0D, 62.0F, 268.0F,
+                o.add(0.0D, 5.0D, 0.0D), Easing.SINE_IN_OUT);
+
+        // --- 4. the last of it ----------------------------------------------
+        // One final slug of cereal, much bigger than the rest, dead centre.
+        final int last = pourEnd - 16;
+        tl.cue(last, sound(o, ModSounds.KRAVE_BOOM, 2.0F, 0.55F));
+        tl.cue(last, burst(o.add(0.0D, 2.0D, 0.0D), ParticleTypes.EXPLOSION_EMITTER, 6, 6.0D, 0.1D));
+        tl.cue(last, burst(o.add(0.0D, 2.0D, 0.0D), ParticleTypes.FLAME, 120, 14.0D, 0.9D));
+        impact(tl, rig, o, last, 4.2F);
+
+        // The empty carton hangs there a moment, then drops out of frame.
+        tl.cue(pourEnd + 10, sound(hang, ModSounds.KRAVE_DEATH, 1.2F, 0.9F));
+        rig.dolly(pourEnd, end - pourEnd, 16, ring(o, 268.0F, 48.0D, 26.0D),
+                ring(o, 300.0F, 86.0D, 54.0D), o.add(0.0D, 5.0D, 0.0D),
+                o.add(0.0D, 20.0D, 0.0D), Easing.CUBIC_IN_OUT);
+
+        rig.fov(Track.from(0.0F, 70.0F)
+                .key(settle, 88.0F, Easing.EXPO_OUT)
+                .key(settle + 26, 70.0F, Easing.SPRING_OUT)
+                .key(tip, 66.0F, Easing.CUBIC_IN_OUT)
+                .key(tip + 40, 82.0F, Easing.CUBIC_IN_OUT)
+                .key(last, 78.0F)
+                .key(last + 8, 104.0F, Easing.EXPO_OUT)
+                .key(last + 30, 74.0F, Easing.SPRING_OUT)
+                .hold(end));
+        rig.roll(Track.from(0.0F, 0.0F)
+                .key(settle, 3.5F, Easing.CUBIC_IN)
+                .key(settle + 24, 0.0F, Easing.SPRING_OUT)
+                .key(tip + 40, -2.5F, Easing.SINE_IN_OUT)
+                .key(pourEnd, 2.5F, Easing.SINE_IN_OUT)
+                .key(last + 6, 6.0F, Easing.CUBIC_IN)
+                .key(last + 34, 0.0F, Easing.SPRING_OUT)
                 .hold(end));
 
-        // A second giant far off behind it, purely for scale: something that big
-        // needs something else that big in frame or it just reads as close.
-        SmokerActor far = new SmokerActor();
-        Vec3 farAt = o.add(-62.0D, -4.0D, 68.0D);
-        far.bind(tl, "far", farAt, facing(farAt, o), 11.0F);
-        tl.track("far.dy", Track.from(0.0F, -28.0F)
-                .hold(22.0F)
-                .key(92.0F, 0.0F, Easing.QUINT_OUT)
-                .hold(end));
-        tl.track("far.headPitch", Track.from(0.0F, 26.0F)
-                .key(96.0F, -8.0F, Easing.BACK_OUT)
-                .key(108.0F, -2.0F, Easing.SPRING_OUT)
-                .hold(end));
-        tl.track("far.armR", Track.from(0.0F, 6.0F).key(100.0F, -95.0F, Easing.BACK_OUT).hold(end));
-        tl.track("far.elbowR", Track.from(0.0F, 8.0F).key(100.0F, 120.0F, Easing.BACK_OUT).hold(end));
-        tl.track("far.jaw", Track.from(0.0F, 0.0F)
-                .hold(118.0F)
-                .key(124.0F, 30.0F, Easing.ELASTIC_OUT)
-                .key(136.0F, 8.0F)
-                .key(150.0F, 26.0F, Easing.ELASTIC_OUT)
-                .key(168.0F, 0.0F));
-        tl.track("far.ember", Track.from(0.0F, 0.3F)
-                .key(112.0F, 1.3F, Easing.EXPO_OUT)
-                .key(126.0F, 0.4F)
-                .key(150.0F, 1.1F)
-                .key(end, 0.2F));
-        tl.track("far.ring0", Track.from(124.0F, 0.0F).key(190.0F, 1.0F, Easing.LINEAR));
-        tl.track("far.ring1", Track.from(150.0F, 0.0F).key(210.0F, 1.0F, Easing.LINEAR));
-        tl.track("far.breathe", Track.constant(1.0F).wobble(0.03F, 51.0F, 0.0F, 0.0F));
-
-        // --- score ----------------------------------------------------------
-        tl.cue(4, sound(o, ModSounds.KRAVE_SIREN, 1.3F, 0.9F));
-        tl.cue(30, sound(rim, ModSounds.KRAVE_VOICE, 1.0F, 0.7F));
-        tl.cue(46, sound(o, ModSounds.KRAVE_RUMBLE, 1.4F, 0.65F));
-        tl.cue(79, sound(o, ModSounds.KRAVE_BOOM, 4.0F, 0.5F));
-        tl.cue(79, burst(o.add(0.0D, 1.0D, 0.0D), ParticleTypes.EXPLOSION, 34, 14.0D, 0.15D));
-        tl.cue(80, burst(o.add(0.0D, 1.0D, 0.0D), ParticleTypes.LARGE_SMOKE, 170, 18.0D, 0.6D));
-        tl.cue(88, sound(o, ModSounds.EVT_MCD, 1.3F, 1.0F));
-        tl.cue(152, sound(o, ModSounds.KRAVE_LAUGH, 1.1F, 0.8F));
-
-        return new Scene("Boxfall", o, tl, rig, 30).add(box).add(far);
+        return scene;
     }
 
     // ------------------------------------------------------------------------
@@ -1355,6 +1390,296 @@ public final class StageScripts {
     // seconds. Stage 7 was one object and no impact; this is four impacts and no
     // stillness at all.
     // ------------------------------------------------------------------------
+
+    // ------------------------------------------------------------------------
+    // STAGE 8: THE INTERVIEW
+    //
+    // She is watching something enormous, and it buffers. The buffering is the
+    // beat the whole scene turns on, so it is held far past comfortable - the
+    // player has to get irritated on their own before she acts on it for them.
+    // Then the set goes into the ground, the ground stays poisoned, and the man
+    // responsible turns up and fixes it by wiring the field with charges.
+    // ------------------------------------------------------------------------
+    private static Scene theInterview(Vec3 o, Vec3 eye) {
+        final int end = 470;
+        Timeline tl = new Timeline(end);
+        CameraRig rig = new CameraRig(70.0F);
+
+        // She sits back from the set and both face the same way, so one frame
+        // holds her and the screen at once and the beat needs no cutting.
+        Vec3 sofa = ring(o, 200.0F, 30.0D, 34.0D);
+        Vec3 tvAt = ring(o, 20.0F, 34.0D, 40.0D);
+        Vec3 screen = tvAt.add(0.0D, 16.0D, 0.0D);
+        Vec3 crater = ring(o, 20.0F, 14.0D, 0.0D);
+
+        // Bound at yaw 0 like the dicing scene, so "aim" is the world bearing
+        // straight out, with nothing to subtract.
+        ThrowerActor barb = new ThrowerActor();
+        barb.bind(tl, "barb", sofa, 0.0F, 12.0F);
+
+        SkyTelevisionActor tv = new SkyTelevisionActor(1.0F);
+        tv.bind(tl, "tv", tvAt, facing(tvAt, sofa), 15.0F);
+
+        InternetManagerActor man = new InternetManagerActor(1.0F);
+        Vec3 vanAt = ring(o, 300.0F, 58.0D, 0.0D);
+        Vec3 walkTo = ring(o, 300.0F, 16.0D, 0.0D);
+        man.layCable(40.0F, 4);
+        man.bind(tl, "man", vanAt, facing(vanAt, crater), 7.0F);
+
+        C4CableActor cable = new C4CableActor(1.0F);
+        Vec3 runFrom = ring(o, 300.0F, 34.0D, 1.0D);
+        cable.bind(tl, "c4", runFrom, facing(runFrom, crater), 7.0F);
+        // Laid AFTER bind: run() resolves the world end point against the bind
+        // position, yaw and scale, so it has to know them first.
+        cable.run(7, crater);
+
+        Scene scene = new Scene("The Interview", o, tl, rig, 34)
+                .add(barb).add(tv).add(man).add(cable);
+
+        // She is already sitting there when we arrive; nothing to blink in.
+        tl.track("barb.blink", Track.constant(0.0F));
+        tl.track("barb.ghost", Track.constant(0.0F));
+        // Below zero leaves her limbs on the humanoid tracks - she is watching,
+        // not throwing, and will not take the wind-up pose until she means it.
+        Track thrown = Track.from(0.0F, -1.0F);
+        Track aim = Track.from(0.0F, facing(sofa, tvAt));
+
+        // --- 1. watching ----------------------------------------------------
+        // Wide two-shot drifting in. Nothing is wrong yet and the camera is in
+        // no hurry, which is exactly what makes the stall land when it comes.
+        rig.dolly(0, 78, 0, eye, ring(o, 110.0F, 66.0D, 30.0D),
+                o.add(0.0D, 12.0D, 0.0D), screen, Easing.CUBIC_IN_OUT);
+
+        tl.track("tv.power", Track.from(0.0F, 0.0F)
+                .key(10.0F, 0.0F)
+                .key(28.0F, 1.0F, Easing.QUINT_OUT)
+                .key(284.0F, 1.0F)
+                .key(286.0F, 0.0F, Easing.STEP)
+                .hold(end));
+        tl.track("tv.dialA", Track.constant(0.35F));
+        tl.track("tv.dialB", Track.constant(0.7F));
+        tl.cue(12, sound(tvAt, ModSounds.KRAVE_VOICE, 1.4F, 1.0F));
+
+        // --- 2. IT BUFFERS --------------------------------------------------
+        // Push in until the ring fills the frame, then sit on it. A hundred and
+        // twenty ticks of nothing happening, on purpose.
+        rig.dolly(78, 34, 8, ring(o, 110.0F, 66.0D, 30.0D), ring(o, 40.0F, 32.0D, 32.0D),
+                screen, screen, Easing.CUBIC_IN_OUT);
+        rig.hold(112, 118, 10, ring(o, 40.0F, 28.0D, 30.0D), screen);
+
+        tl.track("tv.buffer", Track.from(0.0F, 0.0F)
+                .key(94.0F, 0.0F)
+                .key(104.0F, 1.0F, Easing.QUINT_OUT)
+                .key(224.0F, 1.0F)
+                .key(232.0F, 0.0F, Easing.STEP)
+                .hold(end));
+        tl.cue(100, sound(tvAt, ModSounds.KRAVE_HURT, 0.8F, 0.6F));
+
+        // The snow gives her one hopeful flicker at 160 and then goes straight
+        // back to the ring. That false recovery is the cruelty of the beat.
+        tl.track("tv.static", Track.from(0.0F, 0.9F)
+                .key(32.0F, 0.12F, Easing.CUBIC_OUT)
+                .key(96.0F, 0.06F)
+                .key(160.0F, 0.06F)
+                .key(166.0F, 0.9F, Easing.STEP)
+                .key(174.0F, 0.08F, Easing.STEP)
+                .key(182.0F, 0.75F, Easing.STEP)
+                .key(232.0F, 0.4F)
+                .hold(end));
+
+        // Her patience goes in stages rather than all at once: a look away at
+        // 150, back to the screen at 200, then she stops waiting.
+        aim.key(140.0F, facing(sofa, tvAt))
+           .key(154.0F, facing(sofa, tvAt) - 26.0F, Easing.CUBIC_OUT)
+           .key(190.0F, facing(sofa, tvAt) - 26.0F)
+           .key(206.0F, facing(sofa, tvAt), Easing.CUBIC_IN_OUT);
+        tl.cue(150, sound(sofa, ModSounds.BARBARA_IDLE, 1.0F, 0.9F));
+        tl.cue(196, sound(sofa, ModSounds.BARBARA_HURT, 1.2F, 0.85F));
+
+        // --- 3. she throws it -----------------------------------------------
+        // ThrowerActor releases at 0.585 of its own track, so the wind-up start
+        // and the release tick are picked to put the snap where the set leaves.
+        final int coil = 232;
+        final int windup = 44;
+        final int release = coil + Math.round(windup * 0.585F);
+        final int hit = release + 26;
+
+        thrown.key(coil - 1, -1.0F, Easing.STEP)
+              .key(coil, 0.0F, Easing.STEP)
+              .key(coil + windup, 1.0F, Easing.CUBIC_IN_OUT)
+              .key(coil + windup + 1, -1.0F, Easing.STEP);
+
+        rig.dolly(coil - 4, 30, 8, ring(o, 40.0F, 28.0D, 30.0D), ring(o, 82.0F, 44.0D, 36.0D),
+                screen, tvAt.add(0.0D, 12.0D, 0.0D), Easing.CUBIC_IN_OUT);
+        tl.cue(coil + 6, sound(tvAt, ModSounds.KRAVE_SCREECH, 1.0F, 0.7F));
+        tl.cue(release, sound(sofa, ModSounds.BARBARA_RAGE, 1.6F, 1.0F));
+
+        // The set leaves the sky. It lifts a little on the coil before it goes,
+        // so the throw has somewhere to come from.
+        tl.track("tv.dx", Track.from(0.0F, 0.0F)
+                .key(release, 0.0F)
+                .key(hit, (float) (crater.x - tvAt.x), Easing.QUINT_IN)
+                .hold(end));
+        tl.track("tv.dy", Track.from(0.0F, 0.0F)
+                .key(coil + 16, 5.0F, Easing.CUBIC_OUT)
+                .key(release, 0.0F, Easing.CUBIC_IN)
+                .key(hit, (float) (crater.y - tvAt.y), Easing.QUINT_IN)
+                .hold(end));
+        tl.track("tv.dz", Track.from(0.0F, 0.0F)
+                .key(release, 0.0F)
+                .key(hit, (float) (crater.z - tvAt.z), Easing.QUINT_IN)
+                .hold(end));
+        // Nothing that heavy turns on a clean axis; the actor spreads this over
+        // three of them, and it overshoots slightly past the landing.
+        tl.track("tv.tumble", Track.from(0.0F, 0.0F)
+                .key(release, 0.0F)
+                .key(hit, 780.0F, Easing.CUBIC_IN)
+                .key(hit + 6, 828.0F, Easing.CUBIC_OUT)
+                .hold(end));
+        // The glass starts going on the way down, and finishes on contact.
+        tl.track("tv.crack", Track.from(0.0F, 0.0F)
+                .key(release + 6, 0.22F, Easing.CUBIC_OUT)
+                .key(hit - 2, 0.60F)
+                .key(hit, 1.0F, Easing.STEP)
+                .hold(end));
+
+        rig.dolly(release, hit - release, 4, ring(o, 82.0F, 44.0D, 36.0D),
+                ring(o, 74.0F, 32.0D, 14.0D), tvAt.add(0.0D, 12.0D, 0.0D),
+                crater.add(0.0D, 3.0D, 0.0D), Easing.QUINT_IN);
+        impact(tl, rig, crater, hit, 3.4F);
+
+        // --- 4. the ground stays poisoned -----------------------------------
+        // Not a flash: a stain that keeps breathing for the rest of the scene,
+        // so the field is still visibly wrong when the Manager walks onto it.
+        for (int t = hit + 4; t < end - 12; t += 9) {
+            final int at = t;
+            tl.cue(at, burst(crater.add(0.0D, 0.6D, 0.0D), ParticleTypes.SCULK_SOUL, 9, 7.0D, 0.16D));
+            if ((at - hit) % 27 == 0) {
+                tl.cue(at, burst(crater.add(0.0D, 0.3D, 0.0D), ParticleTypes.SPORE_BLOSSOM_AIR, 22, 11.0D, 0.05D));
+                tl.cue(at, sound(crater, ModSounds.KRAVE_RUMBLE, 0.35F, 1.7F));
+            }
+        }
+        rig.orbit(hit + 20, 86, 16, crater, 36.0D, 28.0D, 9.0D, 15.0D, 40.0F, 168.0F,
+                crater.add(0.0D, 4.0D, 0.0D), Easing.SINE_IN_OUT);
+
+        // --- 5. the Internet Manager ----------------------------------------
+        final int arrive = hit + 46;
+        final int layStart = arrive + 26;
+        final int layEnd = layStart + 74;
+
+        tl.track("man.walk", Track.from(0.0F, 0.0F)
+                .key(arrive, 0.0F)
+                .key(arrive + 4, 1.0F, Easing.STEP)
+                .key(layEnd, 1.0F)
+                .key(layEnd + 6, 0.0F, Easing.STEP)
+                .hold(end));
+        tl.track("man.dx", Track.from(0.0F, 0.0F)
+                .key(arrive, 0.0F)
+                .key(layEnd, (float) (walkTo.x - vanAt.x), Easing.SINE_IN_OUT)
+                .hold(end));
+        tl.track("man.dz", Track.from(0.0F, 0.0F)
+                .key(arrive, 0.0F)
+                .key(layEnd, (float) (walkTo.z - vanAt.z), Easing.SINE_IN_OUT)
+                .hold(end));
+        // The cable pays out at exactly the rate he walks, because a run that
+        // appears faster than the man laying it stops being something he did.
+        tl.track("man.unspool", Track.from(0.0F, 0.0F)
+                .key(layStart, 0.0F)
+                .key(layEnd, 1.0F, Easing.SINE_IN_OUT)
+                .hold(end));
+        // He looks down at the run while laying it, and up at the crater after.
+        tl.track("man.headPitch", Track.from(0.0F, 0.0F)
+                .key(layStart, 26.0F, Easing.CUBIC_IN_OUT)
+                .key(layEnd, 26.0F)
+                .key(layEnd + 16, -8.0F, Easing.CUBIC_IN_OUT)
+                .hold(end));
+        tl.cue(arrive, sound(vanAt, ModSounds.KRAVE_BOOM, 0.9F, 1.9F));
+        tl.cue(arrive + 8, sound(vanAt, ModSounds.EVT_MANAGER, 1.3F, 1.0F));
+
+        rig.dolly(arrive - 6, 46, 12, ring(o, 168.0F, 36.0D, 13.0D), ring(o, 286.0F, 32.0D, 10.0D),
+                crater.add(0.0D, 4.0D, 0.0D), walkTo.add(0.0D, 5.0D, 0.0D), Easing.CUBIC_IN_OUT);
+
+        // He crouches to set the charges, stands, and points at his work.
+        final int plant = layEnd + 8;
+        tl.track("man.plant", Track.from(0.0F, 0.0F)
+                .key(plant, 0.0F)
+                .key(plant + 12, 1.0F, Easing.CUBIC_OUT)
+                .key(plant + 34, 1.0F)
+                .key(plant + 44, 0.0F, Easing.CUBIC_IN_OUT)
+                .hold(end));
+        tl.track("man.charge", Track.from(0.0F, 0.0F)
+                .key(plant + 6, 0.0F)
+                .key(plant + 30, 1.0F, Easing.CUBIC_IN_OUT)
+                .hold(end));
+        tl.track("man.point", Track.from(0.0F, 0.0F)
+                .key(plant + 46, 0.0F)
+                .key(plant + 58, 1.0F, Easing.BACK_OUT)
+                .hold(end));
+        tl.cue(plant + 10, sound(walkTo, ModSounds.KRAVE_HURT, 0.7F, 1.4F));
+
+        // --- 6. the charges, in sequence ------------------------------------
+        final int armAt = layStart + 10;
+        final int fireAt = plant + 62;
+        tl.track("c4.sag", Track.constant(0.7F));
+        tl.track("c4.arm", Track.from(0.0F, 0.0F)
+                .key(armAt, 0.0F)
+                .key(layEnd, 1.0F, Easing.SINE_IN_OUT)
+                .hold(end));
+        // The blink rate accelerates all the way in. That rising rate IS the
+        // tension; a steady blink would just be a light on a prop.
+        tl.track("c4.blink", Track.from(0.0F, 0.0F)
+                .key(armAt, 0.6F)
+                .key(plant + 40, 2.4F, Easing.CUBIC_IN)
+                .key(fireAt, 9.0F, Easing.QUINT_IN)
+                .hold(end));
+        // And it travels ALONG the run rather than going off as one bang, which
+        // is the whole reason the actor keeps its links as independent siblings.
+        tl.track("c4.fire", Track.from(0.0F, 0.0F)
+                .key(fireAt, 0.0F)
+                .key(fireAt + 34, 1.0F, Easing.CUBIC_IN_OUT)
+                .hold(end));
+
+        rig.dolly(fireAt - 18, 24, 8, ring(o, 286.0F, 32.0D, 10.0D), ring(o, 250.0F, 46.0D, 20.0D),
+                walkTo.add(0.0D, 5.0D, 0.0D), walkPoint(runFrom, crater, 0.5F).add(0.0D, 3.0D, 0.0D),
+                Easing.CUBIC_IN_OUT);
+
+        // One detonation per segment, marching down the cable into the crater.
+        for (int i = 0; i < 7; i++) {
+            int at = fireAt + 3 + i * 5;
+            Vec3 where = walkPoint(runFrom, crater, i / 6.0F);
+            tl.cue(at, sound(where, ModSounds.KRAVE_BOOM, 1.6F, 1.25F - i * 0.06F));
+            tl.cue(at, burst(where.add(0.0D, 1.0D, 0.0D), ParticleTypes.EXPLOSION, 8, 3.0D, 0.3D));
+            tl.cue(at, burst(where.add(0.0D, 1.0D, 0.0D), ParticleTypes.FLAME, 26, 3.5D, 0.6D));
+            rig.shake(at, 12, 1.4F, 2.2F, where, 40.0D);
+        }
+        impact(tl, rig, crater, fireAt + 36, 4.0F);
+
+        // Pull out on a poisoned, cratered, still-smoking field.
+        rig.dolly(fireAt + 40, 46, 14, ring(o, 250.0F, 46.0D, 20.0D), ring(o, 214.0F, 78.0D, 46.0D),
+                crater.add(0.0D, 3.0D, 0.0D), o.add(0.0D, 6.0D, 0.0D), Easing.CUBIC_IN_OUT);
+
+        rig.fov(Track.from(0.0F, 70.0F)
+                .key(94.0F, 62.0F, Easing.CUBIC_IN_OUT)
+                .key(224.0F, 58.0F)
+                .key(release, 74.0F, Easing.CUBIC_IN)
+                .key(hit, 104.0F, Easing.EXPO_OUT)
+                .key(hit + 22, 72.0F, Easing.SPRING_OUT)
+                .key(fireAt, 66.0F, Easing.CUBIC_IN_OUT)
+                .key(fireAt + 36, 96.0F, Easing.EXPO_OUT)
+                .key(fireAt + 58, 74.0F, Easing.SPRING_OUT)
+                .hold(end));
+        rig.roll(Track.from(0.0F, 0.0F)
+                .key(release, 0.0F)
+                .key(hit, 7.5F, Easing.CUBIC_IN)
+                .key(hit + 26, 0.0F, Easing.SPRING_OUT)
+                .key(fireAt + 36, 4.0F, Easing.CUBIC_IN)
+                .key(fireAt + 60, 0.0F, Easing.SPRING_OUT)
+                .hold(end));
+
+        tl.track("barb.throw", thrown.hold(end));
+        tl.track("barb.aim", aim.hold(end));
+        return scene;
+    }
 
     private static Scene theBarrage(Vec3 o, Vec3 eye) {
         final int end = 268;
