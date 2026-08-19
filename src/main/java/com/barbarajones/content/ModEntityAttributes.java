@@ -55,7 +55,7 @@ public final class ModEntityAttributes {
     private static final List<RegistryObject<? extends EntityType<?>>> REQUIRED = List.of(
             ModEntities.BARBARA, ModEntities.CAYDEN, ModEntities.KRAVE_MONSTER,
             ModEntities.NUGGET, ModEntities.DANIEL, ModEntities.MOM, ModEntities.PLUG,
-            ModEntities.DUHL_WOL, ModEntities.KRAVE_MINION);
+            ModEntities.DUHL_WOL, ModEntities.KRAVE_MINION, ModEntities.MOM_BOSS);
 
     /** Populated as we register, then checked against REQUIRED. */
     private static final Set<EntityType<?>> REGISTERED = new HashSet<>();
@@ -77,6 +77,7 @@ public final class ModEntityAttributes {
         put(event, ModEntities.PLUG.get(),          ThePlug.createAttributes().build());
         put(event, ModEntities.DUHL_WOL.get(),      DuhlWol.createAttributes().build());
         put(event, ModEntities.KRAVE_MINION.get(),  KraveMinion.createAttributes().build());
+        put(event, ModEntities.MOM_BOSS.get(),      MomCobbBoss.createAttributes().build());
 
         verifyEveryMobRegistered();
         verifyRequiredAttributes();
