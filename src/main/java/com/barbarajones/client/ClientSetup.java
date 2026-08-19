@@ -76,5 +76,7 @@ public final class ClientSetup {
     public static void registerLayers(EntityRenderersEvent.RegisterLayerDefinitions event) {
         event.registerLayerDefinition(KraveMonsterModel.LAYER_LOCATION, KraveMonsterModel::createBodyLayer);
         event.registerLayerDefinition(ManagerModel.LAYER_LOCATION, ManagerModel::createBodyLayer);
+        event.registerLayerDefinition(com.barbarajones.client.render.BarbaraModel.LAYER,
+                com.barbarajones.client.render.BarbaraModel::createBodyLayer);
     }
 }

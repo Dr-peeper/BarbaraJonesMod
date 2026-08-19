@@ -17,7 +17,7 @@ public class BarbaraRenderer extends MobRenderer<BarbaraJones, BarbaraModel> {
             new ResourceLocation(BarbaraJonesMod.MODID, "textures/entity/barbara.png");
 
     public BarbaraRenderer(EntityRendererProvider.Context ctx) {
-        super(ctx, new BarbaraModel(ctx.bakeLayer(ModelLayers.PLAYER)), 0.5F);
+        super(ctx, new BarbaraModel(ctx.bakeLayer(BarbaraModel.LAYER)), 0.5F);
     }
 
     @Override

@@ -32,9 +32,10 @@ public class SsjAuraLayer extends RenderLayer<CaydenCobb, CaydenModel> {
     public void render(PoseStack pose, MultiBufferSource buffers, int light, CaydenCobb entity,
                        float limbSwing, float limbSwingAmount, float partial,
                        float ageInTicks, float netHeadYaw, float headPitch) {
-        boolean full = entity.isSuperSaiyan();
-        boolean half = !full && entity.isDesperate();
-        if (!full && !half) {
+        boolean dark = entity.isDark();
+        boolean full = !dark && entity.isSuperSaiyan();
+        boolean half = !dark && !full && entity.isDesperate();
+        if (!full && !half && !dark) {
             return;
         }
         // The aura is drawn in world space around the entity, so undo the model's
@@ -48,7 +49,27 @@ public class SsjAuraLayer extends RenderLayer<CaydenCobb, CaydenModel> {
         // billboard the flat effects toward the camera
         float camYaw = Minecraft.getInstance().gameRenderer.getMainCamera().getYRot();
 
-        if (full) {
+        if (dark) {
+            // Dark Cayden reads as the inverse of the ascension: the column falls
+            // INWARD and downward rather than licking up, in violet-black with a
+            // red core, and the arcs are dense instead of occasional. Same
+            // machinery, deliberately opposite silhouette.
+            darkColumn(pose, buf, t, camYaw);
+            arcs(pose, buf, entity, t);
+        } else if (full && entity.getTier() >= 3) {
+            // ULTRA INSTINCT. The opposite of effort: no flames at all, a still
+            // silver shell and a slow drifting halo. Everything below is loud
+            // because it is straining; this one is quiet because it is not.
+            ultraShell(pose, buf, t, camYaw);
+            hairSpikes(pose, buf, t);
+        } else if (full && entity.getTier() == 2) {
+            // SSJ2: same gold, but taller, denser, and the arcs never stop.
+            flameColumn(pose, buf, t, camYaw, 1.35F, false);
+            hairSpikes(pose, buf, t);
+            arcs(pose, buf, entity, t);
+            arcs(pose, buf, entity, t + 7.0F);   // a second offset pass = constant crackle
+            shockwave(pose, buf, entity, t);
+        } else if (full) {
             flameColumn(pose, buf, t, camYaw, 1.0F, false);
             hairSpikes(pose, buf, t);
             arcs(pose, buf, entity, t);
@@ -106,6 +127,91 @@ public class SsjAuraLayer extends RenderLayer<CaydenCobb, CaydenModel> {
             float w = 0.34F * pulse;
             tri(buf, m, -w, 0.0F, 0.0F, w, 0.0F, 0.0F, 0.0F, 0.95F * pulse, 0.0F,
                     1.0F, 0.95F, 0.65F, 0.42F);
+        }
+        pose.popPose();
+    }
+
+    /**
+     * The possession aura. Tongues fall in toward him instead of rising off him,
+     * which is what makes it read as something taking hold rather than power
+     * escaping - the whole point of the transformation.
+     */
+    private void darkColumn(PoseStack pose, VertexConsumer buf, float t, float camYaw) {
+        pose.pushPose();
+        pose.mulPose(Axis.YP.rotationDegrees(-camYaw));
+        Matrix4f m = pose.last().pose();
+
+        final int TONGUES = 12;
+        for (int i = 0; i < TONGUES; i++) {
+            float phase = ((t * 0.07F) + i / (float) TONGUES) % 1.0F;
+            float life = phase;                       // grows as it descends
+            float x = ((i % 4) - 1.5F) * 0.22F + Mth.sin(t * 0.17F + i) * 0.06F;
+            float baseY = 2.4F - phase * 2.5F;        // falls toward the ground
+            float height = 0.5F * (1.0F - life) + 0.2F;
+            float halfW = 0.09F + life * 0.16F;
+
+            float r = 0.42F + 0.5F * life;
+            float g = 0.03F;
+            float b = 0.30F - 0.18F * life;
+            float a = 0.55F * (1.0F - Math.abs(phase - 0.5F) * 1.6F);
+            if (a <= 0.01F) {
+                continue;
+            }
+            tri(buf, m,
+                    x - halfW, baseY, 0.0F,
+                    x + halfW, baseY, 0.0F,
+                    x + Mth.sin(t * 0.26F + i) * 0.10F, baseY - height, 0.0F,
+                    r, g, b, a);
+        }
+
+        // a bruised halo at chest height, pulsing slowly
+        float pulse = 0.7F + Mth.sin(t * 0.3F) * 0.3F;
+        for (int i = 0; i < 5; i++) {
+            float w = (0.30F + i * 0.05F) * pulse;
+            tri(buf, m, -w, 1.05F, 0.0F, w, 1.05F, 0.0F, 0.0F, 1.05F + 0.30F * pulse, 0.0F,
+                    0.55F, 0.02F, 0.38F, 0.20F);
+        }
+        pose.popPose();
+    }
+
+    /**
+     * Ultra Instinct: a smooth silver shell and a slow halo, with none of the
+     * flame the lower forms have. The read is stillness - he is not powering up
+     * any more, he simply is not where the hit was going to land.
+     */
+    private void ultraShell(PoseStack pose, VertexConsumer buf, float t, float camYaw) {
+        pose.pushPose();
+        pose.mulPose(Axis.YP.rotationDegrees(-camYaw));
+        Matrix4f m = pose.last().pose();
+
+        // a tall, near-still teardrop of pale silver around him
+        final int PANELS = 14;
+        float breathe = 1.0F + Mth.sin(t * 0.08F) * 0.03F;
+        for (int i = 0; i < PANELS; i++) {
+            float u = i / (float) (PANELS - 1);              // 0 at feet, 1 at crown
+            float y = u * 2.3F * breathe;
+            float w = Mth.sin(u * Mth.PI) * 0.62F * breathe + 0.08F;
+            float a = 0.20F * (1.0F - Math.abs(u - 0.45F));
+            if (a <= 0.005F) {
+                continue;
+            }
+            tri(buf, m, -w, y, 0.0F, w, y, 0.0F, 0.0F, y + 0.16F, 0.0F,
+                    0.86F, 0.92F, 1.0F, a);
+        }
+
+        // the halo: a thin ring that drifts rather than pulses
+        float spin = t * 0.9F;
+        final int SEG = 24;
+        for (int i = 0; i < SEG; i++) {
+            float a0 = (i / (float) SEG) * Mth.TWO_PI + spin * Mth.DEG_TO_RAD;
+            float a1 = ((i + 1) / (float) SEG) * Mth.TWO_PI + spin * Mth.DEG_TO_RAD;
+            float r0 = 0.52F, r1 = 0.60F;
+            float yy = 2.32F;
+            tri(buf, m,
+                    Mth.cos(a0) * r0, yy, Mth.sin(a0) * r0,
+                    Mth.cos(a1) * r0, yy, Mth.sin(a1) * r0,
+                    Mth.cos(a1) * r1, yy, Mth.sin(a1) * r1,
+                    0.95F, 0.98F, 1.0F, 0.5F);
         }
         pose.popPose();
     }

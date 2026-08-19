@@ -20,6 +20,8 @@ import net.minecraft.sounds.SoundEvents;
 import net.minecraft.sounds.SoundSource;
 import net.minecraft.world.effect.MobEffectInstance;
 import net.minecraft.world.effect.MobEffects;
+import net.minecraft.tags.BlockTags;
+import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.damagesource.DamageSource;
 import net.minecraft.world.entity.AgeableMob;
 import net.minecraft.world.entity.EntityType;
@@ -71,6 +73,15 @@ public class CaydenCobb extends TamableAnimal {
     /** Half-ascension: cornered and fighting for his life. Synced for the aura. */
     private static final EntityDataAccessor<Boolean> DESPERATE =
             SynchedEntityData.defineId(CaydenCobb.class, EntityDataSerializers.BOOLEAN);
+    /** Dark Cayden: what his mother brings out of him. Synced for the aura. */
+    private static final EntityDataAccessor<Boolean> DARK =
+            SynchedEntityData.defineId(CaydenCobb.class, EntityDataSerializers.BOOLEAN);
+    /**
+     * How far up the ladder he currently is: 0 none, 1 Super Saiyan, 2 SSJ2,
+     * 3 Ultra Instinct. Synced so the aura can render the right form.
+     */
+    private static final EntityDataAccessor<Integer> TIER =
+            SynchedEntityData.defineId(CaydenCobb.class, EntityDataSerializers.INT);
 
     public static final int RAGE_THRESHOLD = 25;
     /** How long a transformation lasts before powering down on its own. */
@@ -83,6 +94,18 @@ public class CaydenCobb extends TamableAnimal {
     private static final int FLASH_ODDS = 10;
     /** Odds of a meteor answering a desperate punch: 1 in this. */
     private static final int METEOR_ODDS = 3;
+    /** Radius the dark aura rots plants within. */
+    private static final int CORRUPT_RADIUS = 6;
+    /** Ticks between laser volleys while dark. */
+    private static final int LASER_INTERVAL = 30;
+    /** Ticks between flight bursts while dark. */
+    private static final int BURST_INTERVAL = 55;
+    /** Ticks between SSJ2 shockwaves. */
+    private static final int WAVE_INTERVAL = 45;
+    /** Percentage chance Ultra Instinct simply refuses an incoming hit. */
+    private static final int DODGE_PERCENT = 70;
+    /** Ticks between techniques at tier 1; higher tiers cut this down. */
+    private static final int ARSENAL_INTERVAL = 90;
     /** Heal a point this often, once out of combat. */
     private static final int REGEN_INTERVAL = 60;
     /** How long since being hit before he starts healing again. */
@@ -103,6 +126,13 @@ public class CaydenCobb extends TamableAnimal {
     private int graceTicks;
     /** Client-only: ticks since the ascension became visible, or -1. */
     private int ssjClientAge = -1;
+    private int laserTimer;
+    private int burstTimer;
+    private int flightTicks;
+    private int waveTimer;
+    private int dodgeFlash;
+    private int arsenalTimer = 60;
+    private int lastMove = -1;
     private int ssjTicks;
     /** While true the transformation has no timer: it ends when the boss does. */
     private boolean ssjUntilBossDies;
@@ -148,6 +178,8 @@ public class CaydenCobb extends TamableAnimal {
         this.entityData.define(HOUSED, false);
         this.entityData.define(SSJ, false);
         this.entityData.define(DESPERATE, false);
+        this.entityData.define(DARK, false);
+        this.entityData.define(TIER, 0);
     }
 
     // ---- krave state -------------------------------------------------------
@@ -180,8 +212,24 @@ public class CaydenCobb extends TamableAnimal {
         double atkBase = BASE_DAMAGE + fed / 5;
         double spdBase = Math.max(0.12D, BASE_SPEED - fed * 0.012D);
         if (isSuperSaiyan()) {
-            atkBase *= 4.0D;
-            spdBase = BASE_SPEED * 1.6D;
+            // Each rung is a real step up, not a recolour.
+            int tier = Math.max(1, getTier());
+            atkBase *= switch (tier) {
+                case 3 -> 12.0D;
+                case 2 -> 7.0D;
+                default -> 4.0D;
+            };
+            spdBase = BASE_SPEED * switch (tier) {
+                case 3 -> 2.4D;
+                case 2 -> 1.9D;
+                default -> 1.6D;
+            };
+        }
+        if (isDark()) {
+            // Ruthless, not invulnerable: he hits far harder and closes faster,
+            // but he can still be killed - which is what keeps the fight tense.
+            atkBase *= 3.0D;
+            spdBase = BASE_SPEED * 1.45D;
         }
         var atk = getAttribute(Attributes.ATTACK_DAMAGE);
         var spd = getAttribute(Attributes.MOVEMENT_SPEED);
@@ -367,6 +415,9 @@ public class CaydenCobb extends TamableAnimal {
 
         regenerate();
         updateDesperation();
+        updateDark();
+        updateTier();
+        useArsenal();
 
         if (isSuperSaiyan()) {
             // Linked to the boss fight, the transformation has no clock on it -
@@ -494,6 +545,362 @@ public class CaydenCobb extends TamableAnimal {
                         1, 0.25D, 0.1D, 0.25D, 0.0D);
             }
         }
+    }
+
+    // ---- the ladder ---------------------------------------------------------
+
+    public int getTier() {
+        return this.entityData.get(TIER);
+    }
+
+    /**
+     * What he turns into is decided by what is in front of him. Fighting the
+     * Wither is worth a transformation; fighting the Krave Monster is worth
+     * everything he has.
+     *
+     * <p>Returns the tier the opponent deserves, 0 for anything ordinary.
+     */
+    private static int tierFor(@Nullable LivingEntity foe) {
+        if (foe == null || !foe.isAlive()) {
+            return 0;
+        }
+        if (foe instanceof com.barbarajones.entity.KraveMonster) {
+            return 3;                                     // the one that made him
+        }
+        if (foe instanceof net.minecraft.world.entity.boss.enderdragon.EnderDragon
+                || foe instanceof net.minecraft.world.entity.monster.warden.Warden
+                || foe instanceof com.barbarajones.boss.manager.TheManager) {
+            return 2;                                     // above a Wither
+        }
+        if (foe instanceof net.minecraft.world.entity.boss.wither.WitherBoss) {
+            return 1;
+        }
+        return 0;
+    }
+
+    /**
+     * Escalates to meet the opponent, and never quietly drops back down mid
+     * fight - he powers down when the fight is over, not when the boss happens
+     * to step out of range for a tick.
+     */
+    private void updateTier() {
+        int want = tierFor(getTarget());
+        int have = getTier();
+
+        if (want > have) {
+            this.entityData.set(TIER, want);
+            if (!isSuperSaiyan()) {
+                becomeSuperSaiyan();      // reuses the existing ascension beat
+            }
+            this.ssjUntilBossDies = true; // it lasts as long as the fight does
+            applyKraveStats();
+            announceTier(want);
+        } else if (want == 0 && have > 0 && getTarget() == null) {
+            this.entityData.set(TIER, 0);
+        }
+
+        if (getTier() >= 2) {
+            ssj2Shockwave();
+        }
+        if (getTier() >= 3 && this.tickCount % 2 == 0 && level() instanceof ServerLevel sl) {
+            // Ultra Instinct trails silver rather than burning - it is meant to
+            // read as calm, not as effort.
+            sl.sendParticles(ParticleTypes.END_ROD, getX(), getY() + getBbHeight() * 0.5D, getZ(),
+                    2, 0.3D, 0.5D, 0.3D, 0.01D);
+        }
+        if (this.dodgeFlash > 0) {
+            this.dodgeFlash--;
+        }
+    }
+
+    private void announceTier(int tier) {
+        String line = switch (tier) {
+            case 1 -> ChatFormatting.GOLD + "" + ChatFormatting.BOLD + "CAYDEN COBB HAS ASCENDED.";
+            case 2 -> ChatFormatting.YELLOW + "" + ChatFormatting.BOLD
+                    + "THAT WAS NOT ALL OF IT. SUPER SAIYAN 2.";
+            case 3 -> ChatFormatting.WHITE + "" + ChatFormatting.BOLD
+                    + "He stops trying. ULTRA INSTINCT.";
+            default -> null;
+        };
+        if (line == null) {
+            return;
+        }
+        playSound(ModSounds.KRAVE_ROAR.get(), 1.6F, tier >= 3 ? 1.4F : 0.8F);
+        for (Player p : level().getEntitiesOfClass(Player.class, getBoundingBox().inflate(64.0D))) {
+            p.sendSystemMessage(Component.literal(line));
+        }
+    }
+
+    /** SSJ2: the air itself keeps detonating around him. */
+    private void ssj2Shockwave() {
+        if (--this.waveTimer > 0 || !(level() instanceof ServerLevel sl)) {
+            return;
+        }
+        this.waveTimer = WAVE_INTERVAL;
+        sl.sendParticles(ParticleTypes.EXPLOSION, getX(), getY() + 1.0D, getZ(),
+                3, 1.2D, 0.6D, 1.2D, 0.0D);
+        sl.playSound(null, blockPosition(), ModSounds.KRAVE_BOOM.get(), getSoundSource(), 1.1F, 1.7F);
+
+        for (LivingEntity victim : sl.getEntitiesOfClass(LivingEntity.class,
+                getBoundingBox().inflate(7.0D))) {
+            if (victim == this || victim instanceof Player
+                    || victim instanceof com.barbarajones.entity.BarbaraJones) {
+                continue;
+            }
+            Vec3 away = victim.position().subtract(position());
+            double len = Math.max(0.4D, away.length());
+            victim.push(away.x / len * 0.9D, 0.45D, away.z / len * 0.9D);
+            victim.hurtMarked = true;
+            victim.hurt(sl.damageSources().mobAttack(this), 4.0F + getTier() * 2.0F);
+        }
+    }
+
+    // ---- the arsenal --------------------------------------------------------
+
+    /**
+     * Transformed, he can reach for pieces of the apocalypse itself and throw
+     * them at whatever he is fighting.
+     *
+     * <p>Only hardware that cannot hit his own side is in here. The meteors
+     * already refuse to damage Cayden, Barbara or players; the giant box and the
+     * sky actors are pure spectacle. The tornado and the mouth beam are both
+     * built to grab or burn the PLAYER - they belong to the apocalypse, not to
+     * him, and putting them in his kit would have him attacking you.
+     */
+    private void useArsenal() {
+        int tier = getTier();
+        LivingEntity boss = getTarget();
+        if (tier < 1 || boss == null || !boss.isAlive() || !(level() instanceof ServerLevel sl)) {
+            return;
+        }
+        if (--this.arsenalTimer > 0) {
+            return;
+        }
+        // Higher forms cycle techniques faster - that escalation is most of what
+        // makes tier 3 feel different from tier 1 in play.
+        this.arsenalTimer = Math.max(28, ARSENAL_INTERVAL - (tier - 1) * 26);
+
+        int moves = tier >= 3 ? 6 : tier >= 2 ? 4 : 2;
+        int move = this.random.nextInt(moves);
+        if (move == this.lastMove) {                 // never the same trick twice running
+            move = (move + 1) % moves;
+        }
+        this.lastMove = move;
+
+        switch (move) {
+            case 0 -> meteorVolley(sl, boss, com.barbarajones.entity.KraveMeteor.TYPE_METEOR,
+                    2 + tier, "The sky answers him.");
+            case 1 -> meteorVolley(sl, boss, com.barbarajones.entity.KraveMeteor.TYPE_KNIFE,
+                    4 + tier * 2, "Knives. Actual knives.");
+            case 2 -> meteorVolley(sl, boss, com.barbarajones.entity.KraveMeteor.TYPE_PIBB,
+                    6 + tier * 2, "It is raining Mr Pibb.");
+            case 3 -> meteorVolley(sl, boss, com.barbarajones.entity.KraveMeteor.TYPE_GATORADE,
+                    6 + tier * 2, "Blue Gatorade, from orbit.");
+            case 4 -> boxDrop(sl, boss);
+            default -> skyCameo(sl, boss);
+        }
+    }
+
+    /** A cluster of one kind of falling object, aimed at the boss. */
+    private void meteorVolley(ServerLevel sl, LivingEntity boss, byte kind, int count, String callout) {
+        Vec3 at = boss.position();
+        for (int i = 0; i < count; i++) {
+            com.barbarajones.entity.KraveMeteor m =
+                    com.barbarajones.content.ModEntities.METEOR.get().create(sl);
+            if (m == null) {
+                continue;
+            }
+            double ox = (this.random.nextDouble() - 0.5D) * 9.0D;
+            double oz = (this.random.nextDouble() - 0.5D) * 9.0D;
+            m.saiyanStrike(this);            // attributed to him, so bosses take it in full
+            m.kind(kind);
+            m.setPos(at.x + ox, at.y + 30.0D + i * 2.5D, at.z + oz);
+            m.aim(-ox * 0.05D, -oz * 0.05D);
+            sl.addFreshEntity(m);
+        }
+        playSound(ModSounds.KRAVE_ROAR.get(), 1.3F, 1.1F);
+        say(callout);
+    }
+
+    /** The giant Krave box, dropped from a height onto whatever he is fighting. */
+    private void boxDrop(ServerLevel sl, LivingEntity boss) {
+        com.barbarajones.entity.GiantKraveBox box =
+                com.barbarajones.content.ModEntities.GIANT_BOX.get().create(sl);
+        if (box != null) {
+            box.setPos(boss.getX(), boss.getY() + 36.0D, boss.getZ());
+            sl.addFreshEntity(box);
+        }
+        // the box itself is cosmetic, so the hurt comes from what rides it down
+        meteorVolley(sl, boss, com.barbarajones.entity.KraveMeteor.TYPE_BOX, 6, null);
+        sl.playSound(null, boss.blockPosition(), ModSounds.KRAVE_BOOM.get(),
+                getSoundSource(), 2.0F, 0.6F);
+        say("He drops the whole box on them.");
+    }
+
+    /** He calls one of the sky actors down for a moment. Pure theatre. */
+    private void skyCameo(ServerLevel sl, LivingEntity boss) {
+        byte kind = this.random.nextBoolean()
+                ? com.barbarajones.entity.SkyCinematic.TORCHER
+                : com.barbarajones.entity.SkyCinematic.POURER;
+        com.barbarajones.entity.SkyCinematic actor =
+                com.barbarajones.content.ModEntities.SKY_CINEMATIC.get().create(sl);
+        if (actor != null) {
+            actor.kind(kind).lifespan(90).walkTo(boss.getX(), boss.getZ());
+            actor.setPos(boss.getX() - 24.0D, boss.getY() + 2.0D, boss.getZ() - 24.0D);
+            sl.addFreshEntity(actor);
+        }
+        say(kind == com.barbarajones.entity.SkyCinematic.TORCHER
+                ? "He calls her down with the blowtorch."
+                : "He calls her down with the Pibb.");
+    }
+
+    private void say(@Nullable String line) {
+        if (line == null) {
+            return;
+        }
+        for (Player p : level().getEntitiesOfClass(Player.class, getBoundingBox().inflate(48.0D))) {
+            p.sendSystemMessage(Component.literal(ChatFormatting.LIGHT_PURPLE + line));
+        }
+    }
+
+    // ---- dark cayden --------------------------------------------------------
+
+    public boolean isDark() {
+        return this.entityData.get(DARK);
+    }
+
+    /**
+     * His mother is the one thing that turns him. Fighting her drops the kid act
+     * entirely: he stops flinching, starts flying at her in bursts, and the
+     * ground he passes over dies.
+     *
+     * <p>Deliberately keyed to WHO he is fighting rather than to his health, so
+     * it never overlaps with the desperation state - that one is about losing,
+     * this one is about her.
+     */
+    private void updateDark() {
+        boolean fightingMum = getTarget() instanceof com.barbarajones.boss.mom.MomCobbBoss
+                && getTarget().isAlive();
+
+        if (fightingMum && !isDark()) {
+            this.entityData.set(DARK, true);
+            applyKraveStats();
+            playSound(ModSounds.KRAVE_ROAR.get(), 1.6F, 0.55F);
+            if (level() instanceof ServerLevel sl) {
+                sl.sendParticles(ParticleTypes.SCULK_SOUL, getX(), getY() + 1.0D, getZ(),
+                        60, 0.6D, 1.0D, 0.6D, 0.05D);
+                sl.sendParticles(ParticleTypes.FLASH, getX(), getY() + 1.0D, getZ(),
+                        1, 0.0D, 0.0D, 0.0D, 0.0D);
+            }
+            for (Player p : level().getEntitiesOfClass(Player.class, getBoundingBox().inflate(48.0D))) {
+                p.sendSystemMessage(Component.literal(ChatFormatting.DARK_PURPLE + ""
+                        + ChatFormatting.BOLD + "Cayden stops being a kid about it."));
+            }
+        } else if (!fightingMum && isDark()) {
+            this.entityData.set(DARK, false);
+            setNoGravity(false);
+            this.flightTicks = 0;
+            applyKraveStats();
+        }
+
+        if (!isDark()) {
+            return;
+        }
+
+        corruptGround();
+        darkFlight();
+        darkLasers();
+
+        if (this.tickCount % 2 == 0 && level() instanceof ServerLevel sl) {
+            sl.sendParticles(ParticleTypes.SQUID_INK, getX(), getY() + getBbHeight() * 0.6D, getZ(),
+                    3, 0.4D, 0.5D, 0.4D, 0.01D);
+        }
+    }
+
+    /**
+     * Everything growing near him rots. Plants are destroyed and grass blocks go
+     * to coarse dirt; nothing structural is touched, so this scars the field
+     * without eating anyone's build.
+     */
+    private void corruptGround() {
+        if (this.tickCount % 10 != 0 || !(level() instanceof ServerLevel sl)) {
+            return;
+        }
+        BlockPos centre = blockPosition();
+        for (int i = 0; i < 8; i++) {
+            BlockPos p = centre.offset(
+                    this.random.nextInt(CORRUPT_RADIUS * 2 + 1) - CORRUPT_RADIUS,
+                    this.random.nextInt(3) - 1,
+                    this.random.nextInt(CORRUPT_RADIUS * 2 + 1) - CORRUPT_RADIUS);
+            var state = sl.getBlockState(p);
+
+            if (state.is(Blocks.GRASS) || state.is(Blocks.TALL_GRASS) || state.is(Blocks.FERN)
+                    || state.is(Blocks.LARGE_FERN) || state.is(BlockTags.FLOWERS)
+                    || state.is(BlockTags.SAPLINGS) || state.is(Blocks.SUGAR_CANE)) {
+                sl.destroyBlock(p, false);
+                sl.sendParticles(ParticleTypes.ASH, p.getX() + 0.5D, p.getY() + 0.3D, p.getZ() + 0.5D,
+                        4, 0.3D, 0.2D, 0.3D, 0.0D);
+            } else if (state.is(Blocks.GRASS_BLOCK)) {
+                sl.setBlockAndUpdate(p, Blocks.COARSE_DIRT.defaultBlockState());
+                sl.sendParticles(ParticleTypes.SMOKE, p.getX() + 0.5D, p.getY() + 1.05D, p.getZ() + 0.5D,
+                        2, 0.3D, 0.0D, 0.3D, 0.0D);
+            } else if (state.is(BlockTags.LEAVES) && this.random.nextInt(4) == 0) {
+                sl.destroyBlock(p, false);
+            }
+        }
+    }
+
+    /** Short bursts of flight to close on her, not sustained hovering. */
+    private void darkFlight() {
+        LivingEntity target = getTarget();
+        if (target == null) {
+            return;
+        }
+        if (this.flightTicks > 0) {
+            this.flightTicks--;
+            Vec3 to = target.position().add(0.0D, target.getBbHeight() * 0.6D, 0.0D)
+                    .subtract(position());
+            double len = to.length();
+            if (len > 0.5D) {
+                setDeltaMovement(getDeltaMovement().scale(0.6D).add(to.scale(0.13D / len)));
+            }
+            this.fallDistance = 0.0F;
+            if (this.flightTicks == 0) {
+                setNoGravity(false);
+            }
+            return;
+        }
+        if (--this.burstTimer <= 0) {
+            this.burstTimer = BURST_INTERVAL;
+            if (distanceToSqr(target) > 9.0D) {
+                this.flightTicks = 22;
+                setNoGravity(true);
+                setDeltaMovement(getDeltaMovement().add(0.0D, 0.42D, 0.0D));
+                playSound(ModSounds.KRAVE_SCREECH.get(), 0.9F, 0.7F);
+            }
+        }
+    }
+
+    /** Red Krave lasers, fired in threes with a little spread. */
+    private void darkLasers() {
+        LivingEntity target = getTarget();
+        if (target == null || --this.laserTimer > 0) {
+            return;
+        }
+        this.laserTimer = LASER_INTERVAL;
+        if (!hasLineOfSight(target)) {
+            return;
+        }
+        Vec3 from = position().add(0.0D, getBbHeight() * 0.75D, 0.0D);
+        for (int i = 0; i < 3; i++) {
+            Vec3 aim = target.position().add(
+                    (this.random.nextDouble() - 0.5D) * 0.8D,
+                    target.getBbHeight() * 0.5D + (this.random.nextDouble() - 0.5D) * 0.6D,
+                    (this.random.nextDouble() - 0.5D) * 0.8D);
+            level().addFreshEntity(
+                    new com.barbarajones.entity.KraveLaser(level(), this, from, aim));
+        }
+        playSound(ModSounds.KRAVE_BOOM.get(), 1.0F, 1.8F);
     }
 
     // ---- flashes of the real thing -----------------------------------------
@@ -633,6 +1040,22 @@ public class CaydenCobb extends TamableAnimal {
 
     @Override
     public boolean hurt(DamageSource source, float amount) {
+        // Ultra Instinct: the body answers before he does. Most incoming damage
+        // is simply not there when it lands, and he slides out of the way.
+        if (getTier() >= 3 && !level().isClientSide && this.random.nextInt(100) < DODGE_PERCENT
+                && !source.is(net.minecraft.tags.DamageTypeTags.BYPASSES_INVULNERABILITY)) {
+            if (level() instanceof ServerLevel sl) {
+                Vec3 side = new Vec3(this.random.nextDouble() - 0.5D, 0.0D, this.random.nextDouble() - 0.5D);
+                double len = Math.max(0.2D, side.length());
+                setDeltaMovement(getDeltaMovement().add(side.scale(0.55D / len)).add(0.0D, 0.18D, 0.0D));
+                this.hurtMarked = true;
+                sl.sendParticles(ParticleTypes.END_ROD, getX(), getY() + getBbHeight() * 0.6D, getZ(),
+                        10, 0.3D, 0.4D, 0.3D, 0.12D);
+                sl.playSound(null, blockPosition(), ModSounds.KRAVE_SCREECH.get(), getSoundSource(), 0.7F, 2.0F);
+            }
+            this.dodgeFlash = 6;
+            return false;
+        }
         // Ascended for the Kosmos showdown he simply cannot be killed. That is
         // the deal the user asked for: this is the one fight where he gets the
         // full apocalypse arsenal and does not die for using it.
