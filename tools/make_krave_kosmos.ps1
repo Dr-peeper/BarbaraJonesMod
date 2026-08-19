@@ -267,21 +267,31 @@ Box2 $m 16 48 4 12 4 $hide   # left leg
 Save $m "$edir\krave_minion.png"
 "  krave_minion: entity texture"
 
-# ---- Krave Laser bolt ---------------------------------------------------------
-$laser = NewImg 16 16
-Rct $laser 0 0 16 16 (C '000000' 0)
-Rct $laser 5 0 6 16 (C 'FFD060' 180)
-Rct $laser 7 0 2 16 (C 'FFFFFF' 230)
-Save $laser "$edir\krave_laser.png"
-"  krave_laser: texture"
+# ---- Krave Laser: a radial glow orb, not a bolt - gold/white energy ball ----
+function GlowOrb($size,$hot,$mid,$edge){
+    $img = NewImg $size $size
+    $c = ($size - 1) / 2.0
+    $r = $c + 0.5
+    for($x=0;$x -lt $size;$x++){ for($y=0;$y -lt $size;$y++){
+        $dx = $x - $c; $dy = $y - $c
+        $d = [Math]::Sqrt($dx*$dx + $dy*$dy)
+        if($d -gt $r){ continue }
+        $f = 1.0 - ($d / $r)                     # 1 at center, 0 at rim
+        $a = [int](255 * [Math]::Pow($f, 0.55))
+        if($a -le 0){ continue }
+        if($f -gt 0.78){ $col = C $hot $a }
+        elseif($f -gt 0.4){ $col = C $mid $a }
+        else{ $col = C $edge $a }
+        Rct $img $x $y 1 1 $col
+    }}
+    return $img
+}
+Save (GlowOrb 32 'FFFFFF' 'FFD060' 'FF8010') "$edir\krave_laser.png"
+"  krave_laser: texture (glow orb)"
 
-# ---- Krave Mouth Beam: blue "kamehameha" bolt from the boss ------------------
-$beam = NewImg 16 16
-Rct $beam 0 0 16 16 (C '000000' 0)
-Rct $beam 3 0 10 16 (C '2050FF' 190)
-Rct $beam 6 0 4 16 (C 'C8E0FF' 235)
-Save $beam "$edir\krave_beam.png"
-"  krave_beam: texture"
+# ---- Krave Mouth Beam: same treatment, blue "kamehameha" energy ball --------
+Save (GlowOrb 32 'FFFFFF' 'A0D8FF' '2050FF') "$edir\krave_beam.png"
+"  krave_beam: texture (glow orb)"
 
 # ---- Krave Healing Box: a real cereal-box front, not a plain tinted panel ----
 # 48x64 (vs the old 16x16) so the wordmark, bowl-and-spoon pictogram and
