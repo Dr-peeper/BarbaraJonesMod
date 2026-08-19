@@ -29,6 +29,11 @@ public final class ModNetwork {
                 PacketKraveHit::encode, PacketKraveHit::decode, PacketKraveHit::handle);
         CHANNEL.registerMessage(3, PacketKraveLevel.class,
                 PacketKraveLevel::encode, PacketKraveLevel::decode, PacketKraveLevel::handle);
+        // Client -> server: the Ascension Ledger buttons. Every other packet
+        // here goes the other way, which is how this one got missed - the
+        // screen has always sent it and nothing has ever been listening.
+        CHANNEL.registerMessage(4, PacketCaydenUpgrade.class,
+                PacketCaydenUpgrade::encode, PacketCaydenUpgrade::decode, PacketCaydenUpgrade::handle);
     }
 
     /** Send Cayden's vitals to his owner alone. */
