@@ -49,23 +49,26 @@ public class SsjAuraLayer extends RenderLayer<CaydenCobb, CaydenModel> {
         pose.mulPose(Axis.XP.rotationDegrees(180.0F));
         pose.translate(0.0D, -1.5D, 0.0D);
 
-        VertexConsumer buf = buffers.getBuffer(RenderType.lightning());
+        VertexConsumer rawBuf = buffers.getBuffer(RenderType.lightning());
         float t = ageInTicks;
         // billboard the flat effects toward the camera
         float camYaw = Minecraft.getInstance().gameRenderer.getMainCamera().getYRot();
 
-        // Per-rung tint: rather than every tier reading the same gold as SSJ1,
-        // multiply the whole pass's shader color so each rung reads as its own
-        // distinct palette instead of a linear gold->brighter-gold ramp. Ultra
-        // Instinct shifts hue over time instead of sitting on one color, so it
-        // reads as categorically different rather than "one more step."
+        // Per-rung tint. RenderType.lightning() is POSITION_COLOR with no
+        // texture and no ColorModulator uniform in its shader, so
+        // RenderSystem.setShaderColor() is silently a no-op on it (that was
+        // tried first and does nothing here - it only works on textured
+        // entity render types, which is why KraveMonster's tint works but
+        // this one didn't). The colors are baked straight into the vertices
+        // by every draw call below, so tinting means actually multiplying
+        // those vertex colors - hence the wrapper.
         float tr = 1.0F, tg = 1.0F, tb = 1.0F;
         int tier = full ? entity.getTier() : 0;
         switch (tier) {
             case 2 -> { tr = 1.0F; tg = 1.0F; tb = 0.85F; }               // SSJ2: white-hot gold
             case 3 -> { tr = 1.0F; tg = 0.7F; tb = 0.35F; }               // SSJ3: deep orange
-            case 4 -> { tr = 1.0F; tg = 0.22F; tb = 0.28F; }              // GOD: red
-            case 5 -> { tr = 0.35F; tg = 0.55F; tb = 1.0F; }              // BLUE: blue
+            case 4 -> { tr = 1.0F; tg = 0.15F; tb = 0.18F; }              // GOD: red
+            case 5 -> { tr = 0.25F; tg = 0.45F; tb = 1.0F; }              // BLUE: blue
             case 6 -> {                                                  // ULTRA: shifting prismatic
                 tr = 0.55F + 0.45F * Mth.sin(t * 0.045F);
                 tg = 0.15F + 0.15F * Mth.sin(t * 0.03F + 2.0F);
@@ -73,7 +76,8 @@ public class SsjAuraLayer extends RenderLayer<CaydenCobb, CaydenModel> {
             }
             default -> { }                                               // SSJ1 / half / dark: unchanged gold-red
         }
-        com.mojang.blaze3d.systems.RenderSystem.setShaderColor(tr, tg, tb, 1.0F);
+        VertexConsumer buf = (tr == 1.0F && tg == 1.0F && tb == 1.0F)
+                ? rawBuf : new TintedVertexConsumer(rawBuf, tr, tg, tb);
 
         // Each rung reads as its own escalation, not a recolor of the same
         // effect stack:
@@ -115,8 +119,78 @@ public class SsjAuraLayer extends RenderLayer<CaydenCobb, CaydenModel> {
             shockwave(pose, buf, entity, t + 40.0F);
         }
 
-        com.mojang.blaze3d.systems.RenderSystem.setShaderColor(1.0F, 1.0F, 1.0F, 1.0F);
         pose.popPose();
+    }
+
+    /**
+     * Multiplies every vertex color that flows through it by a fixed tint,
+     * then forwards to the real buffer. RenderType.lightning() has no
+     * texture and no shader-color uniform, so this is the only way to
+     * actually recolor it per rung - see the note in render() above.
+     */
+    private static final class TintedVertexConsumer implements VertexConsumer {
+        private final VertexConsumer delegate;
+        private final float tr, tg, tb;
+
+        TintedVertexConsumer(VertexConsumer delegate, float tr, float tg, float tb) {
+            this.delegate = delegate;
+            this.tr = tr;
+            this.tg = tg;
+            this.tb = tb;
+        }
+
+        @Override
+        public VertexConsumer vertex(double x, double y, double z) {
+            delegate.vertex(x, y, z);
+            return this;
+        }
+
+        @Override
+        public VertexConsumer color(int r, int g, int b, int a) {
+            delegate.color(Mth.clamp((int) (r * tr), 0, 255), Mth.clamp((int) (g * tg), 0, 255),
+                    Mth.clamp((int) (b * tb), 0, 255), a);
+            return this;
+        }
+
+        @Override
+        public VertexConsumer uv(float u, float v) {
+            delegate.uv(u, v);
+            return this;
+        }
+
+        @Override
+        public VertexConsumer overlayCoords(int u, int v) {
+            delegate.overlayCoords(u, v);
+            return this;
+        }
+
+        @Override
+        public VertexConsumer uv2(int u, int v) {
+            delegate.uv2(u, v);
+            return this;
+        }
+
+        @Override
+        public VertexConsumer normal(float x, float y, float z) {
+            delegate.normal(x, y, z);
+            return this;
+        }
+
+        @Override
+        public void endVertex() {
+            delegate.endVertex();
+        }
+
+        @Override
+        public void unsetDefaultColor() {
+            delegate.unsetDefaultColor();
+        }
+
+        @Override
+        public void defaultColor(int r, int g, int b, int a) {
+            delegate.defaultColor(Mth.clamp((int) (r * tr), 0, 255), Mth.clamp((int) (g * tg), 0, 255),
+                    Mth.clamp((int) (b * tb), 0, 255), a);
+        }
     }
 
     /** A slow breathing glow around the torso - GOD/BLUE's "pulsating energy" instead of hair spikes. */

@@ -148,6 +148,14 @@ public class EventHandler {
         next.setTarget(fallen.getTarget());
         level.addFreshEntity(next);
 
+        // Vanilla's ~1s death animation (plus his own ghost-trail afterimage
+        // effect) used to leave the collapsing old body on screen at the same
+        // moment the new form spawned in the same spot - two Krave Monsters
+        // visible at once, which reads as "he duplicated" rather than "he got
+        // back up." Discarding him immediately instead of letting death play
+        // out makes the hand-off read as one boss, not two.
+        fallen.discard();
+
         level.playSound(null, fallen.blockPosition(), ModSounds.KRAVE_ROAR.get(),
                 SoundSource.HOSTILE, 2.4F, 0.45F);
         level.sendParticles(net.minecraft.core.particles.ParticleTypes.EXPLOSION_EMITTER,
