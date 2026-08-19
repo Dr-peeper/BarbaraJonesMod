@@ -409,4 +409,42 @@ public final class ModItems {
     public static final RegistryObject<Item> POCKET_SCALE  = plain("pocket_scale", 1);
     public static final RegistryObject<Item> NUGGET_COLLAR = plain("nugget_collar", 16);
     public static final RegistryObject<Item> CHOCOLATE_BAR = edible("chocolate_bar", food(6, 0.7F).effect(() -> new MobEffectInstance(MobEffects.MOVEMENT_SPEED, 200), 1.0F).build());
+
+    // ---- Krave tree + ore block items ------------------------------------
+    public static final RegistryObject<Item> KRAVE_LOG_ITEM = ITEMS.register("krave_log",
+            () -> new BlockItem(ModBlocks.KRAVE_LOG.get(), props()));
+    public static final RegistryObject<Item> KRAVE_WOOD_ITEM = ITEMS.register("krave_wood",
+            () -> new BlockItem(ModBlocks.KRAVE_WOOD.get(), props()));
+    public static final RegistryObject<Item> STRIPPED_KRAVE_LOG_ITEM = ITEMS.register("stripped_krave_log",
+            () -> new BlockItem(ModBlocks.STRIPPED_KRAVE_LOG.get(), props()));
+    public static final RegistryObject<Item> STRIPPED_KRAVE_WOOD_ITEM = ITEMS.register("stripped_krave_wood",
+            () -> new BlockItem(ModBlocks.STRIPPED_KRAVE_WOOD.get(), props()));
+    public static final RegistryObject<Item> KRAVE_LEAVES_ITEM = ITEMS.register("krave_leaves",
+            () -> new BlockItem(ModBlocks.KRAVE_LEAVES.get(), props()));
+    public static final RegistryObject<Item> KRAVE_SAPLING_ITEM = ITEMS.register("krave_sapling",
+            () -> new BlockItem(ModBlocks.KRAVE_SAPLING.get(), props()));
+    public static final RegistryObject<Item> KRAVE_PLANKS_ITEM = ITEMS.register("krave_planks",
+            () -> new BlockItem(ModBlocks.KRAVE_PLANKS.get(), props()));
+    public static final RegistryObject<Item> KRAVE_STAIRS_ITEM = ITEMS.register("krave_stairs",
+            () -> new BlockItem(ModBlocks.KRAVE_STAIRS.get(), props()));
+    public static final RegistryObject<Item> KRAVE_SLAB_ITEM = ITEMS.register("krave_slab",
+            () -> new BlockItem(ModBlocks.KRAVE_SLAB.get(), props()));
+    public static final RegistryObject<Item> KRAVE_FENCE_ITEM = ITEMS.register("krave_fence",
+            () -> new BlockItem(ModBlocks.KRAVE_FENCE.get(), props()));
+    public static final RegistryObject<Item> KRAVE_FENCE_GATE_ITEM = ITEMS.register("krave_fence_gate",
+            () -> new BlockItem(ModBlocks.KRAVE_FENCE_GATE.get(), props()));
+    public static final RegistryObject<Item> KRAVE_DOOR_BLOCK_ITEM = ITEMS.register("krave_door_block",
+            () -> new BlockItem(ModBlocks.KRAVE_DOOR_BLOCK.get(), props()));
+    public static final RegistryObject<Item> KRAVE_TRAPDOOR_ITEM = ITEMS.register("krave_trapdoor",
+            () -> new BlockItem(ModBlocks.KRAVE_TRAPDOOR.get(), props()));
+    public static final RegistryObject<Item> KRAVE_BUTTON_ITEM = ITEMS.register("krave_button",
+            () -> new BlockItem(ModBlocks.KRAVE_BUTTON.get(), props()));
+    public static final RegistryObject<Item> KRAVE_PRESSURE_PLATE_ITEM = ITEMS.register("krave_pressure_plate",
+            () -> new BlockItem(ModBlocks.KRAVE_PRESSURE_PLATE.get(), props()));
+    public static final RegistryObject<Item> KRAVE_POD_ITEM = ITEMS.register("krave_pod",
+            () -> new BlockItem(ModBlocks.KRAVE_POD.get(), props()));
+    public static final RegistryObject<Item> KRAVE_ORE_ITEM = ITEMS.register("krave_ore",
+            () -> new BlockItem(ModBlocks.KRAVE_ORE.get(), props()));
+    public static final RegistryObject<Item> DEEPSLATE_KRAVE_ORE_ITEM = ITEMS.register("deepslate_krave_ore",
+            () -> new BlockItem(ModBlocks.DEEPSLATE_KRAVE_ORE.get(), props()));
 }

@@ -1,0 +1,4 @@
+{
+  "parent": "minecraft:block/template_orientable_trapdoor_bottom",
+  "textures": { "texture": "deepslate_krave_ore deepslate_krave_ore/krave_trapdoor" }
+}

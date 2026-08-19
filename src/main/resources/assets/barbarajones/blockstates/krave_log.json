@@ -1,0 +1,7 @@
+{
+  "variants": {
+    "axis=y": { "model": "krave_log krave_log krave_log_top/krave_log" },
+    "axis=z": { "model": "krave_log krave_log krave_log_top/krave_log_horizontal", "x": 90 },
+    "axis=x": { "model": "krave_log krave_log krave_log_top/krave_log_horizontal", "x": 90, "y": 90 }
+  }
+}

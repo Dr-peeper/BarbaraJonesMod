@@ -110,4 +110,44 @@ public final class ModBlocks {
     public static final RegistryObject<Block> GRASS_CROP = BLOCKS.register("grass_crop",
             () -> new com.barbarajones.block.GrassCropBlock(
                     BlockBehaviour.Properties.copy(Blocks.WHEAT).noOcclusion()));
+
+    // ---- the Krave tree and its ore ---------------------------------------
+    // The block objects live in block/krave; these bind them to ids. They were
+    // written and then never registered, so the whole tree was dead source.
+    public static final RegistryObject<Block> KRAVE_LOG =
+            BLOCKS.register("krave_log", () -> com.barbarajones.block.krave.KraveWood.LOG);
+    public static final RegistryObject<Block> KRAVE_WOOD =
+            BLOCKS.register("krave_wood", () -> com.barbarajones.block.krave.KraveWood.WOOD);
+    public static final RegistryObject<Block> STRIPPED_KRAVE_LOG =
+            BLOCKS.register("stripped_krave_log", () -> com.barbarajones.block.krave.KraveWood.STRIPPED_LOG);
+    public static final RegistryObject<Block> STRIPPED_KRAVE_WOOD =
+            BLOCKS.register("stripped_krave_wood", () -> com.barbarajones.block.krave.KraveWood.STRIPPED_WOOD);
+    public static final RegistryObject<Block> KRAVE_LEAVES =
+            BLOCKS.register("krave_leaves", () -> com.barbarajones.block.krave.KraveWood.LEAVES);
+    public static final RegistryObject<Block> KRAVE_SAPLING =
+            BLOCKS.register("krave_sapling", () -> com.barbarajones.block.krave.KraveWood.SAPLING);
+    public static final RegistryObject<Block> KRAVE_PLANKS =
+            BLOCKS.register("krave_planks", () -> com.barbarajones.block.krave.KraveWood.PLANKS);
+    public static final RegistryObject<Block> KRAVE_STAIRS =
+            BLOCKS.register("krave_stairs", () -> com.barbarajones.block.krave.KraveWood.STAIRS);
+    public static final RegistryObject<Block> KRAVE_SLAB =
+            BLOCKS.register("krave_slab", () -> com.barbarajones.block.krave.KraveWood.SLAB);
+    public static final RegistryObject<Block> KRAVE_FENCE =
+            BLOCKS.register("krave_fence", () -> com.barbarajones.block.krave.KraveWood.FENCE);
+    public static final RegistryObject<Block> KRAVE_FENCE_GATE =
+            BLOCKS.register("krave_fence_gate", () -> com.barbarajones.block.krave.KraveWood.FENCE_GATE);
+    public static final RegistryObject<Block> KRAVE_DOOR_BLOCK =
+            BLOCKS.register("krave_door_block", () -> com.barbarajones.block.krave.KraveWood.DOOR);
+    public static final RegistryObject<Block> KRAVE_TRAPDOOR =
+            BLOCKS.register("krave_trapdoor", () -> com.barbarajones.block.krave.KraveWood.TRAPDOOR);
+    public static final RegistryObject<Block> KRAVE_BUTTON =
+            BLOCKS.register("krave_button", () -> com.barbarajones.block.krave.KraveWood.BUTTON);
+    public static final RegistryObject<Block> KRAVE_PRESSURE_PLATE =
+            BLOCKS.register("krave_pressure_plate", () -> com.barbarajones.block.krave.KraveWood.PRESSURE_PLATE);
+    public static final RegistryObject<Block> KRAVE_POD =
+            BLOCKS.register("krave_pod", () -> com.barbarajones.block.krave.KraveWood.POD);
+    public static final RegistryObject<Block> KRAVE_ORE =
+            BLOCKS.register("krave_ore", () -> com.barbarajones.block.krave.KraveOre.ORE);
+    public static final RegistryObject<Block> DEEPSLATE_KRAVE_ORE =
+            BLOCKS.register("deepslate_krave_ore", () -> com.barbarajones.block.krave.KraveOre.DEEPSLATE_ORE);
 }

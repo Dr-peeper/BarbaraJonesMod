@@ -1,0 +1,4 @@
+{
+  "parent": "minecraft:block/cube_column_horizontal",
+  "textures": { "side": "stripped_krave_wood stripped_krave_log stripped_krave_log/stripped_krave_log", "end": "stripped_krave_wood stripped_krave_log stripped_krave_log/stripped_krave_log" }
+}

@@ -1,0 +1,7 @@
+{
+  "variants": {
+    "axis=y": { "model": "stripped_krave_log stripped_krave_log stripped_krave_log_top/stripped_krave_log" },
+    "axis=z": { "model": "stripped_krave_log stripped_krave_log stripped_krave_log_top/stripped_krave_log_horizontal", "x": 90 },
+    "axis=x": { "model": "stripped_krave_log stripped_krave_log stripped_krave_log_top/stripped_krave_log_horizontal", "x": 90, "y": 90 }
+  }
+}

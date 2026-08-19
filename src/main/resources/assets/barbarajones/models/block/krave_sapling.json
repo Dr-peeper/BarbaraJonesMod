@@ -1,0 +1,4 @@
+{
+  "parent": "minecraft:block/cross",
+  "textures": { "cross": "deepslate_krave_ore deepslate_krave_ore/krave_sapling" }
+}

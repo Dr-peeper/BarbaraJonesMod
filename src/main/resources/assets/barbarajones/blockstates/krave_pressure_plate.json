@@ -1,0 +1,6 @@
+{
+  "variants": {
+    "powered=false": { "model": "deepslate_krave_ore deepslate_krave_ore/krave_pressure_plate" },
+    "powered=true": { "model": "deepslate_krave_ore deepslate_krave_ore/krave_pressure_plate_down" }
+  }
+}

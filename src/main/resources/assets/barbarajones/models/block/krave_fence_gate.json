@@ -1,0 +1,4 @@
+{
+  "parent": "minecraft:block/template_fence_gate",
+  "textures": { "texture": "deepslate_krave_ore deepslate_krave_ore/krave_planks" }
+}

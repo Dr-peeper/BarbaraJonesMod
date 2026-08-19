@@ -1,0 +1,4 @@
+{
+  "parent": "minecraft:block/cocoa_1",
+  "textures": { "cocoa": "deepslate_krave_ore deepslate_krave_ore/krave_pod" }
+}

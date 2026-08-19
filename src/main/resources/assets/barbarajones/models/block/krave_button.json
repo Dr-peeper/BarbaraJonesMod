@@ -1,0 +1,4 @@
+{
+  "parent": "minecraft:block/button",
+  "textures": { "texture": "deepslate_krave_ore deepslate_krave_ore/krave_planks" }
+}

@@ -1,0 +1,4 @@
+{
+  "parent": "minecraft:block/door_top_hinge",
+  "textures": { "top": "deepslate_krave_ore deepslate_krave_ore/krave_door_top", "bottom": "deepslate_krave_ore deepslate_krave_ore/krave_door_bottom" }
+}
