@@ -54,6 +54,9 @@ public class KraveBoxItem extends Item {
         if (monster == null) {
             monster = ModEntities.KRAVE_MONSTER.get().create(level);
             if (monster != null) {
+                monster.setForm(com.barbarajones.EventHandler.nextKraveForm(player));
+            }
+            if (monster != null) {
                 monster.moveTo(x, player.getY() + 1.0D, z, player.getYRot() + 180.0F, 0.0F);
                 level.addFreshEntity(monster);
             }

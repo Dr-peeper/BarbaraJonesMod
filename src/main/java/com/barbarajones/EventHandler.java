@@ -99,6 +99,33 @@ public class EventHandler {
         }
     }
 
+    /**
+     * How many Krave Monster forms this player has put down, so the next one
+     * arrives one step further along. Stored per player rather than per world:
+     * the escalation is that player's story.
+     */
+    public static int kraveFormsBeaten(Player player) {
+        return persistedOf(player).getInt("KraveFormsBeaten");
+    }
+
+    /** Which form should spawn for this player next. */
+    public static int nextKraveForm(@Nullable Player player) {
+        if (player == null) {
+            return 1;
+        }
+        return Math.min(com.barbarajones.entity.KraveMonster.FINAL_FORM,
+                kraveFormsBeaten(player) + 1);
+    }
+
+    /** Static twin of persisted(), for the spawn sites that have no handler instance. */
+    private static CompoundTag persistedOf(Player player) {
+        CompoundTag data = player.getPersistentData();
+        if (!data.contains(PERSIST)) {
+            data.put(PERSIST, new CompoundTag());
+        }
+        return data.getCompound(PERSIST);
+    }
+
     /** Run the apocalypse cutscene. */
     @SubscribeEvent
     public void onServerTick(TickEvent.ServerTickEvent event) {
@@ -233,6 +260,23 @@ public class EventHandler {
         }
 
         if (dead instanceof KraveMonster) {
+            if (event.getSource().getEntity() instanceof Player slayer
+                    || dead.getLastHurtByMob() instanceof CaydenCobb) {
+                for (Player p : level.getEntitiesOfClass(Player.class,
+                        dead.getBoundingBox().inflate(64.0D))) {
+                    CompoundTag persist = persistedOf(p);
+                    int beaten = Math.max(persist.getInt("KraveFormsBeaten"),
+                            ((KraveMonster) dead).getForm());
+                    persist.putInt("KraveFormsBeaten", beaten);
+                    if (beaten < KraveMonster.FINAL_FORM) {
+                        p.sendSystemMessage(Component.literal(ChatFormatting.DARK_PURPLE + ""
+                                + ChatFormatting.BOLD + "It is not finished. It will come back worse."));
+                    } else {
+                        p.sendSystemMessage(Component.literal(ChatFormatting.GOLD + ""
+                                + ChatFormatting.BOLD + "THE KRAVE IS FINALLY DEAD."));
+                    }
+                }
+            }
             for (Player player : level.getEntitiesOfClass(Player.class,
                     dead.getBoundingBox().inflate(48.0D, 32.0D, 48.0D))) {
                 Quests.complete(player, Quests.SLAY_KRAVE);   // the boss falls; ACT II begins

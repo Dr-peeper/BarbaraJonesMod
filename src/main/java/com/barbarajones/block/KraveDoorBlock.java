@@ -78,7 +78,7 @@ public class KraveDoorBlock extends DoorBlock {
         if (dest == null) {
             return;
         }
-        ensureBossExists(dest);
+        ensureBossExists(dest, player);
 
         // Remember where (and in which dimension) the player stepped in, so a
         // Krave Tether can send them straight back to this exact doorway.
@@ -131,7 +131,7 @@ public class KraveDoorBlock extends DoorBlock {
     }
 
     /** The Kosmos always has exactly one Krave Monster - spawn him near the boss island the first time. */
-    private void ensureBossExists(ServerLevel kosmos) {
+    private void ensureBossExists(ServerLevel kosmos, net.minecraft.world.entity.player.Player player) {
         KraveKosmosData data = KraveKosmosData.get(kosmos);
         var id = data.getBossId();
         if (id != null) {
@@ -148,6 +148,9 @@ public class KraveDoorBlock extends DoorBlock {
         com.barbarajones.dimension.KraveDenBuilder.buildDen(kosmos, denCenter);
 
         KraveMonster monster = ModEntities.KRAVE_MONSTER.get().create(kosmos);
+        if (monster != null) {
+            monster.setForm(com.barbarajones.EventHandler.nextKraveForm(player));
+        }
         if (monster == null) {
             return;
         }

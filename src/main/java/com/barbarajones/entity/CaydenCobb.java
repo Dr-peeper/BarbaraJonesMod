@@ -602,8 +602,12 @@ public class CaydenCobb extends TamableAnimal {
         if (foe == null || !foe.isAlive()) {
             return 0;
         }
-        if (foe instanceof com.barbarajones.entity.KraveMonster) {
-            return 4;                                     // the one that made him
+        if (foe instanceof com.barbarajones.entity.KraveMonster monster) {
+            // Only as far as this incarnation demands. The first one falls to a
+            // plain Super Saiyan; it takes all four encounters before he ever
+            // needs Ultra Instinct, which is what makes reaching it mean
+            // anything.
+            return monster.getForm();
         }
         if (foe instanceof net.minecraft.world.entity.boss.enderdragon.EnderDragon) {
             return 3;                                     // it flies, so he has to

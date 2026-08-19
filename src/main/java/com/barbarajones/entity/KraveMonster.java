@@ -4,6 +4,7 @@ import com.barbarajones.content.ModItems;
 import com.barbarajones.content.ModSounds;
 
 import net.minecraft.network.chat.Component;
+import net.minecraft.nbt.CompoundTag;
 import net.minecraft.network.syncher.EntityDataAccessor;
 import net.minecraft.network.syncher.EntityDataSerializers;
 import net.minecraft.network.syncher.SynchedEntityData;
@@ -60,6 +61,9 @@ public class KraveMonster extends Monster {
      */
     private static final EntityDataAccessor<Float> DATA_REAR =
             SynchedEntityData.defineId(KraveMonster.class, EntityDataSerializers.FLOAT);
+    /** Which time round this is: 1 through 4. Synced so the renderer can grow him. */
+    private static final EntityDataAccessor<Integer> FORM =
+            SynchedEntityData.defineId(KraveMonster.class, EntityDataSerializers.INT);
 
     private final ServerBossEvent bossEvent =
             new ServerBossEvent(Component.literal("The Krave Monster"),
@@ -79,6 +83,7 @@ public class KraveMonster extends Monster {
     protected void defineSynchedData() {
         super.defineSynchedData();
         this.entityData.define(DATA_REAR, 0.0F);
+        this.entityData.define(FORM, 1);
     }
 
     /** Client-side, partial-tick-safe: use in setupAnim. */
@@ -100,9 +105,72 @@ public class KraveMonster extends Monster {
     }
 
     /** Highest Cayden tier this fight has seen, so he never shrinks mid-duel. */
+    /** He cannot escalate past this. */
+    public static final int FINAL_FORM = 4;
+
     private int matchedTier;
     private int duelBlink;
 
+
+    public int getForm() {
+        return Math.max(1, Math.min(FINAL_FORM, this.entityData.get(FORM)));
+    }
+
+    /**
+     * Sets which incarnation this is and rebuilds him around it.
+     *
+     * <p>Each form is a genuine step up rather than a health bar with a bigger
+     * number: he hits harder, moves faster and is physically larger, so you can
+     * see across a field which one you are dealing with.
+     */
+    public void setForm(int form) {
+        int f = Math.max(1, Math.min(FINAL_FORM, form));
+        this.entityData.set(FORM, f);
+
+        double health = switch (f) {
+            case 4 -> 1600.0D;
+            case 3 -> 800.0D;
+            case 2 -> 380.0D;
+            default -> 160.0D;
+        };
+        double attack = switch (f) {
+            case 4 -> 22.0D;
+            case 3 -> 15.0D;
+            case 2 -> 9.0D;
+            default -> 5.0D;
+        };
+        double speed = switch (f) {
+            case 4 -> 0.62D;
+            case 3 -> 0.50D;
+            case 2 -> 0.40D;
+            default -> 0.32D;
+        };
+
+        var maxHp = getAttribute(Attributes.MAX_HEALTH);
+        var atk = getAttribute(Attributes.ATTACK_DAMAGE);
+        var spd = getAttribute(Attributes.MOVEMENT_SPEED);
+        if (maxHp != null) {
+            maxHp.setBaseValue(health);
+        }
+        if (atk != null) {
+            atk.setBaseValue(attack);
+        }
+        if (spd != null) {
+            spd.setBaseValue(speed);
+        }
+        setHealth(getMaxHealth());
+    }
+
+    /** The name shown on the boss bar, so the escalation is legible. */
+    public net.minecraft.network.chat.Component formTitle() {
+        String suffix = switch (getForm()) {
+            case 4 -> " - FINAL FORM";
+            case 3 -> " - THIRD FORM";
+            case 2 -> " - SECOND FORM";
+            default -> "";
+        };
+        return net.minecraft.network.chat.Component.literal("The Krave Monster" + suffix);
+    }
 
     public static AttributeSupplier.Builder createAttributes() {
         return Monster.createMonsterAttributes()
@@ -231,6 +299,11 @@ public class KraveMonster extends Monster {
      * down for a tick.
      */
     private void matchRival() {
+        // Superseded by the form ladder: his strength now comes from which
+        // incarnation he is, not from what Cayden happens to have turned into.
+        if (true) {
+            return;
+        }
         int tier = 0;
         if (getTarget() instanceof CaydenCobb c && c.isAlive()) {
             tier = Math.max(c.getTier(), c.isSuperSaiyan() ? 1 : 0);
@@ -351,6 +424,20 @@ public class KraveMonster extends Monster {
     /** Public wrapper so the duel goal can reposition him. */
     void blinkNear(double x, double y, double z) {
         KraveBlink.blinkTo(this, x, y, z, ModSounds.KRAVE_SCREECH.get());
+    }
+
+    @Override
+    public void addAdditionalSaveData(CompoundTag tag) {
+        super.addAdditionalSaveData(tag);
+        tag.putInt("KraveForm", getForm());
+    }
+
+    @Override
+    public void readAdditionalSaveData(CompoundTag tag) {
+        super.readAdditionalSaveData(tag);
+        if (tag.contains("KraveForm")) {
+            setForm(tag.getInt("KraveForm"));
+        }
     }
 
     @Override

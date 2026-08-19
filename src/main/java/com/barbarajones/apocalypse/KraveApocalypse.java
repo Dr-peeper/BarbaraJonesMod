@@ -532,6 +532,9 @@ public class KraveApocalypse {
             if (monster == null) {
                 monster = ModEntities.KRAVE_MONSTER.get().create(this.level);
                 if (monster != null) {
+                    monster.setForm(com.barbarajones.EventHandler.nextKraveForm(this.owner));
+                }
+                if (monster != null) {
                     monster.setPos(spawnAt.x, spawnAt.y, spawnAt.z);
                     this.level.addFreshEntity(monster);
                 }
