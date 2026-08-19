@@ -7,6 +7,7 @@ import com.barbarajones.content.ModFluids;
 import com.barbarajones.content.ModItems;
 import com.barbarajones.content.ModSounds;
 import com.barbarajones.content.ModTabs;
+import com.barbarajones.menu.ModMenus;
 import com.barbarajones.net.ModNetwork;
 
 import net.minecraftforge.common.MinecraftForge;
@@ -34,6 +35,7 @@ public class BarbaraJonesMod {
         com.barbarajones.content.extra.ExtraRegistry.ENTITIES.register(bus);
         ModFeatures.FEATURES.register(bus);
         ModTabs.TABS.register(bus);
+        ModMenus.MENUS.register(bus);
 
         ModLoadingContext.get().registerConfig(ModConfig.Type.COMMON, Config.SPEC);
 

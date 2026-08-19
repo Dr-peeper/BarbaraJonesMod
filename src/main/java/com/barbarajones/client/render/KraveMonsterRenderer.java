@@ -23,6 +23,17 @@ public class KraveMonsterRenderer extends MobRenderer<KraveMonster, KraveMonster
     private static final ResourceLocation TEXTURE =
             new ResourceLocation(BarbaraJonesMod.MODID, "textures/entity/krave_monster.png");
 
+    /**
+     * The model's paw geometry (KraveMonsterModel: hips.y + thigh/shin/foot
+     * offsets) reaches noticeably lower than the entity's actual feet
+     * position, so the feet were sinking into the ground - most visible now
+     * that the model renders at 1.8x instead of the original 1.15x. Nudges
+     * the whole solid body up to compensate; the ghost trail already has its
+     * own separate, independently-tuned offset (see renderGhosts) so this
+     * only applies to the main render pass.
+     */
+    private static final double GROUND_CORRECTION = 0.3D;
+
     public KraveMonsterRenderer(EntityRendererProvider.Context ctx) {
         super(ctx, new KraveMonsterModel(ctx.bakeLayer(KraveMonsterModel.LAYER_LOCATION)), 1.6F);
     }
@@ -39,7 +50,11 @@ public class KraveMonsterRenderer extends MobRenderer<KraveMonster, KraveMonster
     public void render(KraveMonster entity, float yaw, float partialTicks, PoseStack pose,
                        MultiBufferSource buffers, int light) {
         renderGhosts(entity, partialTicks, pose, buffers, light);
+
+        pose.pushPose();
+        pose.translate(0.0D, GROUND_CORRECTION, 0.0D);
         super.render(entity, yaw, partialTicks, pose, buffers, light);
+        pose.popPose();
     }
 
     private void renderGhosts(KraveMonster e, float partial, PoseStack pose,

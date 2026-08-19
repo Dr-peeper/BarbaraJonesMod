@@ -73,25 +73,32 @@ public final class KraveDenBuilder {
             }
         }
 
-        spawnHealingBoxes(kosmos, center);
+        spawnGuardianBox(kosmos, center);
     }
 
-    private static void spawnHealingBoxes(ServerLevel kosmos, BlockPos center) {
+    /**
+     * One elite Krave Box at the den's exact center - the boss's own
+     * protector, bigger and with double the shield capacity (see
+     * KraveHealingBox.setElite). The four ordinary boxes ringing the
+     * landing island instead of the den are placed separately, once, by
+     * KraveDoorBlock.ensureLandingBoxesExist - they used to sit here too,
+     * but clustering all five at the den meant nobody ever found one
+     * anywhere else in the Kosmos.
+     */
+    private static void spawnGuardianBox(ServerLevel kosmos, BlockPos center) {
         var bossId = KraveKosmosData.get(kosmos).getBossId();
         KraveMonster boss = bossId != null && kosmos.getEntity(bossId) instanceof KraveMonster m ? m : null;
 
-        int[][] spots = { {6, 6}, {-6, 6}, {6, -6}, {-6, -6} };
-        for (int[] spot : spots) {
-            BlockPos pos = center.offset(spot[0], 1, spot[1]);
-            KraveHealingBox box = ModEntities.KRAVE_HEALING_BOX.get().create(kosmos);
-            if (box == null) {
-                continue;
-            }
-            box.moveTo(pos.getX() + 0.5D, pos.getY(), pos.getZ() + 0.5D, 0.0F, 0.0F);
-            if (boss != null) {
-                box.setHealTarget(boss);
-            }
-            kosmos.addFreshEntity(box);
+        KraveHealingBox box = ModEntities.KRAVE_HEALING_BOX.get().create(kosmos);
+        if (box == null) {
+            return;
         }
+        BlockPos pos = center.above(1);
+        box.moveTo(pos.getX() + 0.5D, pos.getY(), pos.getZ() + 0.5D, 0.0F, 0.0F);
+        box.setElite(true);
+        if (boss != null) {
+            box.setHealTarget(boss);
+        }
+        kosmos.addFreshEntity(box);
     }
 }

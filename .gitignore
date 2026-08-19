@@ -5,6 +5,10 @@ build/
 # Local toolchain: a bundled JDK 17 + Gradle 8.1.1 (~740 MB). Not source.
 .tools/
 
+# Raw vanilla Minecraft art extracted as recolor input for make_krave_terrain_textures.ps1 -
+# Mojang's original assets, not ours to redistribute. Only the recolored output PNGs are committed.
+tools/vanilla_src/
+
 # Gradle wrapper local state
 gradle-app.setting
 .gradletasknamecache

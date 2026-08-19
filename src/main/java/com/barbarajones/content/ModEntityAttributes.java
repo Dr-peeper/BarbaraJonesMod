@@ -9,7 +9,6 @@ import com.barbarajones.entity.BarbaraJones;
 import com.barbarajones.entity.CaydenCobb;
 import com.barbarajones.entity.Daniel;
 import com.barbarajones.entity.DuhlWol;
-import com.barbarajones.entity.KraveHealingBox;
 import com.barbarajones.entity.KraveMinion;
 import com.barbarajones.entity.KraveMonster;
 import com.barbarajones.entity.MomCobb;
@@ -40,21 +39,23 @@ import java.util.Set;
  * spawn by any means, so {@link #verifyEveryMobRegistered()} now cross-checks
  * the registrations against {@link #REQUIRED} and throws at startup. A mistake
  * here is otherwise invisible until someone tries to spawn that specific mob.
+ *
+ * <p>KRAVE_HEALING_BOX is deliberately NOT in this list - it's a plain Entity
+ * now (End-Crystal-style, not LivingEntity - see KraveHealingBox), so it has
+ * no AttributeSupplier to register at all.
  */
 @Mod.EventBusSubscriber(modid = BarbaraJonesMod.MODID, bus = Mod.EventBusSubscriber.Bus.MOD)
 public final class ModEntityAttributes {
 
     /**
-     * Every Mob-based entity in the mod. Add new ones here as well as in
+     * Every LivingEntity-based mob in the mod. Add new ones here as well as in
      * {@link #createAttributes} - the check below exists to make a mismatch
      * loud instead of leaving an unspawnable mob behind.
      */
     private static final List<RegistryObject<? extends EntityType<?>>> REQUIRED = List.of(
             ModEntities.BARBARA, ModEntities.CAYDEN, ModEntities.KRAVE_MONSTER,
             ModEntities.NUGGET, ModEntities.DANIEL, ModEntities.MOM, ModEntities.PLUG,
-            ModEntities.DUHL_WOL, ModEntities.KRAVE_MINION, ModEntities.KRAVE_HEALING_BOX,
-            ModEntities.MOM_BOSS, ModEntities.MOM_STASH,
-            ModEntities.THE_MANAGER, ModEntities.MANAGER_MINION);
+            ModEntities.DUHL_WOL, ModEntities.KRAVE_MINION);
 
     /** Populated as we register, then checked against REQUIRED. */
     private static final Set<EntityType<?>> REGISTERED = new HashSet<>();
@@ -67,20 +68,15 @@ public final class ModEntityAttributes {
 
     @SubscribeEvent
     public static void createAttributes(EntityAttributeCreationEvent event) {
-        put(event, ModEntities.BARBARA.get(),            BarbaraJones.createAttributes().build());
-        put(event, ModEntities.CAYDEN.get(),             CaydenCobb.createAttributes().build());
-        put(event, ModEntities.KRAVE_MONSTER.get(),      KraveMonster.createAttributes().build());
-        put(event, ModEntities.NUGGET.get(),             Nugget.createAttributes().build());
-        put(event, ModEntities.DANIEL.get(),             Daniel.createAttributes().build());
-        put(event, ModEntities.MOM.get(),                MomCobb.createAttributes().build());
-        put(event, ModEntities.PLUG.get(),               ThePlug.createAttributes().build());
-        put(event, ModEntities.DUHL_WOL.get(),           DuhlWol.createAttributes().build());
-        put(event, ModEntities.KRAVE_MINION.get(),       KraveMinion.createAttributes().build());
-        put(event, ModEntities.KRAVE_HEALING_BOX.get(),  KraveHealingBox.createAttributes().build());
-        put(event, ModEntities.MOM_BOSS.get(),           MomCobbBoss.createAttributes().build());
-        put(event, ModEntities.MOM_STASH.get(),          MomKraveStash.createAttributes().build());
-        put(event, ModEntities.THE_MANAGER.get(),        TheManager.createAttributes().build());
-        put(event, ModEntities.MANAGER_MINION.get(),     ManagerMinion.createAttributes().build());
+        put(event, ModEntities.BARBARA.get(),       BarbaraJones.createAttributes().build());
+        put(event, ModEntities.CAYDEN.get(),        CaydenCobb.createAttributes().build());
+        put(event, ModEntities.KRAVE_MONSTER.get(), KraveMonster.createAttributes().build());
+        put(event, ModEntities.NUGGET.get(),        Nugget.createAttributes().build());
+        put(event, ModEntities.DANIEL.get(),        Daniel.createAttributes().build());
+        put(event, ModEntities.MOM.get(),           MomCobb.createAttributes().build());
+        put(event, ModEntities.PLUG.get(),          ThePlug.createAttributes().build());
+        put(event, ModEntities.DUHL_WOL.get(),      DuhlWol.createAttributes().build());
+        put(event, ModEntities.KRAVE_MINION.get(),  KraveMinion.createAttributes().build());
 
         verifyEveryMobRegistered();
         verifyRequiredAttributes();

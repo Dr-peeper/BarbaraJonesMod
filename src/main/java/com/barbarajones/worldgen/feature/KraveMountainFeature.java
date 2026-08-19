@@ -6,6 +6,7 @@ import com.mojang.serialization.Codec;
 import net.minecraft.core.BlockPos;
 import net.minecraft.util.RandomSource;
 import net.minecraft.world.level.WorldGenLevel;
+import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.levelgen.feature.Feature;
 import net.minecraft.world.level.levelgen.feature.FeaturePlaceContext;
@@ -26,10 +27,16 @@ import java.util.List;
  *
  * <p>Cross-section is organic rather than circular via
  * {@link KraveTerrainShape} - a few random cosine "lobes" perturbing the
- * radius by angle. Rocky outcrops and the optional chocolate waterfall
+ * radius by angle. Rocky outcrops and the guaranteed chocolate waterfall
  * spring are anchored to actual placed surface blocks collected during the
  * main pass, not independently recomputed coordinates - that mismatch was
- * why waterfalls kept ending up in empty air instead of on the mound.
+ * why waterfalls kept ending up in empty air instead of on the mound. A
+ * second bug on top of that one: the "peak zone" collected for outcrops/the
+ * spring required a column to reach 55% of the mountain's height, and on a
+ * mountain where that zone came up empty (peak column's ground-search
+ * failed, e.g.) BOTH outcrops and the spring were silently skipped
+ * entirely - not rare, just quiet. origin's own column is now a guaranteed
+ * fallback anchor, so every mountain that builds at all gets a spring.
  */
 public class KraveMountainFeature extends Feature<NoneFeatureConfiguration> {
 
@@ -63,6 +70,14 @@ public class KraveMountainFeature extends Feature<NoneFeatureConfiguration> {
 
         int maxRadius = (int) Math.ceil(baseRadius * 1.6) + 1;
         List<BlockPos> upperSurface = new ArrayList<>();
+        // The origin's own column always exists if we got this far (the
+        // isSolid() check above guarantees it), so it's a reliable fallback
+        // anchor even on the rare mountain whose actual peak zone comes up
+        // empty (peakRadius below missed every column, or every candidate's
+        // ground-search failed) - that silent, total skip of BOTH outcrops
+        // and the waterfall was the real bug behind "still not spawning"
+        // reports across several earlier attempts at this.
+        BlockPos originTop = null;
 
         for (int dx = -maxRadius; dx <= maxRadius; dx++) {
             for (int dz = -maxRadius; dz <= maxRadius; dz++) {
@@ -89,10 +104,17 @@ public class KraveMountainFeature extends Feature<NoneFeatureConfiguration> {
                     level.setBlock(top, dirt, 3);
                 }
                 level.setBlock(top, grass, 3);
+                if (dx == 0 && dz == 0) {
+                    originTop = top;
+                }
                 if (columnHeight >= height * 0.55) {
                     upperSurface.add(top);
                 }
             }
+        }
+
+        if (upperSurface.isEmpty() && originTop != null) {
+            upperSurface.add(originTop);
         }
 
         if (!upperSurface.isEmpty()) {
@@ -115,20 +137,57 @@ public class KraveMountainFeature extends Feature<NoneFeatureConfiguration> {
             }
             List<BlockPos> springCandidates = edges.isEmpty() ? upperSurface : edges;
 
-            // Not every mountain should have one - the earlier "missing"
-            // reports were really a placement-reliability bug (springs
-            // landing away from any actual ledge), now fixed above; this is
-            // back to a real chance rather than a guarantee, just weighted
-            // high enough that waterfalls read as common, not universal.
+            // Guaranteed now, not a chance - repeated "still not spawning"
+            // reports outweigh the earlier "not every mountain should have
+            // one" note. Every mountain that reaches here (which upperSurface's
+            // originTop fallback above now guarantees, not just the ones with
+            // a big enough peak zone) gets at least one; a second is common
+            // but not universal.
             BlockState chocolate = ModBlocks.CHOCOLATE_BLOCK.get().defaultBlockState();
-            if (random.nextInt(10) < 7) {
+            level.setBlock(springCandidates.get(random.nextInt(springCandidates.size())).above(), chocolate, 3);
+            if (springCandidates.size() > 1 && random.nextInt(10) < 7) {
                 level.setBlock(springCandidates.get(random.nextInt(springCandidates.size())).above(), chocolate, 3);
-                if (springCandidates.size() > 1 && random.nextBoolean()) {
-                    level.setBlock(springCandidates.get(random.nextInt(springCandidates.size())).above(), chocolate, 3);
-                }
             }
         }
 
+        // A hidden chamber inside the mountain's own body - "caves on
+        // mountains", distinct from the general island cave pockets
+        // (KraveCavePocketFeature) and the surface ruins/den. Leaves a
+        // BARRIER marker like every other hidden-healing-box spot in the
+        // Kosmos; KraveKosmosAmbience.scanForCaveMarkers picks it up
+        // generically regardless of which Feature placed it.
+        if (random.nextInt(10) < 4) {
+            carveMountainCave(level, origin, random, height);
+        }
+
         return true;
+    }
+
+    private void carveMountainCave(WorldGenLevel level, BlockPos origin, RandomSource random, int height) {
+        int dx = random.nextInt(5) - 2;
+        int dz = random.nextInt(5) - 2;
+        BlockPos.MutableBlockPos ground = origin.offset(dx, GROUND_SEARCH, dz).mutable();
+        int minY = origin.getY() - GROUND_SEARCH;
+        while (ground.getY() > minY && !level.getBlockState(ground).isSolid()) {
+            ground.move(0, -1, 0);
+        }
+        if (!level.getBlockState(ground).isSolid()) {
+            return;
+        }
+
+        int chamberHeight = Math.max(3, (int) (height * (0.25 + random.nextDouble() * 0.25)));
+        BlockPos floor = ground.above(chamberHeight);
+        if (!level.getBlockState(floor).isSolid() || !level.getBlockState(floor.above(2)).isSolid()) {
+            return;   // not solidly inside the mound's body here - skip, safe no-op
+        }
+
+        for (int cx = -1; cx <= 1; cx++) {
+            for (int cz = -1; cz <= 1; cz++) {
+                for (int cy = 0; cy <= 2; cy++) {
+                    level.setBlock(floor.offset(cx, cy, cz), Blocks.AIR.defaultBlockState(), 3);
+                }
+            }
+        }
+        level.setBlock(floor, Blocks.BARRIER.defaultBlockState(), 3);
     }
 }

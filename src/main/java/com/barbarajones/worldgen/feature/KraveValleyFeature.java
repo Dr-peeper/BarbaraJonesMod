@@ -74,6 +74,14 @@ public class KraveValleyFeature extends Feature<NoneFeatureConfiguration> {
                 }
             }
         }
+
+        // A hidden healing box at the bottom of the pit - reuses the same
+        // BARRIER marker convention as every other hidden spot in the
+        // Kosmos; KraveKosmosAmbience.scanForCaveMarkers picks it up
+        // generically. The floor center is guaranteed solid (isFloor above).
+        if (random.nextInt(10) < 4) {
+            level.setBlock(origin.below(depth - 1), Blocks.BARRIER.defaultBlockState(), 3);
+        }
         return true;
     }
 

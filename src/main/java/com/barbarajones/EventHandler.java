@@ -3,6 +3,7 @@ package com.barbarajones;
 import com.barbarajones.apocalypse.KraveApocalypse;
 import com.barbarajones.apocalypse.KraveKosmosAmbience;
 import com.barbarajones.apocalypse.KraveKosmosBattle;
+import com.barbarajones.content.ModDamageTypes;
 import com.barbarajones.content.ModEntities;
 import com.barbarajones.content.ModSounds;
 import com.barbarajones.content.ModFluids;
@@ -189,7 +190,7 @@ public class EventHandler {
         }
         if (entity.getFluidTypeHeight(ModFluids.CHOCOLATE_TYPE.get()) > 0.0D) {
             entity.setSecondsOnFire(1);
-            entity.hurt(entity.damageSources().lava(), 2.0F);
+            entity.hurt(ModDamageTypes.of(entity.level(), ModDamageTypes.CHOCOLATE), 2.0F);
         }
     }
 

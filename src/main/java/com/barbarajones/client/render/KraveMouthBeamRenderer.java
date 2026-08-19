@@ -5,15 +5,21 @@ import com.barbarajones.entity.KraveMouthBeam;
 
 import com.mojang.blaze3d.vertex.PoseStack;
 import com.mojang.blaze3d.vertex.VertexConsumer;
+import com.mojang.math.Axis;
 import net.minecraft.client.renderer.MultiBufferSource;
 import net.minecraft.client.renderer.RenderType;
 import net.minecraft.client.renderer.entity.EntityRenderer;
 import net.minecraft.client.renderer.entity.EntityRendererProvider;
 import net.minecraft.client.renderer.texture.OverlayTexture;
 import net.minecraft.resources.ResourceLocation;
+import net.minecraft.util.Mth;
 import org.joml.Matrix4f;
 
-/** Same camera-facing billboard technique as KraveLaserRenderer, but wider - a "big beam" feel. */
+/**
+ * Same giant-glowing-orb technique as {@link KraveLaserRenderer}, sized up
+ * further - the boss's own "big beam" should read as noticeably bigger and
+ * heavier than Cayden's.
+ */
 public class KraveMouthBeamRenderer extends EntityRenderer<KraveMouthBeam> {
 
     private static final ResourceLocation TEXTURE =
@@ -26,15 +32,28 @@ public class KraveMouthBeamRenderer extends EntityRenderer<KraveMouthBeam> {
     @Override
     public void render(KraveMouthBeam entity, float yaw, float partial, PoseStack pose,
                        MultiBufferSource buffers, int light) {
+        float age = entity.tickCount + partial;
         pose.pushPose();
         pose.mulPose(this.entityRenderDispatcher.cameraOrientation());
 
         VertexConsumer buf = buffers.getBuffer(RenderType.entityCutoutNoCull(TEXTURE));
+        float pulse = 1.0F + 0.08F * Mth.sin(age * 0.5F);
+
+        orb(pose, buf, light, 2.2F * pulse, -age * 3.0F);
+        orb(pose, buf, light, 1.25F * pulse, age * 7.0F);
+
+        pose.popPose();
+        super.render(entity, yaw, partial, pose, buffers, light);
+    }
+
+    private void orb(PoseStack pose, VertexConsumer buf, int light, float size, float spinDeg) {
+        pose.pushPose();
+        pose.mulPose(Axis.ZP.rotationDegrees(spinDeg));
+
         Matrix4f m = pose.last().pose();
         var normal = pose.last().normal();
-        float w = 0.28F;
-        float h = 1.3F;
-        float[][] pts = {{-w, -h}, {w, -h}, {w, h}, {-w, h}};
+        float h = size / 2.0F;
+        float[][] pts = {{-h, -h}, {h, -h}, {h, h}, {-h, h}};
         float[][] uv = {{0, 1}, {1, 1}, {1, 0}, {0, 0}};
         for (int i = 0; i < 4; i++) {
             buf.vertex(m, pts[i][0], pts[i][1], 0.0F)
@@ -46,7 +65,6 @@ public class KraveMouthBeamRenderer extends EntityRenderer<KraveMouthBeam> {
                     .endVertex();
         }
         pose.popPose();
-        super.render(entity, yaw, partial, pose, buffers, light);
     }
 
     @Override

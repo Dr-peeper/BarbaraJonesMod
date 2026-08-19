@@ -19,7 +19,7 @@ public final class KraveDimensions {
      * same convention vanilla uses for the End's main island). Players land
      * well away from here so they have to actually traverse the dimension.
      */
-    public static final Vec3 BOSS_ISLAND = new Vec3(0.0D, 80.0D, 0.0D);
+    public static final Vec3 BOSS_ISLAND = new Vec3(0.0D, 90.0D, 0.0D);
 
     /**
      * Seed point for a KraveLanding search - offset from the boss island, not

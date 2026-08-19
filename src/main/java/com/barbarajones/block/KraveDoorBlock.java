@@ -6,6 +6,7 @@ import com.barbarajones.content.ModItems;
 import com.barbarajones.dimension.KraveDimensions;
 import com.barbarajones.dimension.KraveKosmosData;
 import com.barbarajones.dimension.KraveLanding;
+import com.barbarajones.entity.KraveHealingBox;
 import com.barbarajones.entity.KraveMonster;
 
 import net.minecraft.core.BlockPos;
@@ -103,6 +104,7 @@ public class KraveDoorBlock extends DoorBlock {
         // used to drop players straight into the void.
         Vec3 landing = KraveLanding.findLanding(dest, KraveDimensions.PORTAL_LANDING, 6)
                 .orElse(KraveDimensions.PORTAL_LANDING);
+        ensureLandingBoxesExist(dest, landing);
 
         // Gather the companions BEFORE the player leaves - afterwards they are
         // no longer "near the player" in any level we can search.
@@ -161,6 +163,55 @@ public class KraveDoorBlock extends DoorBlock {
         // had no target to latch onto yet - KraveHealingBox.resolveTarget()'s
         // KraveKosmosData fallback picks him up automatically on their next
         // heal tick now that setBossId() above has run, no extra wiring needed.
+    }
+
+    /**
+     * The four ordinary healing boxes ring the landing island - the larger
+     * island players actually arrive on and explore - rather than the den,
+     * which now has just its one elite guardian (see KraveDenBuilder). Same
+     * one-time-authoring pattern as ensureBossExists: guarded by a flag in
+     * KraveKosmosData so re-entering the Kosmos never duplicates them.
+     *
+     * <p>Each spot uses {@link KraveLanding#findOpenLanding}, not the plain
+     * search: it rejects candidates too close to a box already placed this
+     * pass (so they read as spread out instead of clustering wherever the
+     * spiral search happens to land first) and candidates boxed in against a
+     * wall or cliff (so nothing ends up half-buried in a mountainside). The
+     * cardinal offsets are just four different starting points to search
+     * outward from - the actual final spot is whatever passes both checks
+     * nearest that direction, not that exact point.
+     */
+    private void ensureLandingBoxesExist(ServerLevel kosmos, Vec3 landing) {
+        KraveKosmosData data = KraveKosmosData.get(kosmos);
+        if (data.isLandingBoxesSpawned()) {
+            return;
+        }
+        data.setLandingBoxesSpawned(true);
+
+        var bossId = data.getBossId();
+        KraveMonster boss = bossId != null && kosmos.getEntity(bossId) instanceof KraveMonster m ? m : null;
+
+        int[][] offsets = { {18, 0}, {-18, 0}, {0, 18}, {0, -18} };
+        java.util.List<Vec3> placed = new java.util.ArrayList<>();
+        for (int[] off : offsets) {
+            Vec3 seed = landing.add(off[0], 0.0D, off[1]);
+            var spot = KraveLanding.findOpenLanding(kosmos, seed, 4, placed, 14.0D);
+            if (spot.isEmpty()) {
+                continue;
+            }
+            placed.add(spot.get());
+
+            KraveHealingBox box = ModEntities.KRAVE_HEALING_BOX.get().create(kosmos);
+            if (box == null) {
+                continue;
+            }
+            Vec3 pos = spot.get();
+            box.moveTo(pos.x, pos.y, pos.z, 0.0F, 0.0F);
+            if (boss != null) {
+                box.setHealTarget(boss);
+            }
+            kosmos.addFreshEntity(box);
+        }
     }
 
     private CompoundTag persisted(ServerPlayer player) {

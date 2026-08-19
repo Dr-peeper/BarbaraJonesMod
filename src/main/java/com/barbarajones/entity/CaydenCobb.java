@@ -193,10 +193,13 @@ public class CaydenCobb extends TamableAnimal {
         this.targetSelector.addGoal(1, new OwnerHurtByTargetGoal(this));
         this.targetSelector.addGoal(2, new OwnerHurtTargetGoal(this));
         this.targetSelector.addGoal(3, new HurtByTargetGoal(this));
-        // always hostile toward hostiles - except the fight-support mobs, which
-        // ignore him and he ignores them; the player handles those, not Cayden
+        // always hostile toward hostiles - except Kosmonauts (Krave Minions),
+        // which ignore him and he ignores them; the player handles those, not
+        // Cayden. Krave Healing Boxes no longer need excluding here at all -
+        // they're a plain Entity now (End-Crystal-style), not a Monster, so
+        // this Monster-typed target selector can never select one anyway.
         this.targetSelector.addGoal(4, new NearestAttackableTargetGoal<>(this, Monster.class, true,
-                e -> !(e instanceof KraveMinion) && !(e instanceof KraveHealingBox)));
+                e -> !(e instanceof KraveMinion)));
     }
 
     @Override

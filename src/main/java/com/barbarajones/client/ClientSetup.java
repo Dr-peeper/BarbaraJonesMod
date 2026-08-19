@@ -24,11 +24,14 @@ import com.barbarajones.boss.mom.client.MomCobbBossRenderer;
 import com.barbarajones.boss.mom.client.MomKraveStashRenderer;
 import com.barbarajones.boss.mom.client.ThrownHouseholdRenderer;
 import com.barbarajones.content.ModEntities;
+import com.barbarajones.menu.ModMenus;
 
+import net.minecraft.client.gui.screens.MenuScreens;
 import net.minecraftforge.api.distmarker.Dist;
 import net.minecraftforge.client.event.EntityRenderersEvent;
 import net.minecraftforge.eventbus.api.SubscribeEvent;
 import net.minecraftforge.fml.common.Mod;
+import net.minecraftforge.fml.event.lifecycle.FMLClientSetupEvent;
 
 /** Binds every entity to its renderer. */
 @Mod.EventBusSubscriber(modid = BarbaraJonesMod.MODID, bus = Mod.EventBusSubscriber.Bus.MOD,
@@ -78,5 +81,10 @@ public final class ClientSetup {
         event.registerLayerDefinition(ManagerModel.LAYER_LOCATION, ManagerModel::createBodyLayer);
         event.registerLayerDefinition(com.barbarajones.client.render.BarbaraModel.LAYER,
                 com.barbarajones.client.render.BarbaraModel::createBodyLayer);
+    }
+
+    @SubscribeEvent
+    public static void clientSetup(FMLClientSetupEvent event) {
+        event.enqueueWork(() -> MenuScreens.register(ModMenus.KRAFTING_BENCH.get(), KraftingBenchScreen::new));
     }
 }

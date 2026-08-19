@@ -212,6 +212,8 @@ public final class ModItems {
             ITEMS.register("krave_shovel", () -> new KraveTools.KraveShovel(props()));
     public static final RegistryObject<Item> KRAVE_HOE =
             ITEMS.register("krave_hoe", () -> new KraveTools.KraveHoe(props()));
+    public static final RegistryObject<Item> KRAVE_MULTITOOL =
+            ITEMS.register("krave_multitool", () -> new KraveTools.KraveMultiTool(props()));
 
     public static final RegistryObject<Item> CAYDEN_COMPASS =
             ITEMS.register("cayden_compass", () -> new CaydenCompassItem(props().stacksTo(1)));
@@ -233,6 +235,12 @@ public final class ModItems {
             ITEMS.register("krave_grass", () -> new BlockItem(ModBlocks.KRAVE_GRASS.get(), props()));
     public static final RegistryObject<Item> KRAVE_DIRT_ITEM =
             ITEMS.register("krave_dirt", () -> new BlockItem(ModBlocks.KRAVE_DIRT.get(), props()));
+    public static final RegistryObject<Item> KRAFTING_BENCH_ITEM =
+            ITEMS.register("krafting_bench", () -> new BlockItem(ModBlocks.KRAFTING_BENCH.get(), props()));
+    public static final RegistryObject<Item> CHOCOLATE_LOG_ITEM =
+            ITEMS.register("chocolate_log", () -> new BlockItem(ModBlocks.CHOCOLATE_LOG.get(), props()));
+    public static final RegistryObject<Item> KRAVE_LEAVES_ITEM =
+            ITEMS.register("krave_leaves", () -> new BlockItem(ModBlocks.KRAVE_LEAVES.get(), props()));
 
     // ---- liquid chocolate ------------------------------------------------------
 
@@ -240,8 +248,9 @@ public final class ModItems {
             () -> new BucketItem(() -> ModFluids.CHOCOLATE.get(), props().stacksTo(1).craftRemainder(net.minecraft.world.item.Items.BUCKET)));
 
     // ---- spawn eggs ----------------------------------------------------------
-    // ForgeSpawnEggItem only accepts EntityType<? extends Mob>, so the seven
-    // plain-Entity props (the car, meteors, the tornado, beams, cinematics)
+    // ForgeSpawnEggItem only accepts EntityType<? extends Mob>, so the plain-
+    // Entity props (the car, meteors, the tornado, beams, cinematics, and now
+    // the Krave Healing Box - rebuilt End-Crystal-style, no longer a Mob)
     // cannot have one - KravePropSpawnerItem covers those instead.
 
     public static final RegistryObject<Item> EGG_BARBARA = ITEMS.register("barbara_jones_spawn_egg",
@@ -262,8 +271,6 @@ public final class ModItems {
             () -> new ForgeSpawnEggItem(ModEntities.DUHL_WOL, 0x7A5232, 0xB0342A, props()));
     public static final RegistryObject<Item> EGG_KRAVE_MINION = ITEMS.register("krave_minion_spawn_egg",
             () -> new ForgeSpawnEggItem(ModEntities.KRAVE_MINION, 0x3A1E6E, 0x8B1A1A, props()));
-    public static final RegistryObject<Item> EGG_KRAVE_HEALING_BOX = ITEMS.register("krave_healing_box_spawn_egg",
-            () -> new ForgeSpawnEggItem(ModEntities.KRAVE_HEALING_BOX, 0xB060D0, 0x4CAF50, props()));
 
     /** Cycles through the prop entities that cannot take a spawn egg. */
     public static final RegistryObject<Item> PROP_SPAWNER = ITEMS.register("krave_prop_spawner",

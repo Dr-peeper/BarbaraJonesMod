@@ -1,0 +1,7 @@
+{
+  "variants": {
+    "axis=x": { "model": "barbarajones:block/chocolate_log_horizontal", "x": 90, "y": 90 },
+    "axis=y": { "model": "barbarajones:block/chocolate_log" },
+    "axis=z": { "model": "barbarajones:block/chocolate_log_horizontal", "x": 90 }
+  }
+}
