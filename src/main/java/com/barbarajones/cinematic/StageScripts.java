@@ -63,7 +63,9 @@ public final class StageScripts {
 
     /** Pick the script for this death stage. */
     public static Scene forStage(int stage, Vec3 origin, Vec3 playerEye) {
-        return switch (stage) {
+        // Clamped rather than trusted: a stage of 0 arriving from a desynced
+        // packet must open on the smallest beat in the show, not the largest.
+        return switch (Math.max(1, Math.min(10, stage))) {
             case 1 -> theCraving(origin, playerEye);
             case 2 -> theOs(origin, playerEye);
             case 3 -> theDicing(origin, playerEye);
@@ -994,17 +996,18 @@ public final class StageScripts {
         // 3. Drift across as the torch comes up from her other side, framing the
         //    gap between the nozzle and the coal so the audience can see it close.
         rig.dolly(72, 30, 10, o.add(2.0D, 24.0D, -2.0D), o.add(6.0D, 24.0D, 4.0D),
-                coal.add(0.0D, 4.0D, 0.0D), coal.add(0.0D, -5.0D, 0.0D),
+                coal.add(0.0D, 4.0D, 0.0D), coal.add(0.0D, -6.0D, 0.0D),
                 Easing.SINE_IN_OUT);
         // 4. Tight on the join at the moment of ignition: thirty blocks out,
-        //    centred five blocks BELOW the coal so the nozzle and the tank are in
-        //    frame with it rather than off the bottom edge.
+        //    centred six blocks BELOW the coal, because the coal, the eleven block
+        //    gap and the whole torch under it have to fit in the same frame or the
+        //    audience sees a joint lighting itself.
         rig.dolly(102, 18, 6, o.add(6.0D, 24.0D, 4.0D), o.add(4.0D, 26.0D, 2.0D),
-                coal.add(0.0D, -5.0D, 0.0D), Easing.EXPO_OUT);
-        rig.hold(120, 16, 6, o.add(4.0D, 26.0D, 2.0D), coal.add(0.0D, -4.0D, 0.0D));
+                coal.add(0.0D, -6.0D, 0.0D), Easing.EXPO_OUT);
+        rig.hold(120, 16, 6, o.add(4.0D, 26.0D, 2.0D), coal.add(0.0D, -6.0D, 0.0D));
         // 5. Pull out and up to her face as she takes the torch away.
         rig.dolly(136, 30, 10, o.add(4.0D, 26.0D, 2.0D), o.add(14.0D, 34.0D, -14.0D),
-                coal.add(0.0D, -4.0D, 0.0D), head, Easing.CUBIC_IN_OUT);
+                coal.add(0.0D, -6.0D, 0.0D), head, Easing.CUBIC_IN_OUT);
         // 6. Crane DOWN with the joint as she lowers it, ending at ground level
         //    with the field in the foreground. The move and the fire arrive
         //    together, which is the only reason the fire reads as caused by her.
@@ -1026,10 +1029,12 @@ public final class StageScripts {
                 .key(end, 0.0F, Easing.SINE_IN_OUT));
         rig.fov(Track.from(0.0F, 70.0F)
                 .key(40.0F, 66.0F)
-                .key(100.0F, 58.0F, Easing.CUBIC_IN_OUT)
-                .key(106.0F, 52.0F, Easing.CUBIC_IN)
-                .key(112.0F, 76.0F, Easing.EXPO_OUT)
-                .key(132.0F, 64.0F, Easing.SPRING_OUT)
+                .key(100.0F, 64.0F, Easing.CUBIC_IN_OUT)
+                // Squeezes down on the trigger cock and blows open on the catch,
+                // but never so tight that the tank drops off the bottom edge.
+                .key(106.0F, 60.0F, Easing.CUBIC_IN)
+                .key(112.0F, 84.0F, Easing.EXPO_OUT)
+                .key(132.0F, 68.0F, Easing.SPRING_OUT)
                 .key(186.0F, 82.0F, Easing.CUBIC_IN_OUT)
                 .key(214.0F, 74.0F)
                 .key(end, 70.0F));
@@ -1911,9 +1916,9 @@ public final class StageScripts {
     }
 
     /**
-     * A model-space offset on an actor rotated into world space - the same
-     * transform {@link com.barbarajones.cinematic.actor.CinematicActor#render}
-     * applies, so a point worked out on the rig lands where it does on screen.
+     * A model-space offset on an actor rotated into world space - the same yaw
+     * transform CinematicActor.render applies, so a point worked out on the rig
+     * lands where it does on screen.
      *
      * <p>This is how a prop gets put in a giant's hand. Placing it by eye in
      * world coordinates works right up until the giant is moved or turned, and

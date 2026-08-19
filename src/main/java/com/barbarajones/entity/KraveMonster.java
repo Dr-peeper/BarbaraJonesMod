@@ -99,6 +99,11 @@ public class KraveMonster extends Monster {
         }
     }
 
+    /** Highest Cayden tier this fight has seen, so he never shrinks mid-duel. */
+    private int matchedTier;
+    private int duelBlink;
+
+
     public static AttributeSupplier.Builder createAttributes() {
         return Monster.createMonsterAttributes()
                 .add(Attributes.MAX_HEALTH, 100.0D)          // iron golem
@@ -112,6 +117,7 @@ public class KraveMonster extends Monster {
     @Override
     protected void registerGoals() {
         this.goalSelector.addGoal(0, new FloatGoal(this));
+        this.goalSelector.addGoal(0, new RivalDuelGoal(this));
         this.goalSelector.addGoal(1, new MeleeAttackGoal(this, 0.5D, true));
         this.goalSelector.addGoal(1, new MouthBeamGoal(this));
         this.goalSelector.addGoal(2, new WaterAvoidingRandomStrollGoal(this, 0.9D));
@@ -119,6 +125,9 @@ public class KraveMonster extends Monster {
         this.goalSelector.addGoal(8, new RandomLookAroundGoal(this));
         this.targetSelector.addGoal(0, new HurtByTargetGoal(this));
         this.targetSelector.addGoal(1, new NearestAttackableTargetGoal<>(this, Player.class, true));
+        // He answers Cayden directly. Without this he only ever hunted players,
+        // so the duel the whole mod builds toward never actually started.
+        this.targetSelector.addGoal(1, new NearestAttackableTargetGoal<>(this, CaydenCobb.class, true));
     }
 
     // ---- boss bar -----------------------------------------------------------
@@ -140,6 +149,9 @@ public class KraveMonster extends Monster {
     @Override
     public void tick() {
         super.tick();
+        if (!level().isClientSide) {
+            matchRival();
+        }
         pushGhost();
 
         if (level().isClientSide) {
@@ -203,6 +215,142 @@ public class KraveMonster extends Monster {
 
     public void setBossFightActive(boolean active) {
         this.bossFightActive = active;
+    }
+
+    /**
+     * Scales him to whatever Cayden has turned into.
+     *
+     * <p>He is built as a 100-health boss, which an Ultra Instinct Cayden at
+     * twelve times damage deletes in about two hits. Rather than nerf Cayden -
+     * the transformations are the point - the Monster grows to match, and is
+     * healed to full when he does so the fight starts properly rather than with
+     * a chunk already missing.
+     *
+     * <p>He never scales back down within a fight: dropping his maximum health
+     * mid-duel would leave him instantly near-dead the moment Cayden powered
+     * down for a tick.
+     */
+    private void matchRival() {
+        int tier = 0;
+        if (getTarget() instanceof CaydenCobb c && c.isAlive()) {
+            tier = Math.max(c.getTier(), c.isSuperSaiyan() ? 1 : 0);
+        }
+        if (tier <= this.matchedTier) {
+            return;
+        }
+        this.matchedTier = tier;
+
+        double health = switch (tier) {
+            case 3 -> 1800.0D;
+            case 2 -> 900.0D;
+            default -> 400.0D;
+        };
+        double attack = switch (tier) {
+            case 3 -> 24.0D;
+            case 2 -> 16.0D;
+            default -> 10.0D;
+        };
+        double speed = switch (tier) {
+            case 3 -> 0.70D;
+            case 2 -> 0.55D;
+            default -> 0.45D;
+        };
+
+        var maxHp = getAttribute(Attributes.MAX_HEALTH);
+        var atk = getAttribute(Attributes.ATTACK_DAMAGE);
+        var spd = getAttribute(Attributes.MOVEMENT_SPEED);
+        if (maxHp != null) {
+            maxHp.setBaseValue(health);
+        }
+        if (atk != null) {
+            atk.setBaseValue(attack);
+        }
+        if (spd != null) {
+            spd.setBaseValue(speed);
+        }
+        setHealth(getMaxHealth());
+
+        playSound(ModSounds.KRAVE_ROAR.get(), 2.0F, 0.6F);
+        if (level() instanceof ServerLevel sl) {
+            sl.sendParticles(net.minecraft.core.particles.ParticleTypes.EXPLOSION_EMITTER,
+                    getX(), getY() + 1.5D, getZ(), 1, 0.0D, 0.0D, 0.0D, 0.0D);
+        }
+        for (Player p : level().getEntitiesOfClass(Player.class, getBoundingBox().inflate(64.0D))) {
+            p.sendSystemMessage(net.minecraft.network.chat.Component.literal(
+                    net.minecraft.ChatFormatting.DARK_PURPLE + ""
+                    + net.minecraft.ChatFormatting.BOLD + "HE MATCHES HIM."));
+        }
+    }
+
+    /**
+     * A blink-strike duel: close instantly, hit, vanish, reappear somewhere
+     * else. Runs only against Cayden, so ordinary players still fight the
+     * slower boss they can actually handle.
+     */
+    static class RivalDuelGoal extends net.minecraft.world.entity.ai.goal.Goal {
+
+        private final KraveMonster boss;
+        private int strikeCooldown;
+
+        RivalDuelGoal(KraveMonster boss) {
+            this.boss = boss;
+            setFlags(java.util.EnumSet.of(Flag.MOVE, Flag.LOOK));
+        }
+
+        @Override
+        public boolean canUse() {
+            return this.boss.getTarget() instanceof CaydenCobb c && c.isAlive() && c.isSuperSaiyan();
+        }
+
+        @Override
+        public boolean canContinueToUse() {
+            return canUse();
+        }
+
+        @Override
+        public void tick() {
+            LivingEntity foe = this.boss.getTarget();
+            if (foe == null) {
+                return;
+            }
+            this.boss.getLookControl().setLookAt(foe, 60.0F, 60.0F);
+
+            double dist = this.boss.distanceTo(foe);
+
+            // Out of reach: blink straight onto him rather than walking over.
+            if (dist > 4.0D) {
+                if (--this.boss.duelBlink <= 0) {
+                    this.boss.duelBlink = 8;
+                    Vec3 at = foe.position();
+                    double ang = this.boss.getRandom().nextDouble() * Math.PI * 2.0D;
+                    this.boss.blinkNear(at.x + Math.cos(ang) * 2.5D, at.y,
+                            at.z + Math.sin(ang) * 2.5D);
+                } else {
+                    // and close hard in between, so he is never simply standing
+                    Vec3 to = foe.position().subtract(this.boss.position());
+                    double len = Math.max(0.4D, to.length());
+                    this.boss.setDeltaMovement(this.boss.getDeltaMovement().scale(0.7D)
+                            .add(to.scale(0.28D / len)));
+                }
+                return;
+            }
+
+            if (--this.strikeCooldown <= 0) {
+                this.strikeCooldown = 11;
+                this.boss.doHurtTarget(foe);
+                this.boss.playSound(ModSounds.KRAVE_BOOM.get(), 1.0F, 1.5F);
+                // recoil apart so the duel keeps moving instead of grinding
+                Vec3 away = this.boss.position().subtract(foe.position());
+                double len = Math.max(0.5D, away.length());
+                this.boss.setDeltaMovement(away.scale(0.55D / len).add(0.0D, 0.25D, 0.0D));
+                this.boss.hurtMarked = true;
+            }
+        }
+    }
+
+    /** Public wrapper so the duel goal can reposition him. */
+    void blinkNear(double x, double y, double z) {
+        KraveBlink.blinkTo(this, x, y, z, ModSounds.KRAVE_SCREECH.get());
     }
 
     @Override

@@ -56,12 +56,20 @@ public class SsjAuraLayer extends RenderLayer<CaydenCobb, CaydenModel> {
             // machinery, deliberately opposite silhouette.
             darkColumn(pose, buf, t, camYaw);
             arcs(pose, buf, entity, t);
-        } else if (full && entity.getTier() >= 3) {
+        } else if (full && entity.getTier() >= 4) {
             // ULTRA INSTINCT. The opposite of effort: no flames at all, a still
             // silver shell and a slow drifting halo. Everything below is loud
             // because it is straining; this one is quiet because it is not.
             ultraShell(pose, buf, t, camYaw);
             hairSpikes(pose, buf, t);
+        } else if (full && entity.getTier() == 3) {
+            // SSJ3: the gold goes taller and wilder still, and the hair extends.
+            flameColumn(pose, buf, t, camYaw, 1.75F, false);
+            hairSpikes(pose, buf, t);
+            arcs(pose, buf, entity, t);
+            arcs(pose, buf, entity, t + 5.0F);
+            arcs(pose, buf, entity, t + 11.0F);
+            shockwave(pose, buf, entity, t);
         } else if (full && entity.getTier() == 2) {
             // SSJ2: same gold, but taller, denser, and the arcs never stop.
             flameColumn(pose, buf, t, camYaw, 1.35F, false);

@@ -106,6 +106,8 @@ public class CaydenCobb extends TamableAnimal {
     private static final int DODGE_PERCENT = 70;
     /** Ticks between techniques at tier 1; higher tiers cut this down. */
     private static final int ARSENAL_INTERVAL = 90;
+    /** How far he will look for something worth transforming for. */
+    private static final double BOSS_SCAN_RANGE = 160.0D;
     /** Heal a point this often, once out of combat. */
     private static final int REGEN_INTERVAL = 60;
     /** How long since being hit before he starts healing again. */
@@ -133,6 +135,7 @@ public class CaydenCobb extends TamableAnimal {
     private int dodgeFlash;
     private int arsenalTimer = 60;
     private int lastMove = -1;
+    private int tierIdle;
     private int ssjTicks;
     /** While true the transformation has no timer: it ends when the boss does. */
     private boolean ssjUntilBossDies;
@@ -215,12 +218,14 @@ public class CaydenCobb extends TamableAnimal {
             // Each rung is a real step up, not a recolour.
             int tier = Math.max(1, getTier());
             atkBase *= switch (tier) {
-                case 3 -> 12.0D;
+                case 4 -> 16.0D;
+                case 3 -> 11.0D;
                 case 2 -> 7.0D;
                 default -> 4.0D;
             };
             spdBase = BASE_SPEED * switch (tier) {
-                case 3 -> 2.4D;
+                case 4 -> 2.6D;
+                case 3 -> 2.2D;
                 case 2 -> 1.9D;
                 default -> 1.6D;
             };
@@ -416,6 +421,7 @@ public class CaydenCobb extends TamableAnimal {
         regenerate();
         updateDesperation();
         updateDark();
+        scanForBoss();
         updateTier();
         useArsenal();
 
@@ -547,6 +553,38 @@ public class CaydenCobb extends TamableAnimal {
         }
     }
 
+    /**
+     * Finds a boss worth transforming for, far outside his ordinary follow
+     * range.
+     *
+     * <p>His FOLLOW_RANGE is 32 blocks and NearestAttackableTargetGoal will not
+     * look past it, but an Ender Dragon circles hundreds of blocks out and
+     * hundreds of blocks up. Without this he simply never noticed one was there,
+     * which read in play as him doing nothing at all.
+     */
+    private void scanForBoss() {
+        if (this.tickCount % 20 != 0 || !isTame()) {
+            return;
+        }
+        LivingEntity current = getTarget();
+        if (current != null && current.isAlive() && tierFor(current) > 0) {
+            return;                       // already committed to something worthy
+        }
+        AABB far = getBoundingBox().inflate(BOSS_SCAN_RANGE, BOSS_SCAN_RANGE, BOSS_SCAN_RANGE);
+        LivingEntity best = null;
+        int bestTier = 0;
+        for (LivingEntity e : level().getEntitiesOfClass(LivingEntity.class, far)) {
+            int t = tierFor(e);
+            if (t > bestTier) {
+                bestTier = t;
+                best = e;
+            }
+        }
+        if (best != null) {
+            setTarget(best);
+        }
+    }
+
     // ---- the ladder ---------------------------------------------------------
 
     public int getTier() {
@@ -565,10 +603,12 @@ public class CaydenCobb extends TamableAnimal {
             return 0;
         }
         if (foe instanceof com.barbarajones.entity.KraveMonster) {
-            return 3;                                     // the one that made him
+            return 4;                                     // the one that made him
         }
-        if (foe instanceof net.minecraft.world.entity.boss.enderdragon.EnderDragon
-                || foe instanceof net.minecraft.world.entity.monster.warden.Warden
+        if (foe instanceof net.minecraft.world.entity.boss.enderdragon.EnderDragon) {
+            return 3;                                     // it flies, so he has to
+        }
+        if (foe instanceof net.minecraft.world.entity.monster.warden.Warden
                 || foe instanceof com.barbarajones.boss.manager.TheManager) {
             return 2;                                     // above a Wither
         }
@@ -595,14 +635,35 @@ public class CaydenCobb extends TamableAnimal {
             this.ssjUntilBossDies = true; // it lasts as long as the fight does
             applyKraveStats();
             announceTier(want);
-        } else if (want == 0 && have > 0 && getTarget() == null) {
-            this.entityData.set(TIER, 0);
+        } else if (want == 0 && have > 0) {
+            // A dead boss still lingers as getTarget() for a tick or two, and the
+            // old check also demanded a null target - between them he never
+            // powered down at all. Give it a moment in case the boss simply
+            // blinked out of sight, then drop him all the way back.
+            if (++this.tierIdle > 40) {
+                this.tierIdle = 0;
+                this.entityData.set(TIER, 0);
+                this.ssjUntilBossDies = false;
+                powerDown();
+                for (Player p : level().getEntitiesOfClass(Player.class, getBoundingBox().inflate(48.0D))) {
+                    p.sendSystemMessage(Component.literal(ChatFormatting.GRAY
+                            + "Cayden powers down."));
+                }
+            }
+        } else {
+            this.tierIdle = 0;
         }
 
         if (getTier() >= 2) {
             ssj2Shockwave();
         }
-        if (getTier() >= 3 && this.tickCount % 2 == 0 && level() instanceof ServerLevel sl) {
+        if (getTier() >= 1) {
+            // Without these he is a ground mob with a melee goal, which against
+            // anything airborne means standing still and being shot.
+            combatFlight();
+            combatLasers();
+        }
+        if (getTier() >= 4 && this.tickCount % 2 == 0 && level() instanceof ServerLevel sl) {
             // Ultra Instinct trails silver rather than burning - it is meant to
             // read as calm, not as effort.
             sl.sendParticles(ParticleTypes.END_ROD, getX(), getY() + getBbHeight() * 0.5D, getZ(),
@@ -618,14 +679,16 @@ public class CaydenCobb extends TamableAnimal {
             case 1 -> ChatFormatting.GOLD + "" + ChatFormatting.BOLD + "CAYDEN COBB HAS ASCENDED.";
             case 2 -> ChatFormatting.YELLOW + "" + ChatFormatting.BOLD
                     + "THAT WAS NOT ALL OF IT. SUPER SAIYAN 2.";
-            case 3 -> ChatFormatting.WHITE + "" + ChatFormatting.BOLD
+            case 3 -> ChatFormatting.AQUA + "" + ChatFormatting.BOLD
+                    + "IT FLIES. SO DOES HE. SUPER SAIYAN 3.";
+            case 4 -> ChatFormatting.WHITE + "" + ChatFormatting.BOLD
                     + "He stops trying. ULTRA INSTINCT.";
             default -> null;
         };
         if (line == null) {
             return;
         }
-        playSound(ModSounds.KRAVE_ROAR.get(), 1.6F, tier >= 3 ? 1.4F : 0.8F);
+        playSound(ModSounds.KRAVE_ROAR.get(), 1.6F, tier >= 4 ? 1.4F : 0.8F);
         for (Player p : level().getEntitiesOfClass(Player.class, getBoundingBox().inflate(64.0D))) {
             p.sendSystemMessage(Component.literal(line));
         }
@@ -680,7 +743,7 @@ public class CaydenCobb extends TamableAnimal {
         // makes tier 3 feel different from tier 1 in play.
         this.arsenalTimer = Math.max(28, ARSENAL_INTERVAL - (tier - 1) * 26);
 
-        int moves = tier >= 3 ? 6 : tier >= 2 ? 4 : 2;
+        int moves = tier >= 4 ? 6 : tier >= 2 ? 4 : 2;
         int move = this.random.nextInt(moves);
         if (move == this.lastMove) {                 // never the same trick twice running
             move = (move + 1) % moves;
@@ -808,8 +871,13 @@ public class CaydenCobb extends TamableAnimal {
         }
 
         corruptGround();
-        darkFlight();
-        darkLasers();
+        // updateTier already drives these for any transformed Cayden. Calling
+        // them again here would decrement the shot timer twice a tick and
+        // double his rate of fire.
+        if (getTier() < 1) {
+            combatFlight();
+            combatLasers();
+        }
 
         if (this.tickCount % 2 == 0 && level() instanceof ServerLevel sl) {
             sl.sendParticles(ParticleTypes.SQUID_INK, getX(), getY() + getBbHeight() * 0.6D, getZ(),
@@ -851,7 +919,7 @@ public class CaydenCobb extends TamableAnimal {
     }
 
     /** Short bursts of flight to close on her, not sustained hovering. */
-    private void darkFlight() {
+    private void combatFlight() {
         LivingEntity target = getTarget();
         if (target == null) {
             return;
@@ -862,7 +930,16 @@ public class CaydenCobb extends TamableAnimal {
                     .subtract(position());
             double len = to.length();
             if (len > 0.5D) {
-                setDeltaMovement(getDeltaMovement().scale(0.6D).add(to.scale(0.13D / len)));
+                // Bias upward while he is below them, or he skims along underneath
+                // a hovering boss forever without ever arriving.
+                // Chase speed scales with the form. At the old flat rate an Ender
+                // Dragon simply outran him forever - it moves faster than he
+                // could close, so he trailed it and never arrived.
+                double pull = 0.22D + getTier() * 0.16D;
+                double lift = to.y > 0.5D ? 0.06D + getTier() * 0.05D : 0.0D;
+                setDeltaMovement(getDeltaMovement().scale(0.72D)
+                        .add(to.scale(pull / len))
+                        .add(0.0D, lift, 0.0D));
             }
             this.fallDistance = 0.0F;
             if (this.flightTicks == 0) {
@@ -870,6 +947,25 @@ public class CaydenCobb extends TamableAnimal {
             }
             return;
         }
+        // A target that is genuinely airborne is chased continuously rather than
+        // in bursts. Bursts are fine for closing ground on something that walks;
+        // against a Wither they just drop him back down to be shot again.
+        // Anything airborne, or any boss at all, is pursued without pause. Bursts
+        // are for closing on things that walk.
+        boolean airborne = target.getY() - getY() > 3.0D || !target.onGround()
+                || tierFor(target) >= 3;
+        if (airborne && distanceToSqr(target) > 4.0D) {
+            this.flightTicks = Math.max(this.flightTicks, 12);
+            setNoGravity(true);
+            if (this.burstTimer <= 0) {
+                this.burstTimer = BURST_INTERVAL;
+                playSound(ModSounds.KRAVE_SCREECH.get(), 0.9F, 0.7F);
+            } else {
+                this.burstTimer--;
+            }
+            return;
+        }
+
         if (--this.burstTimer <= 0) {
             this.burstTimer = BURST_INTERVAL;
             if (distanceToSqr(target) > 9.0D) {
@@ -879,21 +975,27 @@ public class CaydenCobb extends TamableAnimal {
                 playSound(ModSounds.KRAVE_SCREECH.get(), 0.9F, 0.7F);
             }
         }
+
     }
 
     /** Red Krave lasers, fired in threes with a little spread. */
-    private void darkLasers() {
+    private void combatLasers() {
         LivingEntity target = getTarget();
         if (target == null || --this.laserTimer > 0) {
             return;
         }
-        this.laserTimer = LASER_INTERVAL;
+        // The higher forms fire noticeably faster - it is his main answer to
+        // anything he cannot punch.
+        this.laserTimer = Math.max(8, LASER_INTERVAL - getTier() * 6);
         if (!hasLineOfSight(target)) {
             return;
         }
         Vec3 from = position().add(0.0D, getBbHeight() * 0.75D, 0.0D);
         for (int i = 0; i < 3; i++) {
-            Vec3 aim = target.position().add(
+            // Lead the shot: a Wither drifts, and bolts aimed at where it was
+            // sail behind it.
+            Vec3 lead = target.getDeltaMovement().scale(6.0D);
+            Vec3 aim = target.position().add(lead).add(
                     (this.random.nextDouble() - 0.5D) * 0.8D,
                     target.getBbHeight() * 0.5D + (this.random.nextDouble() - 0.5D) * 0.6D,
                     (this.random.nextDouble() - 0.5D) * 0.8D);
@@ -1042,7 +1144,7 @@ public class CaydenCobb extends TamableAnimal {
     public boolean hurt(DamageSource source, float amount) {
         // Ultra Instinct: the body answers before he does. Most incoming damage
         // is simply not there when it lands, and he slides out of the way.
-        if (getTier() >= 3 && !level().isClientSide && this.random.nextInt(100) < DODGE_PERCENT
+        if (getTier() >= 4 && !level().isClientSide && this.random.nextInt(100) < DODGE_PERCENT
                 && !source.is(net.minecraft.tags.DamageTypeTags.BYPASSES_INVULNERABILITY)) {
             if (level() instanceof ServerLevel sl) {
                 Vec3 side = new Vec3(this.random.nextDouble() - 0.5D, 0.0D, this.random.nextDouble() - 0.5D);
@@ -1161,8 +1263,12 @@ public class CaydenCobb extends TamableAnimal {
 
         @Override
         public boolean canUse() {
-            return this.cayden.isSuperSaiyan() && this.cayden.getTarget() instanceof KraveMonster target
-                    && target.isAlive();
+            // Any target, not just the Krave Monster. This is his only goal that
+            // can engage something airborne - gating it to one boss left him with
+            // no behaviour whatsoever against a Wither, since MeleeAttackGoal
+            // cannot path to a flying entity.
+            LivingEntity target = this.cayden.getTarget();
+            return this.cayden.isSuperSaiyan() && target != null && target.isAlive();
         }
 
         @Override
