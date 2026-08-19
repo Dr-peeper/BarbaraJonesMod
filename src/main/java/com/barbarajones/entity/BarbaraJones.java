@@ -103,6 +103,7 @@ public class BarbaraJones extends PathfinderMob {
     @Override
     protected void registerGoals() {
         this.goalSelector.addGoal(0, new FloatGoal(this));
+        this.goalSelector.addGoal(0, new BarbaraThrowCaydenGoal(this));
         this.goalSelector.addGoal(1, new MeleeAttackGoal(this, SPEED_PSYCHO, false));
         this.goalSelector.addGoal(2, new WaterAvoidingRandomStrollGoal(this, SPEED_CALM));
         this.goalSelector.addGoal(3, new LookAtPlayerGoal(this, Player.class, 8.0F));
@@ -522,5 +523,58 @@ public class BarbaraJones extends PathfinderMob {
             this.petOwner = tag.getUUID("PetOwner");
         }
         this.combat.load(tag);
+    }
+
+    /**
+     * Barbara's answer to "throw Cayden": when she's raging or fighting and
+     * a Cayden is nearby, she grabs him and launches him at her target
+     * instead of walking over herself. He handles the actual flight (see
+     * {@link CaydenCobb#launchFrom}) - this goal is just the trigger and the
+     * pick-a-victim logic.
+     */
+    static class BarbaraThrowCaydenGoal extends net.minecraft.world.entity.ai.goal.Goal {
+
+        private final BarbaraJones barbara;
+        private int cooldown;
+
+        BarbaraThrowCaydenGoal(BarbaraJones barbara) {
+            this.barbara = barbara;
+            setFlags(java.util.EnumSet.of(Flag.LOOK));
+        }
+
+        @Override
+        public boolean canUse() {
+            if (this.cooldown > 0) {
+                this.cooldown--;
+                return false;
+            }
+            LivingEntity target = this.barbara.getTarget();
+            return target != null && target.isAlive() && findCayden() != null;
+        }
+
+        @Override
+        public boolean canContinueToUse() {
+            return false;   // one throw, then back to the normal goal stack
+        }
+
+        @Override
+        public void start() {
+            CaydenCobb cayden = findCayden();
+            LivingEntity target = this.barbara.getTarget();
+            if (cayden == null || target == null) {
+                return;
+            }
+            cayden.launchFrom(this.barbara.position(), target.position());
+            this.barbara.playSound(net.minecraft.sounds.SoundEvents.PLAYER_ATTACK_SWEEP, 1.0F, 0.9F);
+            this.cooldown = 100 + this.barbara.getRandom().nextInt(100);   // 5-10s between throws
+        }
+
+        @Nullable
+        private CaydenCobb findCayden() {
+            return this.barbara.level().getEntitiesOfClass(CaydenCobb.class,
+                            this.barbara.getBoundingBox().inflate(6.0D),
+                            c -> c.isAlive() && c.distanceToSqr(this.barbara) < 36.0D)
+                    .stream().findFirst().orElse(null);
+        }
     }
 }

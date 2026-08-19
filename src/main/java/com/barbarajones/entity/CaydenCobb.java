@@ -23,6 +23,7 @@ import net.minecraft.sounds.SoundSource;
 import net.minecraft.world.effect.MobEffectInstance;
 import net.minecraft.world.effect.MobEffects;
 import net.minecraft.tags.BlockTags;
+import net.minecraft.util.Mth;
 import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.damagesource.DamageSource;
 import net.minecraft.world.entity.AgeableMob;
@@ -169,6 +170,61 @@ public class CaydenCobb extends TamableAnimal {
 
     public CaydenCobb(EntityType<? extends TamableAnimal> type, Level level) {
         super(type, level);
+    }
+
+    // ---- being thrown by Barbara ---------------------------------------------
+
+    /** Ticks left in a Barbara throw. Server-side timer only; noAi is what actually yields his AI. */
+    private int throwTicks = 0;
+
+    /**
+     * Barbara picks him up and launches him at a target. Disabling AI (not
+     * killing his goals outright) is what makes this work cleanly: with
+     * {@code isNoAi()} true, {@link net.minecraft.world.entity.Mob}'s own
+     * tick skips the goal selector entirely, so nothing fights the arc's
+     * velocity, but gravity and collision (and this class's own tick(),
+     * which isn't gated by noAi) still run normally - he really flies.
+     */
+    public void launchFrom(Vec3 origin, Vec3 targetPos) {
+        if (level().isClientSide) {
+            return;
+        }
+        Vec3 to = targetPos.subtract(origin);
+        double horiz = Math.sqrt(to.x * to.x + to.z * to.z);
+        double speed = Mth.clamp(horiz * 0.11D, 0.9D, 2.2D);
+        double lift = 0.55D + Math.min(1.0D, horiz / 16.0D) * 0.5D;
+        if (horiz > 0.01D) {
+            setDeltaMovement(to.x / horiz * speed, lift, to.z / horiz * speed);
+        } else {
+            setDeltaMovement(0.0D, lift, 0.0D);
+        }
+        setNoAi(true);
+        this.throwTicks = 40;   // 2s hard cap in case he never lands (e.g. thrown over a cliff)
+        level().playSound(null, blockPosition(), SoundEvents.TRIDENT_THROW, getSoundSource(), 1.2F, 0.7F);
+        if (level() instanceof ServerLevel sl) {
+            sl.sendParticles(ParticleTypes.POOF, getX(), getY() + getBbHeight() * 0.5D, getZ(),
+                    12, 0.3D, 0.3D, 0.3D, 0.05D);
+        }
+    }
+
+    private void tickThrow() {
+        if (this.throwTicks <= 0) {
+            return;
+        }
+        this.throwTicks--;
+        boolean landed = onGround() && this.throwTicks < 38;   // ignore the launch-frame's own ground flag
+        if (landed || this.throwTicks <= 0) {
+            setNoAi(false);
+            this.throwTicks = 0;
+            if (level() instanceof ServerLevel sl) {
+                sl.sendParticles(ParticleTypes.EXPLOSION, getX(), getY() + 0.2D, getZ(), 1, 0.0D, 0.0D, 0.0D, 0.0D);
+                for (LivingEntity nearby : sl.getEntitiesOfClass(LivingEntity.class, getBoundingBox().inflate(1.5D),
+                        e -> e != this && e.isAlive() && e instanceof Monster)) {
+                    nearby.hurt(damageSources().mobAttack(this), 6.0F + getTier() * 2.0F);
+                }
+                sl.playSound(null, blockPosition(), SoundEvents.GENERIC_BIG_FALL, getSoundSource(), 1.0F, 1.0F);
+            }
+        }
     }
 
     /**
@@ -623,6 +679,8 @@ public class CaydenCobb extends TamableAnimal {
             }
             return;
         }
+
+        tickThrow();
 
         if (this.graceTicks > 0) {
             this.graceTicks--;
