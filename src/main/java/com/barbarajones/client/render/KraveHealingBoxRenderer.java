@@ -15,11 +15,12 @@ import net.minecraft.resources.ResourceLocation;
 import org.joml.Matrix4f;
 
 /**
- * A stationary, hand-drawn rectangular prism - a "giant cereal box" - with
- * its own texture (no longer reusing the falling apocalypse box's look).
- * Bobs gently and spins slowly, same as before. While the entity's shield is
- * up, a larger translucent shell is drawn around it that fades as the
- * shield depletes.
+ * A stationary, hand-drawn rectangular prism - a genuinely "giant" cereal
+ * box, sized to actually read as a box rather than a paperweight - with its
+ * own texture (no longer reusing the falling apocalypse box's look). Bobs
+ * gently and spins slowly, same as before. While the entity's shield is up,
+ * a larger translucent shell is drawn around it that fades as the shield
+ * depletes.
  */
 public class KraveHealingBoxRenderer extends EntityRenderer<KraveHealingBox> {
 
@@ -27,6 +28,10 @@ public class KraveHealingBoxRenderer extends EntityRenderer<KraveHealingBox> {
             new ResourceLocation(BarbaraJonesMod.MODID, "textures/entity/krave_healing_box.png");
     private static final ResourceLocation SHIELD_TEXTURE =
             new ResourceLocation(BarbaraJonesMod.MODID, "textures/entity/krave_shield.png");
+
+    private static final float HALF_X = 0.6F;
+    private static final float HALF_Y = 0.9F;
+    private static final float HALF_Z = 0.22F;
 
     public KraveHealingBoxRenderer(EntityRendererProvider.Context ctx) {
         super(ctx);
@@ -38,18 +43,18 @@ public class KraveHealingBoxRenderer extends EntityRenderer<KraveHealingBox> {
         float age = entity.tickCount + partial;
 
         pose.pushPose();
-        pose.translate(0.0D, 0.4D + Math.sin(age * 0.08D) * 0.05D, 0.0D);
+        pose.translate(0.0D, HALF_Y + Math.sin(age * 0.08D) * 0.05D, 0.0D);
         pose.mulPose(Axis.YP.rotationDegrees(age * 1.2F));
 
         drawBox(pose, buffers.getBuffer(RenderType.entityCutoutNoCull(TEXTURE)), light,
-                0.3F, 0.5F, 0.18F, 255);
+                HALF_X, HALF_Y, HALF_Z, 255);
 
         int shield = entity.getShield();
         if (shield > 0) {
             VertexConsumer shieldBuf = buffers.getBuffer(RenderType.entityTranslucent(SHIELD_TEXTURE));
             float pulse = 0.55F + 0.15F * (float) Math.sin(age * 0.15D);
             int alpha = (int) (pulse * 220 * (shield / 3.0F));
-            drawBox(pose, shieldBuf, light, 0.42F, 0.62F, 0.3F, alpha);
+            drawBox(pose, shieldBuf, light, HALF_X + 0.15F, HALF_Y + 0.15F, HALF_Z + 0.15F, alpha);
         }
 
         pose.popPose();

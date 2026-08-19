@@ -32,6 +32,11 @@ public final class KraveKosmosAmbience {
     private static final double SCAN_RADIUS = 64.0D;
     /** Cube radius around each player to check for KraveCavePocketFeature's BARRIER markers. */
     private static final int MARKER_SCAN_RADIUS = 6;
+    /** Ambient healing-box scatter: independent of worldgen features, so it
+     *  reaches terrain generated before those features existed too. */
+    private static final int HEALING_BOX_CAP = 2;
+    private static final double HEALING_BOX_SCAN_RADIUS = 80.0D;
+    private static final int HEALING_BOX_SPAWN_CHANCE = 15;
 
     private static int timer;
 
@@ -59,7 +64,40 @@ public final class KraveKosmosAmbience {
                 spawnNear(kosmos, player);
             }
             scanForCaveMarkers(kosmos, player);
+            maybeSpawnHealingBox(kosmos, player);
         }
+    }
+
+    /**
+     * Terrain-independent healing box scatter. The worldgen-placed ones (den
+     * ring, mountain chambers, valley floors) only ever reach chunks
+     * generated after those features were added - a save that already
+     * explored the Kosmos would never see them. This runs at ordinary tick
+     * time near wherever the player is actually standing, so it reaches the
+     * whole dimension, old terrain included, the same way spawnNear already
+     * does for Kosmonauts.
+     */
+    private static void maybeSpawnHealingBox(ServerLevel kosmos, ServerPlayer player) {
+        int nearby = kosmos.getEntitiesOfClass(KraveHealingBox.class,
+                player.getBoundingBox().inflate(HEALING_BOX_SCAN_RADIUS)).size();
+        if (nearby >= HEALING_BOX_CAP || kosmos.random.nextInt(HEALING_BOX_SPAWN_CHANCE) != 0) {
+            return;
+        }
+        double angle = kosmos.random.nextDouble() * Math.PI * 2.0D;
+        double dist = 24.0D + kosmos.random.nextDouble() * 40.0D;
+        Vec3 seed = player.position().add(Math.cos(angle) * dist, 0.0D, Math.sin(angle) * dist);
+
+        Optional<Vec3> landing = KraveLanding.findLanding(kosmos, seed, 2);
+        if (landing.isEmpty()) {
+            return;
+        }
+        KraveHealingBox box = ModEntities.KRAVE_HEALING_BOX.get().create(kosmos);
+        if (box == null) {
+            return;
+        }
+        Vec3 pos = landing.get();
+        box.moveTo(pos.x, pos.y, pos.z, kosmos.random.nextFloat() * 360.0F, 0.0F);
+        kosmos.addFreshEntity(box);
     }
 
     /**

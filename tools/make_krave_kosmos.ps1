@@ -283,24 +283,63 @@ Rct $beam 6 0 4 16 (C 'C8E0FF' 235)
 Save $beam "$edir\krave_beam.png"
 "  krave_beam: texture"
 
-# ---- Krave Healing Box: its own "cereal box" branded texture ----------------
-$boxBase = C '8A2CD0'; $boxDark = C '5A1CA0'; $boxLight = C 'C9A8FF'
-$box = NewImg 16 16
-Rct $box 0 0 16 16 $boxBase
-Rct $box 1 1 14 6 $boxDark          # label panel
-Rct $box 2 2 12 1 $boxLight         # text line
-Rct $box 2 4 9 1 $boxLight          # text line
-Rct $box 2 6 11 1 $boxLight         # text line
-Rct $box 11 9 3 3 (C 'FFE070')      # logo mark
-Rct $box 1 12 14 2 $boxDark         # bottom bar
-Save $box "$edir\krave_healing_box.png"
-"  krave_healing_box: texture"
+# ---- Krave Healing Box: a real cereal-box front, not a plain tinted panel ----
+# 48x64 (vs the old 16x16) so the wordmark, bowl-and-spoon pictogram and
+# nutrition-style panel actually read once stretched over the much bigger
+# entity model below - a flat tint at 16x16 just went to mush at that size.
+function Glyph($bmp,$x,$y,$rows,$c,$s){
+    for($r=0; $r -lt $rows.Length; $r++){
+        for($col=0; $col -lt $rows[$r].Length; $col++){
+            if($rows[$r].Substring($col,1) -eq '1'){ Rct $bmp ($x+$col*$s) ($y+$r*$s) $s $s $c }
+        }
+    }
+}
+$glyphK = @('101','101','110','101','101')
+$glyphR = @('110','101','110','101','101')
+$glyphA = @('010','101','111','101','101')
+$glyphV = @('101','101','101','101','010')
+$glyphE = @('111','100','110','100','111')
 
-# ---- Krave Shield: translucent overlay tint ----------------------------------
-$shield = NewImg 16 16
-Rct $shield 0 0 16 16 (C 'B080FF' 160)
-for($x=0;$x -lt 16;$x++){ for($y=0;$y -lt 16;$y++){
-    if((($x+$y) % 5) -eq 0){ Rct $shield $x $y 1 1 (C 'E8D8FF' 200) }
+$boxBase = C '8A2CD0'; $boxDeep = C '3D1270'; $boxLight = C 'C9A8FF'
+$boxLogo = C 'FFD23F'; $boxCream = C 'FFF3D6'; $boxRed = C 'D6432E'; $boxBowl = C 'E8E8F0'
+
+$box = NewImg 48 64
+Rct $box 0 0 48 64 $boxBase
+Rct $box 0 0 48 1 $boxDeep; Rct $box 0 63 48 1 $boxDeep
+Rct $box 0 0 1 64 $boxDeep; Rct $box 47 0 1 64 $boxDeep
+Rct $box 1 1 46 5 $boxDeep          # top brand band
+
+$gs = 2
+$letters = @($glyphK,$glyphR,$glyphA,$glyphV,$glyphE)
+$lw = 3 * $gs; $gap = 2
+$lx = [int]((48 - ($letters.Length * $lw + ($letters.Length - 1) * $gap)) / 2)
+foreach($g in $letters){ Glyph $box $lx 8 $g $boxLogo $gs; $lx += $lw + $gap }
+Rct $box 4 20 40 2 $boxLight        # underline stripe
+
+# bowl (layered rects narrowing toward the base) with cereal pieces on the rim
+Rct $box 12 34 24 3 $boxBowl
+Rct $box 13 37 22 3 $boxBowl
+Rct $box 15 40 18 3 $boxBowl
+Rct $box 17 43 14 2 $boxBowl
+Rct $box 14 32 2 2 $boxRed; Rct $box 20 31 2 2 $boxLogo; Rct $box 26 32 2 2 $boxRed
+Rct $box 31 33 2 2 $boxLogo; Rct $box 18 33 2 2 $boxCream; Rct $box 28 34 2 2 $boxCream
+# spoon
+Rct $box 34 24 2 14 $boxCream
+Rct $box 32 22 6 4 $boxCream
+
+Rct $box 1 50 46 13 $boxDeep        # nutrition-style panel
+Rct $box 4 53 40 1 $boxLight
+Rct $box 4 56 32 1 $boxLight
+Rct $box 4 59 36 1 $boxLight
+Rct $box 38 51 6 6 $boxLogo         # brand seal
+Save $box "$edir\krave_healing_box.png"
+"  krave_healing_box: texture (48x64, cereal box branding)"
+
+# ---- Krave Shield: translucent overlay tint (32x32, scaled up with the box) --
+$shield = NewImg 32 32
+Rct $shield 0 0 32 32 (C 'B080FF' 150)
+for($x=0;$x -lt 32;$x++){ for($y=0;$y -lt 32;$y++){
+    if((($x+$y) % 6) -eq 0){ Rct $shield $x $y 1 1 (C 'E8D8FF' 190) }
 }}
 Save $shield "$edir\krave_shield.png"
 "  krave_shield: texture"
