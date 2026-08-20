@@ -60,8 +60,13 @@ public class KraveVillagerModel extends HierarchicalModel<KraveVillagerEntity> {
     private final ModelPart legLeft;
     private final ModelPart legRight;
 
-    public KraveVillagerModel(ModelPart root) {
-        this.root = root;
+    public KraveVillagerModel(ModelPart meshRoot) {
+        // createBodyLayer nests everything under a "root" part, so the ModelPart
+        // handed in here is the MESH root and "body" is its GRANDchild. Reading
+        // body straight off it threw "Can.t find part body" and killed the game
+        // at model bake, before the title screen.
+        this.root = meshRoot.getChild("root");
+        ModelPart root = this.root;
         this.body = root.getChild("body");
         this.head = this.body.getChild("head");
         this.flap = this.head.getChild("flap");
