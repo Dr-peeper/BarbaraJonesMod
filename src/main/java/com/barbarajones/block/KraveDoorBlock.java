@@ -2,7 +2,6 @@ package com.barbarajones.block;
 
 import com.barbarajones.content.ModBlocks;
 import com.barbarajones.content.ModEntities;
-import com.barbarajones.content.ModItems;
 import com.barbarajones.dimension.KraveDimensions;
 import com.barbarajones.dimension.KraveKosmosData;
 import com.barbarajones.dimension.KraveLanding;
@@ -11,7 +10,10 @@ import com.barbarajones.entity.KraveMonster;
 
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
+import net.minecraft.core.registries.Registries;
 import net.minecraft.nbt.CompoundTag;
+import net.minecraft.resources.ResourceKey;
+import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.InteractionHand;
@@ -20,22 +22,32 @@ import net.minecraft.world.effect.MobEffectInstance;
 import net.minecraft.world.effect.MobEffects;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.player.Player;
-import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.level.Level;
+import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.level.block.DoorBlock;
 import net.minecraft.world.level.block.state.BlockBehaviour;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.block.state.properties.BlockSetType;
+import net.minecraft.world.level.block.state.properties.DoorHingeSide;
 import net.minecraft.world.level.block.state.properties.DoubleBlockHalf;
 import net.minecraft.world.level.portal.PortalInfo;
 import net.minecraft.world.phys.BlockHitResult;
 import net.minecraft.world.phys.Vec3;
 import net.minecraftforge.common.util.ITeleporter;
 
+import java.util.ArrayList;
+import java.util.List;
+
 /**
  * The Krave Kosmos portal: a 3-wide x 3-tall frame of {@link ModBlocks#KRAVE_BLOCK},
  * bottom-middle two cells replaced by this door. Opening the door with a
- * complete frame around it steps the player through into the Kosmos.
+ * complete frame around it is bidirectional now, same as a vanilla Nether
+ * portal: from anywhere else, it sends you into the Kosmos and builds a
+ * matching frame+door right behind where you land; from inside the Kosmos,
+ * opening a complete frame sends you back to wherever you stepped in from.
+ * No consumable item required either direction - the door you arrive next
+ * to IS the way back, not a Krave Tether (that item still exists for quest/
+ * loot reasons elsewhere in the mod, it's just no longer load-bearing here).
  */
 public class KraveDoorBlock extends DoorBlock {
 
@@ -52,7 +64,11 @@ public class KraveDoorBlock extends DoorBlock {
             BlockPos lowerPos = state.getValue(HALF) == DoubleBlockHalf.LOWER ? pos : pos.below();
             BlockState lowerState = level.getBlockState(lowerPos);
             if (lowerState.getValue(OPEN) && isFrameComplete(level, lowerPos, lowerState)) {
-                enterKosmos(serverPlayer);
+                if (level.dimension().equals(KraveDimensions.KRAVE_KOSMOS)) {
+                    returnHome(serverPlayer);
+                } else {
+                    enterKosmos(serverPlayer);
+                }
             }
         }
         return result;
@@ -79,36 +95,24 @@ public class KraveDoorBlock extends DoorBlock {
         if (dest == null) {
             return;
         }
-        ensureBossExists(dest, player);
+        ensureBossExists(dest);
 
-        // Remember where (and in which dimension) the player stepped in, so a
-        // Krave Tether can send them straight back to this exact doorway.
+        // Remember where (and in which dimension) the player stepped in, so
+        // opening the door we're about to build sends them straight back.
         CompoundTag persist = persisted(player);
         persist.putString("KraveReturnDim", player.level().dimension().location().toString());
         persist.putDouble("KraveReturnX", player.getX());
         persist.putDouble("KraveReturnY", player.getY());
         persist.putDouble("KraveReturnZ", player.getZ());
 
-        // Nobody should be able to walk in without a way out: top the player up
-        // to at least one Krave Tether on every entry, regardless of whether
-        // they thought to craft/bring one themselves.
-        if (player.getInventory().countItem(ModItems.KRAVE_TETHER.get()) < 1) {
-            ItemStack tether = new ItemStack(ModItems.KRAVE_TETHER.get(), 1);
-            if (!player.getInventory().add(tether)) {
-                player.drop(tether, false);
-            }
-        }
-
-        // Actually search for solid ground near the seed point instead of
-        // trusting a fixed coordinate to have terrain under it - this is what
-        // used to drop players straight into the void.
         Vec3 landing = KraveLanding.findLanding(dest, KraveDimensions.PORTAL_LANDING, 6)
                 .orElse(KraveDimensions.PORTAL_LANDING);
         ensureLandingBoxesExist(dest, landing);
+        buildReturnPortal(dest, landing, player.getYRot());
 
         // Gather the companions BEFORE the player leaves - afterwards they are
         // no longer "near the player" in any level we can search.
-        java.util.List<Entity> escort = com.barbarajones.dimension.PetEscort.gather(player);
+        List<Entity> escort = com.barbarajones.dimension.PetEscort.gather(player);
 
         player.changeDimension(dest, new ITeleporter() {
             @Override
@@ -132,8 +136,75 @@ public class KraveDoorBlock extends DoorBlock {
         }
     }
 
+    /**
+     * Mirrors what KraveTetherItem does, minus consuming an item: read the
+     * player's persisted arrival point and step them back to it. Only
+     * reachable by opening a COMPLETE frame (see use() above), so it can't
+     * be triggered by a lone door someone dropped somewhere.
+     */
+    private void returnHome(ServerPlayer player) {
+        CompoundTag data = player.getPersistentData();
+        if (!data.contains(Player.PERSISTED_NBT_TAG)) {
+            return;
+        }
+        CompoundTag persist = data.getCompound(Player.PERSISTED_NBT_TAG);
+        if (!persist.contains("KraveReturnDim")) {
+            return;
+        }
+
+        ResourceKey<Level> returnDim = ResourceKey.create(Registries.DIMENSION,
+                new ResourceLocation(persist.getString("KraveReturnDim")));
+        ServerLevel dest = player.getServer().getLevel(returnDim);
+        if (dest == null) {
+            return;
+        }
+
+        double x = persist.getDouble("KraveReturnX");
+        double y = persist.getDouble("KraveReturnY");
+        double z = persist.getDouble("KraveReturnZ");
+
+        List<Entity> escort = com.barbarajones.dimension.PetEscort.gather(player);
+        player.teleportTo(dest, x, y, z, player.getYRot(), player.getXRot());
+        com.barbarajones.dimension.PetEscort.deliver(escort, dest, new Vec3(x, y, z));
+    }
+
+    /**
+     * A complete Krave Block frame + open-able Krave Door, built once right
+     * behind wherever the player is about to land - facing back toward the
+     * landing spot so turning around after arriving puts it in view. Reuses
+     * the exact same frame shape isFrameComplete() checks, so it's a real,
+     * independently valid portal the moment it's placed, not a decoration.
+     */
+    private void buildReturnPortal(ServerLevel dest, Vec3 landing, float playerYRot) {
+        Direction facing = Direction.fromYRot(playerYRot).getOpposite();
+        BlockPos landingPos = BlockPos.containing(landing.x, landing.y, landing.z);
+        BlockPos doorLower = landingPos.relative(facing.getOpposite(), 2);
+
+        BlockState frame = ModBlocks.KRAVE_BLOCK.get().defaultBlockState();
+        Direction side = facing.getClockWise();
+        BlockPos left = doorLower.relative(side.getOpposite());
+        BlockPos right = doorLower.relative(side);
+
+        dest.setBlock(doorLower, Blocks.AIR.defaultBlockState(), 3);
+        dest.setBlock(doorLower.above(), Blocks.AIR.defaultBlockState(), 3);
+        dest.setBlock(doorLower.above(2), frame, 3);
+        dest.setBlock(left, frame, 3);
+        dest.setBlock(left.above(), frame, 3);
+        dest.setBlock(left.above(2), frame, 3);
+        dest.setBlock(right, frame, 3);
+        dest.setBlock(right.above(), frame, 3);
+        dest.setBlock(right.above(2), frame, 3);
+
+        BlockState doorState = ModBlocks.KRAVE_DOOR.get().defaultBlockState()
+                .setValue(FACING, facing)
+                .setValue(HINGE, DoorHingeSide.LEFT)
+                .setValue(OPEN, Boolean.FALSE);
+        dest.setBlock(doorLower, doorState.setValue(HALF, DoubleBlockHalf.LOWER), 3);
+        dest.setBlock(doorLower.above(), doorState.setValue(HALF, DoubleBlockHalf.UPPER), 3);
+    }
+
     /** The Kosmos always has exactly one Krave Monster - spawn him near the boss island the first time. */
-    private void ensureBossExists(ServerLevel kosmos, net.minecraft.world.entity.player.Player player) {
+    private void ensureBossExists(ServerLevel kosmos) {
         KraveKosmosData data = KraveKosmosData.get(kosmos);
         var id = data.getBossId();
         if (id != null) {
@@ -143,16 +214,13 @@ public class KraveDoorBlock extends DoorBlock {
             }
         }
         Vec3 pos = KraveDimensions.BOSS_ISLAND;
-        BlockPos denCenter = net.minecraft.core.BlockPos.containing(pos.x, pos.y, pos.z);
+        BlockPos denCenter = BlockPos.containing(pos.x, pos.y, pos.z);
         // Build the den (and its guaranteed-solid platform) before the boss
         // spawns, so he lands on authored ground rather than whatever the
         // procedural terrain happened to generate at the origin.
         com.barbarajones.dimension.KraveDenBuilder.buildDen(kosmos, denCenter);
 
         KraveMonster monster = ModEntities.KRAVE_MONSTER.get().create(kosmos);
-        if (monster != null) {
-            monster.setForm(com.barbarajones.EventHandler.nextKraveForm(player));
-        }
         if (monster == null) {
             return;
         }
@@ -192,7 +260,7 @@ public class KraveDoorBlock extends DoorBlock {
         KraveMonster boss = bossId != null && kosmos.getEntity(bossId) instanceof KraveMonster m ? m : null;
 
         int[][] offsets = { {18, 0}, {-18, 0}, {0, 18}, {0, -18} };
-        java.util.List<Vec3> placed = new java.util.ArrayList<>();
+        List<Vec3> placed = new ArrayList<>();
         for (int[] off : offsets) {
             Vec3 seed = landing.add(off[0], 0.0D, off[1]);
             var spot = KraveLanding.findOpenLanding(kosmos, seed, 4, placed, 14.0D);

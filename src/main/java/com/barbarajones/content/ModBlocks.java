@@ -142,8 +142,6 @@ public final class ModBlocks {
             BLOCKS.register("krave_fence", () -> com.barbarajones.block.krave.KraveWood.FENCE);
     public static final RegistryObject<Block> KRAVE_FENCE_GATE =
             BLOCKS.register("krave_fence_gate", () -> com.barbarajones.block.krave.KraveWood.FENCE_GATE);
-    public static final RegistryObject<Block> KRAVE_DOOR_BLOCK =
-            BLOCKS.register("krave_door_block", () -> com.barbarajones.block.krave.KraveWood.DOOR);
     public static final RegistryObject<Block> KRAVE_TRAPDOOR =
             BLOCKS.register("krave_trapdoor", () -> com.barbarajones.block.krave.KraveWood.TRAPDOOR);
     public static final RegistryObject<Block> KRAVE_BUTTON =
