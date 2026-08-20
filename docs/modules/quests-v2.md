@@ -93,7 +93,7 @@ nothing anywhere checked that those `prereqs` strings named quests that existed.
   dead. I deliberately kept `krave_door_block` off the village tier ladder because of it.
 * `KraveMinion` is only ever spawned by `apocalypse/KraveKosmosAmbience` and
   `apocalypse/KraveKosmosBattle`, both of which are Krave Kosmos only. There is no
-  overworld spawn. A "kill Cravelings" quest placed early in the spine would have been
+  overworld spawn. A "kill Kravelings" quest placed early in the spine would have been
   unreachable, so it lives in the Kosmos chapter instead (see §5).
 
 ---
@@ -208,7 +208,7 @@ whole spine is craftable from vanilla ingredients.
 * **The Village** (`village`) — a roof over Rule #1 (Cayden validated-housed) → feed him ten
   times → panelling → living room → the stash (which is where the $500 comes from).
 * **The Krave Kosmos** (`kosmos`) — build and place a Krave Door → step through → kill 8
-  Cravelings (they only exist on the far side; see §1.5) → grind Krave dust and hit level 8
+  Kravelings (they only exist on the far side; see §1.5) → grind Krave dust and hit level 8
   → certified Kosmonaut.
 * **The Bosses** (`bosses`) — summon and kill the Krave Monster (unlockable from *either*
   the Kosmos or the village branch — `min_dependencies: 1`) → hand over the $500 → Mom Cobb

@@ -20,7 +20,7 @@ import java.util.function.Supplier;
  * in this package goes through {@link #of} rather than {@code new ItemStack(...)}
  * directly. Two reasons:
  * <ol>
- *   <li>Some content this book documents (a couple of Craveling-family items,
+ *   <li>Some content this book documents (a couple of Kraveling-family items,
  *       some machine blocks) lives in sibling modules that were still being
  *       written elsewhere in the codebase as this one was built - see
  *       {@code docs/modules/krave-manual.md}'s gap list. A lazy, guarded

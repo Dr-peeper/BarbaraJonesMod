@@ -12,12 +12,12 @@ import net.minecraftforge.registries.RegistryObject;
 /**
  * This module's OWN item registry: the five spawn eggs plus two small flavor
  * items (the shard Krispbone throws, and the Mascot's trophy drop). Everything
- * a player can hold from the Craveling family lives here, not in the shared
+ * a player can hold from the Kraveling family lives here, not in the shared
  * {@code content.ModItems}.
  *
  * <p>NOTE for whoever owns {@code content/ModTabs.java}: these will NOT show
  * up in the creative tab on their own - that tab only iterates
- * {@code ModItems.ITEMS.getEntries()}. See docs/modules/craveling-mobs.md for
+ * {@code ModItems.ITEMS.getEntries()}. See docs/modules/kraveling-mobs.md for
  * the exact line to add.
  */
 public final class ModMobItems {
@@ -35,8 +35,8 @@ public final class ModMobItems {
     // Colors: primary = base body, secondary = spots/accent. Picked per mob's
     // palette so the egg reads correctly in the creative menu at a glance.
 
-    public static final RegistryObject<Item> CRAVELING_SPAWN_EGG = ITEMS.register("craveling_spawn_egg",
-            () -> new ForgeSpawnEggItem(ModMobEntities.CRAVELING, 0x8A6134, 0xD9A857, props()));
+    public static final RegistryObject<Item> KRAVELING_SPAWN_EGG = ITEMS.register("kraveling_spawn_egg",
+            () -> new ForgeSpawnEggItem(ModMobEntities.KRAVELING, 0x8A6134, 0xD9A857, props()));
 
     public static final RegistryObject<Item> KRISPBONE_SPAWN_EGG = ITEMS.register("krispbone_spawn_egg",
             () -> new ForgeSpawnEggItem(ModMobEntities.KRISPBONE, 0xC9AD7F, 0x6B4A2F, props()));
@@ -46,6 +46,9 @@ public final class ModMobItems {
 
     public static final RegistryObject<Item> SOGGY_SPAWN_EGG = ITEMS.register("soggy_spawn_egg",
             () -> new ForgeSpawnEggItem(ModMobEntities.SOGGY, 0x6E7A4A, 0xC7D9A0, props()));
+
+    public static final RegistryObject<Item> KRAVAJO_SPAWN_EGG = ITEMS.register("kravajo_spawn_egg",
+            () -> new ForgeSpawnEggItem(ModMobEntities.KRAVAJO, 0x8A6A2E, 0xE8C87A, props()));
 
     public static final RegistryObject<Item> MASCOT_SPAWN_EGG = ITEMS.register("the_mascot_spawn_egg",
             () -> new ForgeSpawnEggItem(ModMobEntities.MASCOT, 0xD9384A, 0xF2D33A, props()));

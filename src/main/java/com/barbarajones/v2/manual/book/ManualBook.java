@@ -41,7 +41,7 @@ import java.util.List;
  * degrades to a barrier icon rather than crashing if something is not
  * registered on a given build (see {@link Icon}'s own javadoc). A few
  * entities with no held item of their own (Cayden, Barbara, the bosses, the
- * Craveling family) are illustrated with their spawn eggs - still a real
+ * Kraveling family) are illustrated with their spawn eggs - still a real
  * item render, just not a held one.
  */
 public final class ManualBook {
@@ -127,7 +127,7 @@ public final class ManualBook {
 
     public static final List<ManualChapter> CHAPTERS = List.of(
             chapterRule1(),
-            chapterCravelings(),
+            chapterKravelings(),
             chapterKrave(),
             chapterVillage(),
             chapterVillagers(),
@@ -136,8 +136,21 @@ public final class ManualBook {
             chapterBarbara(),
             chapterBosses(),
             chapterAbilities(),
-            chapterDimension()
+            chapterDimension(),
+            chapterRecipeIndex()
     );
+
+    /**
+     * The recipe index. Its body is EMPTY here on purpose: the contents are
+     * generated from the live recipe manager when the chapter is opened, because
+     * this class is built at class-init, long before any recipe exists to read.
+     * ManualScreen swaps in the generated pages by chapter id.
+     */
+    private static ManualChapter chapterRecipeIndex() {
+        return new ManualChapter("recipe_index", 12, "Every Recipe",
+                "Every craftable thing in the mod, as a grid.",
+                icon(net.minecraft.world.item.Items.CRAFTING_TABLE, "Recipes"), GOLD, List.of());
+    }
 
     public static ManualChapter byId(String id) {
         for (ManualChapter c : CHAPTERS) {
@@ -274,23 +287,23 @@ public final class ManualBook {
     }
 
     // ==========================================================================
-    // 2. THE CRAVELINGS
+    // 2. THE KRAVELINGS
     // ==========================================================================
 
-    private static ManualChapter chapterCravelings() {
+    private static ManualChapter chapterKravelings() {
         List<PageElement> e = new ArrayList<>();
 
-        e.add(head("THE CRAVELINGS"));
+        e.add(head("THE KRAVELINGS"));
         e.add(p("Five mobs, one family: hostile cereal gone feral, plus one that is not "
                 + "hostile at all. This is the mod's own hostile roster - not reskinned "
                 + "zombies, each with one genuinely distinct signature move."));
-        e.add(note("A NOTE ON THIS CHAPTER", "The Craveling family was still mid-build elsewhere in the "
+        e.add(note("A NOTE ON THIS CHAPTER", "The Kraveling family was still mid-build elsewhere in the "
                 + "codebase as this manual went to print - see the gap list in this module's own "
                 + "docs page. What follows is accurate to the design as written; exact stats and "
                 + "drop tables may still move before 2.0 ships.", GOLD));
 
         e.add(brk());
-        e.add(sub("CRAVELING"));
+        e.add(sub("KRAVELING"));
         e.add(p("The baseline. An ordinary melee brawler with one twist to its bite: a "
                 + "connecting hit sprays a burst of dry cereal crumbs and has a real chance to "
                 + "leave crumbs underfoot as a short Slowness - as if you are now standing in "
@@ -321,8 +334,8 @@ public final class ManualBook {
         e.add(sub("THE MASCOT"));
         e.add(note("NOT HOSTILE", "The Mascot is registered as a plain creature, not a monster - the odd one out "
                 + "in the family on purpose.", GRASS));
-        e.add(p("Every other member of the family checks for nearby Cravelings and buffs "
-                + "itself off them (any hostile Craveling implements the same shared marker "
+        e.add(p("Every other member of the family checks for nearby Kravelings and buffs "
+                + "itself off them (any hostile Kraveling implements the same shared marker "
                 + "interface), and The Mascot is the one that hands that buff out. Kill it last "
                 + "if you're clearing a group - or leave it, since it never swings at you "
                 + "itself."));
@@ -337,9 +350,9 @@ public final class ManualBook {
         e.add(gal(icon(Items.PRISMARINE_SHARD, "Krave Shard (placeholder render)"),
                 icon(Items.PLAYER_HEAD, "Cereal Mascot Head (placeholder render)")));
 
-        return new ManualChapter("cravelings", 2, "The Cravelings",
+        return new ManualChapter("kravelings", 2, "The Kravelings",
                 "Five mobs, one hostile family, and the one that isn't.",
-                icon(Items.ZOMBIE_SPAWN_EGG, "Craveling"), 0xFF8A5A2A, e);
+                icon(Items.ZOMBIE_SPAWN_EGG, "Kraveling"), 0xFF8A5A2A, e);
     }
 
     // ==========================================================================

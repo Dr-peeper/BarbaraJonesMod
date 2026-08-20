@@ -24,13 +24,13 @@ import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.level.Level;
 
 /**
- * SOGGY - a bloated, waterlogged Craveling. Slow and tanky rather than fast:
+ * SOGGY - a bloated, waterlogged Kraveling. Slow and tanky rather than fast:
  * heavy knockback resistance, a lumbering belly-flop attack
  * ({@link SoggySlamAttackGoal}) instead of a normal swing, and on death it
  * bursts into a milk splash (a vanilla {@link AreaEffectCloud} with
  * Slowness) that punishes anyone who finished it off in melee range.
  */
-public class SoggyEntity extends Monster implements CravelingKin {
+public class SoggyEntity extends Monster implements KravelingKin {
 
     private static final float SPLASH_RADIUS = 3.0F;
     private static final int SPLASH_DURATION = 100; // 5s

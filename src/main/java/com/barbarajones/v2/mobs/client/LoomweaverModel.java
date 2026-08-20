@@ -18,7 +18,7 @@ import net.minecraft.util.Mth;
  * Loomweaver: built from scratch, not the shared humanoid rig - a low
  * clumped-cereal body (abdomen + thorax) riding on eight thin milk-strand
  * legs, the same "low, many-legged thing" silhouette as the brief. Texture:
- * 64x32, laid out as its own sheet (see tools/make_craveling_mobs.ps1).
+ * 64x32, laid out as its own sheet (see tools/make_kraveling_mobs.ps1).
  */
 public class LoomweaverModel extends HierarchicalModel<LoomweaverEntity> {
 

@@ -1,7 +1,7 @@
 package com.barbarajones.v2.mobs.client;
 
 import com.barbarajones.BarbaraJonesMod;
-import com.barbarajones.v2.mobs.entity.CravelingEntity;
+import com.barbarajones.v2.mobs.entity.KravelingEntity;
 
 import net.minecraft.client.model.HumanoidModel;
 import net.minecraft.client.model.geom.ModelLayerLocation;
@@ -16,22 +16,22 @@ import net.minecraft.resources.ResourceLocation;
 import net.minecraft.util.Mth;
 
 /**
- * Craveling: the standard humanoid rig (so it walks/attacks like a person)
+ * Kraveling: the standard humanoid rig (so it walks/attacks like a person)
  * PLUS three blocky "chunk" cubes glued onto the shoulders/chest and one
  * small detached crumb floating just above the head - the silhouette tell
  * that this is a body built out of loose cereal pieces, not a person in a
  * costume. Texture is 64x80: the extra 16 rows below the standard 64x64 skin
- * layout hold the four chunk cubes (see tools/make_craveling_mobs.ps1, which
+ * layout hold the four chunk cubes (see tools/make_kraveling_mobs.ps1, which
  * mirrors every texOffs/size pair below exactly).
  */
-public class CravelingModel extends HumanoidModel<CravelingEntity> {
+public class KravelingModel extends HumanoidModel<KravelingEntity> {
 
     public static final ModelLayerLocation LAYER_LOCATION = new ModelLayerLocation(
-            new ResourceLocation(BarbaraJonesMod.MODID, "craveling"), "main");
+            new ResourceLocation(BarbaraJonesMod.MODID, "kraveling"), "main");
 
     private final ModelPart floatingCrumb;
 
-    public CravelingModel(ModelPart root) {
+    public KravelingModel(ModelPart root) {
         super(root);
         this.floatingCrumb = root.getChild("head").getChild("floating_crumb");
     }
@@ -68,7 +68,7 @@ public class CravelingModel extends HumanoidModel<CravelingEntity> {
     }
 
     @Override
-    public void setupAnim(CravelingEntity entity, float limbSwing, float limbSwingAmount,
+    public void setupAnim(KravelingEntity entity, float limbSwing, float limbSwingAmount,
                           float ageInTicks, float netHeadYaw, float headPitch) {
         super.setupAnim(entity, limbSwing, limbSwingAmount, ageInTicks, netHeadYaw, headPitch);
         // the loose crumb drifts independently of the head's look rotation

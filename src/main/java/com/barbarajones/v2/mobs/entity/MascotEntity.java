@@ -20,7 +20,7 @@ import net.minecraft.world.level.Level;
  * THE MASCOT - a rare, unsettlingly cheerful cereal-box-headed thing. It has
  * NO attack goal and NO target selector at all: it can never hurt the player.
  * Instead {@link MascotBuffAuraGoal} pulses buffs onto every nearby
- * {@link CravelingKin}, and {@link AvoidEntityGoal} makes it bolt the instant
+ * {@link KravelingKin}, and {@link AvoidEntityGoal} makes it bolt the instant
  * a player gets close - "flees when approached" from the brief, using the
  * same vanilla fleeing utility Endermen/foxes use, just aimed permanently at
  * {@link Player}.

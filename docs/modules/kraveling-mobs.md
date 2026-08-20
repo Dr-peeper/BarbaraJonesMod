@@ -1,6 +1,6 @@
-# Craveling Mob Family (`com.barbarajones.v2.mobs`)
+# Kraveling Mob Family (`com.barbarajones.v2.mobs`)
 
-The mod's new common overworld hostile family: CRAVELING (baseline),
+The mod's new common overworld hostile family: KRAVELING (baseline),
 KRISPBONE (ranged skirmisher), LOOMWEAVER (web-trapper), SOGGY (tanky/AoE on
 death), and THE MASCOT (rare, non-hostile buffer/fleer). Everything lives
 under its own package with its own `DeferredRegister`s, per the module rules.
@@ -42,12 +42,12 @@ the forbidden-edit list. This is the one line the orchestrator needs to add.
 ## Registered IDs
 
 **Entities** (`ModMobEntities`, `barbarajones:` namespace):
-`craveling`, `krispbone`, `loomweaver`, `soggy`, `the_mascot` (all spawn-egg
+`kraveling`, `krispbone`, `loomweaver`, `soggy`, `the_mascot` (all spawn-egg
 eligible, `MobCategory.MONSTER`/`CREATURE`), plus `krave_shard`
 (`MobCategory.MISC`, Krispbone's projectile - no spawn egg, no attributes,
 not a `LivingEntity`).
 
-**Items** (`ModMobItems`): `craveling_spawn_egg`, `krispbone_spawn_egg`,
+**Items** (`ModMobItems`): `kraveling_spawn_egg`, `krispbone_spawn_egg`,
 `loomweaver_spawn_egg`, `soggy_spawn_egg`, `the_mascot_spawn_egg`,
 `krave_shard` (also Krispbone's projectile visual/ammo), `cereal_mascot_head`
 (The Mascot's guaranteed trophy drop, `Rarity.EPIC`).
@@ -58,14 +58,14 @@ entry** - it's placed by the mob only, never obtained by a player. Not a gap.
 
 **Sounds** (`ModMobSounds`): four per mob (`_ambient`, `_hurt`, `_death`, plus
 one signature cue - `_step`/`_shoot`/`_web`/`_splash`/`_flee`), 20 total, all
-newly synthesized (see `tools/make_craveling_mobs.ps1`). Entries were added
+newly synthesized (see `tools/make_kraveling_mobs.ps1`). Entries were added
 to the shared `assets/barbarajones/sounds.json` **by hand, append-only** -
 that file isn't on the forbidden list but is a real shared resource; flagging
 it here in case another agent touched it at the same time.
 
 ## Distinct AI per mob (not five `MeleeAttackGoal`s)
 
-- **Craveling** - `CravelingCrumbleAttackGoal` (a `MeleeAttackGoal` override):
+- **Kraveling** - `KravelingCrumbleAttackGoal` (a `MeleeAttackGoal` override):
   connecting hits spray crumb particles and have a 35% chance to apply a
   short Slowness, "crumbs underfoot." Never overrides sun-sensitivity (unlike
   Zombie/Skeleton), so unlike a zombie it does not burn in daylight - a real,
@@ -85,9 +85,9 @@ it here in case another agent touched it at the same time.
   vanilla `AreaEffectCloud` (Slowness, 3-block radius, 5s) - the milk splash.
 - **The Mascot** - NO attack goal, NO target selector, ever.
   `MascotBuffAuraGoal` (no movement/look flags) pulses Speed + Strength every
-  3s onto every `CravelingKin` within 10 blocks; `AvoidEntityGoal<Player>`
+  3s onto every `KravelingKin` within 10 blocks; `AvoidEntityGoal<Player>`
   (vanilla, radius 12) makes it flee the moment a player closes in.
-  `CravelingKin` is a marker interface implemented by the other four mobs
+  `KravelingKin` is a marker interface implemented by the other four mobs
   specifically so this generalizes instead of hard-coding one class.
 
 ## Spawn placement + biome modifier
@@ -105,13 +105,13 @@ convention):
 
 | mob | weight | pack size |
 |---|---|---|
-| craveling | 95 | 1-4 |
+| kraveling | 95 | 1-4 |
 | krispbone | 20 | 1-3 |
 | loomweaver | 30 | 1-2 |
 | soggy | 15 | 1-2 |
 | the_mascot | 2 | 1 |
 
-Craveling's weight/pack-size is a direct zombie-parity match (vanilla zombie
+Kraveling's weight/pack-size is a direct zombie-parity match (vanilla zombie
 is weight 95, 1-4, in most overworld biomes). **Known simplification**:
 vanilla's actual per-biome weights vary (desert has husk instead, swamp
 differs, etc.); this applies one flat weight across the whole
@@ -124,7 +124,7 @@ Standard `minecraft:entity` loot tables under
 `data/barbarajones/loot_tables/entities/` (default lookup by registry name -
 no `getDefaultLootTable()` override needed in Java):
 
-- **craveling**: `minecraft:cocoa_beans` (1-3) + `barbarajones:krave_cereal` (0-2)
+- **kraveling**: `minecraft:cocoa_beans` (1-3) + `barbarajones:krave_cereal` (0-2)
 - **krispbone**: `barbarajones:krave_shard` (1-3) + cocoa beans (0-1)
 - **loomweaver**: `minecraft:string` (0-2, "hardened milk-strands") + krave_cereal (0-1)
 - **soggy**: cocoa beans (0-2) + krave_cereal (0-1) + 15% chance `minecraft:milk_bucket`
@@ -135,8 +135,8 @@ no `getDefaultLootTable()` override needed in Java):
 All five have bespoke geometry (`client/*Model.java` + `*Renderer.java`), not
 reused vanilla layers:
 
-- **Craveling / Krispbone / Soggy / The Mascot**: custom `HumanoidModel`
-  meshes (same pattern as the existing `ManagerModel`) - Craveling adds four
+- **Kraveling / Krispbone / Soggy / The Mascot**: custom `HumanoidModel`
+  meshes (same pattern as the existing `ManagerModel`) - Kraveling adds four
   "chunk" cubes for a blocky cereal-square silhouette, Krispbone replaces
   every box with a genuinely thinner one (hollow ribcage read), Soggy
   enlarges the torso and adds a belly-sag cube, The Mascot replaces the head
@@ -146,7 +146,7 @@ reused vanilla layers:
   a modified biped.
 
 Every texOffs/box-size pair in each `*Model.java` is mirrored exactly (same
-numbers) in `tools/make_craveling_mobs.ps1`'s `Paint-Box` calls - the script
+numbers) in `tools/make_kraveling_mobs.ps1`'s `Paint-Box` calls - the script
 comment documents the shared UV formula. All 8 textures (5 entity skins + 2
 item icons + 1 block texture) were generated and reloaded to verify actual
 pixel dimensions, not just file existence (see the script's `Save-Verify`).
@@ -188,27 +188,27 @@ src/main/java/com/barbarajones/v2/mobs/
   ModMobEntities.java, ModMobItems.java, ModMobSounds.java, ModMobBlocks.java
   MobAttributes.java                - EntityAttributeCreationEvent, own subscriber
   MobSpawnPlacements.java           - SpawnPlacements.register calls
-  entity/CravelingEntity.java, KrispboneEntity.java, LoomweaverEntity.java,
-         SoggyEntity.java, MascotEntity.java, CravelingKin.java
-  entity/ai/CravelingCrumbleAttackGoal.java, KrispboneCombatGoal.java,
+  entity/KravelingEntity.java, KrispboneEntity.java, LoomweaverEntity.java,
+         SoggyEntity.java, MascotEntity.java, KravelingKin.java
+  entity/ai/KravelingCrumbleAttackGoal.java, KrispboneCombatGoal.java,
             LoomweaverWebTrapGoal.java, SoggySlamAttackGoal.java,
             MascotBuffAuraGoal.java
   entity/projectile/KraveShardEntity.java
   block/MilkWebbingBlock.java
-  client/CravelingModel.java, CravelingRenderer.java (+ same x4 more),
+  client/KravelingModel.java, KravelingRenderer.java (+ same x4 more),
          KraveShardRenderer.java, MobsClientSetup.java (own @EventBusSubscriber)
 src/main/resources/assets/barbarajones/
-  textures/entity/{craveling,krispbone,loomweaver,soggy,the_mascot}.png
+  textures/entity/{kraveling,krispbone,loomweaver,soggy,the_mascot}.png
   textures/item/{krave_shard,cereal_mascot_head}.png
   textures/block/milk_webbing.png
   sounds/{20 files - see ModMobSounds.java for the exact list}.ogg
   blockstates/milk_webbing.json, models/block/milk_webbing.json
   models/item/{krave_shard,cereal_mascot_head,*_spawn_egg (x5)}.json
-  lang/craveling_mobs.json
+  lang/kraveling_mobs.json
 data/barbarajones/
-  loot_tables/entities/{craveling,krispbone,loomweaver,soggy,the_mascot}.json
-  forge/biome_modifier/{craveling,krispbone,loomweaver,soggy,the_mascot}_overworld_spawns.json
-tools/make_craveling_mobs.ps1       - textures + sounds, idempotent, self-verifying
+  loot_tables/entities/{kraveling,krispbone,loomweaver,soggy,the_mascot}.json
+  forge/biome_modifier/{kraveling,krispbone,loomweaver,soggy,the_mascot}_overworld_spawns.json
+tools/make_kraveling_mobs.ps1       - textures + sounds, idempotent, self-verifying
 ```
 
 Also touched (shared, not forbidden, append-only):

@@ -1,4 +1,4 @@
-# Textures + sounds for the Craveling mob family (Craveling, Krispbone,
+# Textures + sounds for the Kraveling mob family (Kraveling, Krispbone,
 # Loomweaver, Soggy, The Mascot) plus their flavor items/block.
 #
 # Entity skins use the exact UV math the game itself uses for a cuboid at
@@ -22,7 +22,7 @@ $entityDir  = "$repoRoot\src\main\resources\assets\barbarajones\textures\entity"
 $itemDir    = "$repoRoot\src\main\resources\assets\barbarajones\textures\item"
 $blockDir   = "$repoRoot\src\main\resources\assets\barbarajones\textures\block"
 $soundDir   = "$repoRoot\src\main\resources\assets\barbarajones\sounds"
-$scratch    = "$repoRoot\.tools\craveling_audio_scratch"
+$scratch    = "$repoRoot\.tools\kraveling_audio_scratch"
 New-Item -ItemType Directory -Force $entityDir,$itemDir,$blockDir,$soundDir,$scratch | Out-Null
 
 function C([string]$h,[int]$a=255){
@@ -73,7 +73,7 @@ function Save-Verify($bmp, [string]$path, [int]$expectW, [int]$expectH) {
 }
 
 # ==========================================================================
-# CRAVELING - 64x80. Chunky cereal-square palette: warm browns/tans, a
+# KRAVELING - 64x80. Chunky cereal-square palette: warm browns/tans, a
 # lighter khaki top, dark crevice back/bottom - reads as blocky cereal
 # pieces stacked into a person, not skin.
 # ==========================================================================
@@ -97,11 +97,11 @@ Rct $b 10 14 5 1 (C '3A2510')
 # pieces" better than a flat fill ever could
 $specks = @(@(21,20), @(22,23), @(25,21), @(27,25), @(24,28), @(19,26), @(30,24))
 foreach ($sp in $specks) { Rct $b $sp[0] $sp[1] 1 1 (C '4E3418') }
-Save-Verify $b "$entityDir\craveling.png" 64 80
+Save-Verify $b "$entityDir\kraveling.png" 64 80
 
 # ==========================================================================
 # KRISPBONE - 64x64. Dry, pale, cracked-cereal skeleton: bone-tan base with
-# dark hairline cracks, same standard skin layout as Craveling but every box
+# dark hairline cracks, same standard skin layout as Kraveling but every box
 # is thinner (see KrispboneModel.java).
 # ==========================================================================
 $b = New-Canvas 64 64
@@ -208,6 +208,34 @@ Save-VerifySame $b "$blockDir\milk_webbing.png"
 "textures done"
 
 # ==========================================================================
+# KRAVAJO - 64x32. A toasted cereal flake with paddle wings.
+#
+# The UV map has to match KravajoModel exactly: body at (0,0) 6x3x7, snout at
+# (0,11) 3x2x2, and ONE wing at (0,16) 7x1x6 which the model mirrors for the
+# other side. Small sheet, but the layout is the contract - a texOffs that
+# disagrees with the model is a scrambled mob, not a missing one, so it is
+# easy to miss in a screenshot.
+# ==========================================================================
+$jbase = C 'A8752F'; $jdark = C '6E4718'; $jlight = C 'D6A455'; $jmid = C '8E5F26'
+$b = New-Canvas 64 32
+Paint-Box $b 0 0 6 3 7 $jbase $jdark $jlight $jmid        # flake body
+Paint-Box $b 0 11 3 2 2 $jmid $jdark $jlight $jbase       # snout
+Paint-Box $b 0 16 7 1 6 $jlight $jmid $jlight $jbase      # wing (mirrored in-model)
+
+# Toasted pitting across the top face of the body, so it reads as cereal
+# rather than as a brown box. Deterministic positions: a random scatter
+# regenerates differently on every run and makes the texture un-diffable.
+foreach ($p in @(@(8,2),@(12,4),@(16,3),@(20,5),@(10,6),@(18,7),@(14,1))) {
+    Rct $b $p[0] $p[1] 1 1 $jdark
+}
+# Two tiny bright eyes on the snout, so it has a front.
+Rct $b 3 12 1 1 (C 'FFF0C0'); Rct $b 6 12 1 1 (C 'FFF0C0')
+# A pale vein down the wing to break up the flat paddle.
+Rct $b 2 19 5 1 $jbase
+Save-Verify $b "$entityDir\kravajo.png" 64 32
+
+
+# ==========================================================================
 # SOUNDS - hand-rolled PCM -> WAV -> ffmpeg -> ogg, same approach as
 # tools/make_krave_audio2.ps1. sounds.json entries were added by hand
 # alongside ModMobSounds (see src/main/resources/assets/barbarajones/sounds.json).
@@ -269,8 +297,8 @@ function Build([string]$name, [scriptblock]$gen) {
     "  OK  $name.ogg ($($reread.Length) bytes)"
 }
 
-# ---- Craveling: dry crunchy shuffle/bite ---------------------------------
-function CravelingAmbient() {
+# ---- Kraveling: dry crunchy shuffle/bite ---------------------------------
+function KravelingAmbient() {
     $n = [int]($sampleRate * 0.5)
     $out = New-Object float[] $n
     for ($i = 0; $i -lt $n; $i++) {
@@ -280,7 +308,7 @@ function CravelingAmbient() {
     }
     return $out
 }
-function CravelingHurt() {
+function KravelingHurt() {
     $n = [int]($sampleRate * 0.3)
     $out = New-Object float[] $n
     for ($i = 0; $i -lt $n; $i++) {
@@ -291,7 +319,7 @@ function CravelingHurt() {
     }
     return $out
 }
-function CravelingDeath() {
+function KravelingDeath() {
     $n = [int]($sampleRate * 0.6)
     $out = New-Object float[] $n
     for ($i = 0; $i -lt $n; $i++) {
@@ -301,7 +329,7 @@ function CravelingDeath() {
     }
     return $out
 }
-function CravelingStep() {
+function KravelingStep() {
     $n = [int]($sampleRate * 0.12)
     $out = New-Object float[] $n
     for ($i = 0; $i -lt $n; $i++) {
@@ -504,10 +532,57 @@ function MascotFlee() {
     return $out
 }
 
-Build "craveling_ambient" { CravelingAmbient }
-Build "craveling_hurt" { CravelingHurt }
-Build "craveling_death" { CravelingDeath }
-Build "craveling_step" { CravelingStep }
+# ---- Kravajo: a mosquito with a cereal accent ------------------------------
+# A high buzz with a slow tremolo. The wobble is what makes it read as an
+# insect rather than a tone, and it is deliberately at the pitch that gets
+# under your skin - this mob's entire purpose is to be irritating.
+function KravajoAmbient() {
+    $n = [int]($sampleRate * 0.45)
+    $out = New-Object float[] $n
+    $phase = 0.0
+    for ($i = 0; $i -lt $n; $i++) {
+        $t = $i / $sampleRate
+        $wobble = 1.0 + 0.18 * [Math]::Sin(2.0 * [Math]::PI * 11.0 * $t)
+        $freq = 620.0 * $wobble
+        $phase += 2.0 * [Math]::PI * $freq / $sampleRate
+        $env = [Math]::Min(1.0, $t * 14.0) * [Math]::Exp(-2.2 * $t)
+        # a little square-ish grit so it buzzes instead of humming
+        $s = [Math]::Sin($phase) + 0.28 * [Math]::Sin($phase * 2.0)
+        $out[$i] = $s * 0.22 * $env
+    }
+    return $out
+}
+function KravajoHurt() {
+    $n = [int]($sampleRate * 0.14)
+    $out = New-Object float[] $n
+    $phase = 0.0
+    for ($i = 0; $i -lt $n; $i++) {
+        $t = $i / $sampleRate
+        $freq = 900.0 * [Math]::Exp(-7.0 * $t)   # a squeak that falls away fast
+        $phase += 2.0 * [Math]::PI * $freq / $sampleRate
+        $env = [Math]::Exp(-16.0 * $t)
+        $out[$i] = ([Math]::Sin($phase) * 0.6 + (Noise) * 0.4) * 0.4 * $env
+    }
+    return $out
+}
+# The whiff. Four dives in five deal nothing, so this plays constantly - it is
+# short, dry and quiet on purpose, because a loud miss repeated every few
+# seconds stops being funny very quickly.
+function KravajoMiss() {
+    $n = [int]($sampleRate * 0.10)
+    $out = New-Object float[] $n
+    for ($i = 0; $i -lt $n; $i++) {
+        $t = $i / $sampleRate
+        $env = [Math]::Exp(-24.0 * $t)
+        $out[$i] = (Noise) * 0.30 * $env
+    }
+    return $out
+}
+
+Build "kraveling_ambient" { KravelingAmbient }
+Build "kraveling_hurt" { KravelingHurt }
+Build "kraveling_death" { KravelingDeath }
+Build "kraveling_step" { KravelingStep }
 Build "krispbone_ambient" { KrispboneAmbient }
 Build "krispbone_hurt" { KrispboneHurt }
 Build "krispbone_death" { KrispboneDeath }
@@ -523,6 +598,9 @@ Build "soggy_splash" { SoggySplash }
 Build "mascot_ambient" { MascotAmbient }
 Build "mascot_hurt" { MascotHurt }
 Build "mascot_death" { MascotDeath }
+Build "kravajo_ambient" { KravajoAmbient }
+Build "kravajo_hurt" { KravajoHurt }
+Build "kravajo_miss" { KravajoMiss }
 Build "mascot_flee" { MascotFlee }
 
 Remove-Item -Recurse -Force $scratch

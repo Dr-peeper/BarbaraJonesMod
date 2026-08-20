@@ -32,7 +32,7 @@ import net.minecraft.world.level.Level;
  * is copied deliberately from {@code Spider}, since it is exactly the "many
  * legged thing that isn't afraid of walls" behaviour the brief wants.
  */
-public class LoomweaverEntity extends Monster implements CravelingKin {
+public class LoomweaverEntity extends Monster implements KravelingKin {
 
     private static final EntityDataAccessor<Byte> DATA_FLAGS =
             SynchedEntityData.defineId(LoomweaverEntity.class, EntityDataSerializers.BYTE);

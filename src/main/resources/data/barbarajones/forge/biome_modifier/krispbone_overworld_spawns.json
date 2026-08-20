@@ -3,7 +3,7 @@
   "biomes": "#minecraft:is_overworld",
   "spawners": {
     "type": "barbarajones:krispbone",
-    "weight": 20,
+    "weight": 40,
     "minCount": 1,
     "maxCount": 3
   }

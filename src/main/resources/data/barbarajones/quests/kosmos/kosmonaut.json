@@ -6,7 +6,7 @@
   "icon": "barbarajones:krave_tether",
   "x": 0,
   "y": 3,
-  "dependencies": [ "barbarajones:kosmos/cravelings", "barbarajones:kosmos/deep_krave" ],
+  "dependencies": [ "barbarajones:kosmos/kravelings", "barbarajones:kosmos/deep_krave" ],
   "auto_claim": true,
   "rewards": [
     { "type": "schematic", "schematic": "barbarajones:kosmic_gate" },

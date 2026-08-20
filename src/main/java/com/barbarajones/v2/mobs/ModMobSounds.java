@@ -10,7 +10,7 @@ import net.minecraftforge.registries.RegistryObject;
 
 /**
  * This module's OWN sound registry. Every clip is synthesized by
- * {@code tools/make_craveling_mobs.ps1} - see docs/modules/craveling-mobs.md.
+ * {@code tools/make_kraveling_mobs.ps1} - see docs/modules/kraveling-mobs.md.
  */
 public final class ModMobSounds {
 
@@ -24,11 +24,11 @@ public final class ModMobSounds {
                 new ResourceLocation(BarbaraJonesMod.MODID, name)));
     }
 
-    // Craveling
-    public static final RegistryObject<SoundEvent> CRAVELING_AMBIENT = reg("craveling_ambient");
-    public static final RegistryObject<SoundEvent> CRAVELING_HURT    = reg("craveling_hurt");
-    public static final RegistryObject<SoundEvent> CRAVELING_DEATH   = reg("craveling_death");
-    public static final RegistryObject<SoundEvent> CRAVELING_STEP    = reg("craveling_step");
+    // Kraveling
+    public static final RegistryObject<SoundEvent> KRAVELING_AMBIENT = reg("kraveling_ambient");
+    public static final RegistryObject<SoundEvent> KRAVELING_HURT    = reg("kraveling_hurt");
+    public static final RegistryObject<SoundEvent> KRAVELING_DEATH   = reg("kraveling_death");
+    public static final RegistryObject<SoundEvent> KRAVELING_STEP    = reg("kraveling_step");
 
     // Krispbone
     public static final RegistryObject<SoundEvent> KRISPBONE_AMBIENT = reg("krispbone_ambient");
@@ -47,6 +47,10 @@ public final class ModMobSounds {
     public static final RegistryObject<SoundEvent> SOGGY_HURT    = reg("soggy_hurt");
     public static final RegistryObject<SoundEvent> SOGGY_DEATH   = reg("soggy_death");
     public static final RegistryObject<SoundEvent> SOGGY_SPLASH  = reg("soggy_splash");
+
+    public static final RegistryObject<SoundEvent> KRAVAJO_AMBIENT = reg("kravajo_ambient");
+    public static final RegistryObject<SoundEvent> KRAVAJO_HURT    = reg("kravajo_hurt");
+    public static final RegistryObject<SoundEvent> KRAVAJO_MISS    = reg("kravajo_miss");
 
     // The Mascot
     public static final RegistryObject<SoundEvent> MASCOT_AMBIENT = reg("mascot_ambient");

@@ -14,7 +14,7 @@ import net.minecraftforge.registries.RegistryObject;
  *
  * <p>Deliberately has NO BlockItem and NO creative-tab entry - it is placed
  * by Loomweaver only, never obtained by a player. That is intentional, not a
- * gap; see docs/modules/craveling-mobs.md.
+ * gap; see docs/modules/kraveling-mobs.md.
  */
 public final class ModMobBlocks {
 

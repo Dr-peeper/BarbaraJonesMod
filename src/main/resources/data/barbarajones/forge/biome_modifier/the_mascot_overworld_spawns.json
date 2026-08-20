@@ -3,7 +3,7 @@
   "biomes": "#minecraft:is_overworld",
   "spawners": {
     "type": "barbarajones:the_mascot",
-    "weight": 2,
+    "weight": 4,
     "minCount": 1,
     "maxCount": 1
   }

@@ -1,7 +1,8 @@
 package com.barbarajones.v2.mobs;
 
 import com.barbarajones.BarbaraJonesMod;
-import com.barbarajones.v2.mobs.entity.CravelingEntity;
+import com.barbarajones.v2.mobs.entity.KravajoEntity;
+import com.barbarajones.v2.mobs.entity.KravelingEntity;
 import com.barbarajones.v2.mobs.entity.KrispboneEntity;
 import com.barbarajones.v2.mobs.entity.LoomweaverEntity;
 import com.barbarajones.v2.mobs.entity.MascotEntity;
@@ -30,11 +31,11 @@ public final class ModMobEntities {
 
     private ModMobEntities() { }
 
-    public static final RegistryObject<EntityType<CravelingEntity>> CRAVELING =
-            ENTITIES.register("craveling", () -> EntityType.Builder
-                    .of(CravelingEntity::new, MobCategory.MONSTER)
+    public static final RegistryObject<EntityType<KravelingEntity>> KRAVELING =
+            ENTITIES.register("kraveling", () -> EntityType.Builder
+                    .of(KravelingEntity::new, MobCategory.MONSTER)
                     .sized(0.6F, 1.95F).clientTrackingRange(10)
-                    .build("craveling"));
+                    .build("kraveling"));
 
     public static final RegistryObject<EntityType<KrispboneEntity>> KRISPBONE =
             ENTITIES.register("krispbone", () -> EntityType.Builder
@@ -53,6 +54,13 @@ public final class ModMobEntities {
                     .of(SoggyEntity::new, MobCategory.MONSTER)
                     .sized(0.75F, 1.8F).clientTrackingRange(10)
                     .build("soggy"));
+
+    /** The sky flea. Flying, harmless, everywhere. */
+    public static final RegistryObject<EntityType<KravajoEntity>> KRAVAJO =
+            ENTITIES.register("kravajo", () -> EntityType.Builder
+                    .of(KravajoEntity::new, MobCategory.MONSTER)
+                    .sized(0.6F, 0.5F).clientTrackingRange(8).updateInterval(2)
+                    .build("kravajo"));
 
     public static final RegistryObject<EntityType<MascotEntity>> MASCOT =
             ENTITIES.register("the_mascot", () -> EntityType.Builder

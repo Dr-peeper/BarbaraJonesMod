@@ -20,7 +20,7 @@ import net.minecraft.util.Mth;
  * waterlogged barrel and a sagging belly cube tacked on the front - the
  * "bloated, waterlogged" read from the brief. Texture 64x96: rows 64-96 hold
  * the oversized body and the belly bulge, since both are bigger than the
- * vanilla body's UV allocation (see tools/make_craveling_mobs.ps1).
+ * vanilla body's UV allocation (see tools/make_kraveling_mobs.ps1).
  */
 public class SoggyModel extends HumanoidModel<SoggyEntity> {
 

@@ -6,7 +6,7 @@ import net.minecraft.world.entity.monster.Monster;
 import net.minecraft.world.level.levelgen.Heightmap;
 
 /**
- * Registers where/how each Craveling-family mob is allowed to spawn.
+ * Registers where/how each Kraveling-family mob is allowed to spawn.
  * {@code SpawnPlacements.register} must run exactly once per entity type and
  * has no natural "registration event" of its own, so {@link Mobs#init} calls
  * {@link #register()} from an {@code FMLCommonSetupEvent} listener - the
@@ -24,7 +24,7 @@ public final class MobSpawnPlacements {
     private MobSpawnPlacements() { }
 
     static void register() {
-        SpawnPlacements.register(ModMobEntities.CRAVELING.get(),
+        SpawnPlacements.register(ModMobEntities.KRAVELING.get(),
                 SpawnPlacements.Type.ON_GROUND, Heightmap.Types.MOTION_BLOCKING_NO_LEAVES,
                 Monster::checkMonsterSpawnRules);
 
@@ -43,5 +43,12 @@ public final class MobSpawnPlacements {
         SpawnPlacements.register(ModMobEntities.MASCOT.get(),
                 SpawnPlacements.Type.ON_GROUND, Heightmap.Types.MOTION_BLOCKING_NO_LEAVES,
                 Mob::checkMobSpawnRules);
+
+        // Spawns in open air rather than ON_GROUND, and with no light check: it
+        // is a pest, not a night monster, and gating it on darkness would make
+        // the one mob you are meant to meet constantly the one you rarely see.
+        SpawnPlacements.register(ModMobEntities.KRAVAJO.get(),
+                SpawnPlacements.Type.NO_RESTRICTIONS, Heightmap.Types.MOTION_BLOCKING_NO_LEAVES,
+                (type, level, reason, pos, rand) -> level.getBlockState(pos).isAir());
     }
 }

@@ -29,7 +29,7 @@ import net.minecraft.world.phys.Vec3;
  * single arrows, and it kites rather than closing to melee - see
  * {@link KrispboneCombatGoal}, its only combat goal.
  */
-public class KrispboneEntity extends Monster implements CravelingKin {
+public class KrispboneEntity extends Monster implements KravelingKin {
 
     public KrispboneEntity(EntityType<? extends KrispboneEntity> type, Level level) {
         super(type, level);

@@ -3,7 +3,7 @@
   "biomes": "#minecraft:is_overworld",
   "spawners": {
     "type": "barbarajones:loomweaver",
-    "weight": 30,
+    "weight": 60,
     "minCount": 1,
     "maxCount": 2
   }

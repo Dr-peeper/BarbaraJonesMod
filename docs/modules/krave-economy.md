@@ -12,7 +12,7 @@ and its own creative tab. There is nothing else the orchestrator needs to call.
 
 ## The loop this module builds
 
-> kill Cravelings -> pick up Cocoa Beans (+ maybe a Krave box) -> craft Cocoa
+> kill Kravelings -> pick up Cocoa Beans (+ maybe a Krave box) -> craft Cocoa
 > Beans + Wheat/Sugar into **Krave** (Krave Cereal) -> grind spare Cocoa Beans
 > into **Krave Dust** by hand at a **Krave Mortar** -> upgrade Krave Dust +
 > Krave + Krave Milk into **Rich Krave** -> spend Krave/Rich Krave/Golden
@@ -24,7 +24,7 @@ plain-English tooltip or in-world chat/actionbar line explaining what to do
 with it (see "UX, no wiki required" below). No advancements are registered
 here on purpose - the quest module owns progression tracking.
 
-**No mob module exists yet.** This module assumes a "Craveling" (or whatever
+**No mob module exists yet.** This module assumes a "Kraveling" (or whatever
 the mob module ends up calling it) will drop `minecraft:cocoa_beans` (and,
 rarely, `barbarajones:krave_cereal` or `barbarajones:krave_dust`) on death.
 No such mob or loot table exists anywhere in the repo as of this writing -
@@ -204,7 +204,7 @@ separate `item.barbarajones.krave_mortar` key is needed.)
 Starting from nothing:
 
 1. Punch/gather wood, get a crafting table + basic tools - unchanged, vanilla pace.
-2. Kill a couple of Cravelings (once that mob exists) or find wild cocoa pods:
+2. Kill a couple of Kravelings (once that mob exists) or find wild cocoa pods:
    a handful of Cocoa Beans is enough for several Krave Cereal
    (`krave_cereal.json` is already 1 cocoa bean per 2 cereal - cheap).
 3. Eat Krave Cereal to stay fed while building - it is a real food (nutrition
@@ -227,7 +227,7 @@ and a little milk/sugar to work with.
 
 ## Honest gaps - what this module did NOT finish
 
-- **No Craveling mob exists yet.** The "kill Cravelings -> get cocoa and
+- **No Kraveling mob exists yet.** The "kill Kravelings -> get cocoa and
   Krave" half of the loop has nothing to kill. This module cannot create that
   mob (out of scope) and only assumes a `minecraft:cocoa_beans` drop.
 - **Schematics and village upgrades are not built here.** The task's loop

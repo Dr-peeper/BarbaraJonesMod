@@ -16,7 +16,7 @@ import net.minecraft.resources.ResourceLocation;
 
 /**
  * Krispbone: same standard humanoid texture layout as
- * {@link CravelingModel} (64x64, no extra rows needed) but with the torso and
+ * {@link KravelingModel} (64x64, no extra rows needed) but with the torso and
  * all four limbs replaced by genuinely narrower boxes - a real geometry
  * difference, not a reskin, reading as a dry hollow ribcage-and-bone frame
  * rather than a full body. The head keeps its normal box (painted as a

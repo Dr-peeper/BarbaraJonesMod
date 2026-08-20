@@ -97,11 +97,11 @@ source immediately before being written, listed per chapter:
    ascension gate on death), `apocalypse/KraveApocalypse.java` (the ten
    stages), `housing/HousingValidator.java` (the six housing constants,
    confirmed unchanged: `MIN_VOLUME=30`, `MIN_LIGHT=8`).
-2. **Cravelings** - `v2/mobs/ModMobEntities.java`, `ModMobItems.java`,
+2. **Kravelings** - `v2/mobs/ModMobEntities.java`, `ModMobItems.java`,
    `ModMobBlocks.java`, and all four `entity/ai/*Goal.java` files for each
    mob's signature move. **Honest gap, flagged in the chapter itself:** the
    five entity classes those files reference
-   (`CravelingEntity`/`KrispboneEntity`/`LoomweaverEntity`/`SoggyEntity`/
+   (`KravelingEntity`/`KrispboneEntity`/`LoomweaverEntity`/`SoggyEntity`/
    `MascotEntity`) did not exist anywhere in the repo as Java source at the
    time this was written, and no loot table for any of them exists under
    `data/barbarajones/loot_tables/`. The chapter is accurate to the goal
@@ -197,7 +197,7 @@ source immediately before being written, listed per chapter:
 
 Being straightforward per the module-doc rule:
 
-- **The Craveling family (chapter 2) is written against goal-file design,
+- **The Kraveling family (chapter 2) is written against goal-file design,
   not a working build** - the entity classes and loot tables do not exist
   in the repo yet. See item 2 above. Illustrations for that chapter use
   vanilla placeholder items and say so on the page.

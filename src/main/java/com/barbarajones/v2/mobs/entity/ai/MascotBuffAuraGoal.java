@@ -1,6 +1,6 @@
 package com.barbarajones.v2.mobs.entity.ai;
 
-import com.barbarajones.v2.mobs.entity.CravelingKin;
+import com.barbarajones.v2.mobs.entity.KravelingKin;
 import com.barbarajones.v2.mobs.entity.MascotEntity;
 
 import net.minecraft.core.particles.ParticleTypes;
@@ -16,7 +16,7 @@ import java.util.List;
 
 /**
  * The Mascot never fights - instead, every few seconds it pulses Speed and
- * Strength onto every {@link CravelingKin} within range, hyping up the rest
+ * Strength onto every {@link KravelingKin} within range, hyping up the rest
  * of the family. Empty flag set: it never claims movement/look control, so it
  * runs quietly alongside {@code AvoidEntityGoal} (the actual fleeing).
  */
@@ -52,7 +52,7 @@ public class MascotBuffAuraGoal extends Goal {
 
         AABB area = mascot.getBoundingBox().inflate(RADIUS);
         List<LivingEntity> kin = mascot.level().getEntitiesOfClass(LivingEntity.class, area,
-                e -> e instanceof CravelingKin && e.isAlive());
+                e -> e instanceof KravelingKin && e.isAlive());
 
         if (kin.isEmpty()) {
             return;

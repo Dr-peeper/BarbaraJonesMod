@@ -1,7 +1,7 @@
 package com.barbarajones.v2.mobs;
 
 import com.barbarajones.BarbaraJonesMod;
-import com.barbarajones.v2.mobs.entity.CravelingEntity;
+import com.barbarajones.v2.mobs.entity.KravelingEntity;
 import com.barbarajones.v2.mobs.entity.KrispboneEntity;
 import com.barbarajones.v2.mobs.entity.LoomweaverEntity;
 import com.barbarajones.v2.mobs.entity.MascotEntity;
@@ -12,7 +12,7 @@ import net.minecraftforge.eventbus.api.SubscribeEvent;
 import net.minecraftforge.fml.common.Mod;
 
 /**
- * Binds each of the five Craveling-family mobs to its attribute supplier.
+ * Binds each of the five Kraveling-family mobs to its attribute supplier.
  * {@code EntityAttributeCreationEvent} is a normal Forge event with no
  * "one subscriber only" restriction, so this lives entirely in its own class
  * rather than touching the shared {@code content.ModEntityAttributes} - every
@@ -31,10 +31,11 @@ public final class MobAttributes {
 
     @SubscribeEvent
     public static void createAttributes(EntityAttributeCreationEvent event) {
-        event.put(ModMobEntities.CRAVELING.get(), CravelingEntity.createAttributes().build());
+        event.put(ModMobEntities.KRAVELING.get(), KravelingEntity.createAttributes().build());
         event.put(ModMobEntities.KRISPBONE.get(), KrispboneEntity.createAttributes().build());
         event.put(ModMobEntities.LOOMWEAVER.get(), LoomweaverEntity.createAttributes().build());
         event.put(ModMobEntities.SOGGY.get(), SoggyEntity.createAttributes().build());
+        event.put(ModMobEntities.KRAVAJO.get(), com.barbarajones.v2.mobs.entity.KravajoEntity.createAttributes().build());
         event.put(ModMobEntities.MASCOT.get(), MascotEntity.createAttributes().build());
         // KRAVE_SHARD (MISC, plain Projectile) is not a LivingEntity - no attributes needed.
     }

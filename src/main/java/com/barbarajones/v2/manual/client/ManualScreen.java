@@ -114,7 +114,7 @@ public class ManualScreen extends Screen {
     private void relayout() {
         if (this.chapter >= 0 && this.contentW > 20 && this.contentH > 20) {
             ManualChapter c = ManualBook.CHAPTERS.get(this.chapter);
-            this.pages = Paginator.paginate(this.font, c.elements(), this.contentW - 8, this.contentH - 4);
+            this.pages = Paginator.paginate(this.font, elementsOf(c), this.contentW - 8, this.contentH - 4);
             this.page = Mth.clamp(this.page, 0, this.pages.size() - 1);
         } else {
             this.pages = List.of();
@@ -407,7 +407,7 @@ public class ManualScreen extends Screen {
         tilePaper(g, this.contentX, this.contentY, this.contentW, this.contentH);
         Paginator.Page pg = this.pages.get(Mth.clamp(this.page, 0, this.pages.size() - 1));
         ManualChapter c = ManualBook.CHAPTERS.get(this.chapter);
-        List<PageElement> els = c.elements();
+        List<PageElement> els = elementsOf(c);
         int x = this.contentX + 4;
         int w = this.contentW - 8;
         for (int i = 0; i < pg.elementIndices().size(); i++) {
@@ -579,5 +579,14 @@ public class ManualScreen extends Screen {
             }
         }
         return super.keyPressed(keyCode, scanCode, modifiers);
+    }
+    /**
+     * The contents of a chapter. Everything in the book is static except the
+     * recipe index, which is generated from the live recipe manager each time it
+     * is opened. It cannot be built with the rest of the book, because that
+     * happens at class-init, long before any recipe exists to be read.
+     */
+    private static List<PageElement> elementsOf(ManualChapter c) {
+        return RecipeIndex.CHAPTER_ID.equals(c.id()) ? RecipeIndex.build() : c.elements();
     }
 }

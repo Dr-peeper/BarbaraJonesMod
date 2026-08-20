@@ -1,6 +1,7 @@
 # Refuse to build an entity that nothing can draw. See tools/check_renderers.ps1.
 & (Join-Path $PSScriptRoot "tools/check_renderers.ps1")
 & (Join-Path $PSScriptRoot "tools/check_module_init.ps1")
+& (Join-Path $PSScriptRoot "tools/check_creative_tabs.ps1")
 # Builds the 1.20.1 mod. Uses the JDK 17 in .tools and a memory-capped Gradle,
 # because this machine is tight on RAM.
 #
@@ -18,14 +19,14 @@ if (-not (Test-Path $jdk)) {
 
 $env:JAVA_HOME = $jdk
 $env:Path = "$jdk\bin;$env:Path"
-$env:GRADLE_OPTS = '-Xmx900m -Dorg.gradle.daemon=false'
+$env:GRADLE_OPTS = '-Xmx1200m -Dorg.gradle.daemon=false'
 # reobfJar shells out to the Forge renamer as a SEPARATE java process, which does
 # not inherit GRADLE_OPTS - it takes the JVM default heap of a quarter of RAM, and
 # on this machine Windows cannot commit that much ("The paging file is too small
 # for this operation to complete"). JAVA_TOOL_OPTIONS is read by every JVM that
 # starts, so it caps the child too. Gradle keeps its bigger heap because its own
 # explicit -Xmx is applied after this one.
-$env:JAVA_TOOL_OPTIONS = '-Xmx512m'
+$env:JAVA_TOOL_OPTIONS = '-Xmx768m'
 
 Set-Location $root
 $gradle = Join-Path $root '.tools\gradle\gradle-8.1.1\bin\gradle.bat'

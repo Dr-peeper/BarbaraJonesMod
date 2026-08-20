@@ -19,7 +19,7 @@ import net.minecraftforge.fml.event.lifecycle.FMLCommonSetupEvent;
  * ({@code client.MobsClientSetup}) register themselves via
  * {@code @Mod.EventBusSubscriber} and need no call from here.
  *
- * <p>See docs/modules/craveling-mobs.md for what else the orchestrator needs
+ * <p>See docs/modules/kraveling-mobs.md for what else the orchestrator needs
  * to wire (the creative tab entry, spawn eggs into it, this call itself).
  */
 public final class Mobs {
