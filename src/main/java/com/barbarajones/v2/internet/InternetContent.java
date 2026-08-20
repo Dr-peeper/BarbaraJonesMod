@@ -107,8 +107,14 @@ public final class InternetContent {
      * at even though there is nothing else to do here yet.
      */
     public static void init(IEventBus bus) {
-        // Registration itself happens via ITEMS/BLOCKS/ENTITIES.register(bus),
-        // called directly by the orchestrator (see the class javadoc). Nothing
-        // else to do at mod-construction time.
+        // This used to be empty, on the assumption the orchestrator would call
+        // the three registers itself. It did not - it called init(), which did
+        // nothing, so no item, block or entity in this module was ever
+        // registered and the attribute handler below NPE.d on internet_manager
+        // before the title screen. The contract is that init(bus) registers
+        // everything the module owns; it does.
+        ITEMS.register(bus);
+        BLOCKS.register(bus);
+        ENTITIES.register(bus);
     }
 }
