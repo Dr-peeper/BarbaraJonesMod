@@ -87,8 +87,21 @@ public class KraveDoorBlock extends DoorBlock {
         return InteractionResult.sidedSuccess(level.isClientSide);
     }
 
+    /**
+     * The Kosmos side keeps the old flat 3x3 frame - it has to, since that's
+     * all {@link #buildReturnPortal} ever puts down. The overworld side now
+     * needs a real enclosed chocolate room around the door, not just a
+     * frame someone could build in open air with nothing behind it.
+     */
     private boolean isFrameComplete(Level level, BlockPos lowerPos, BlockState lowerState) {
         Direction facing = lowerState.getValue(FACING);
+        if (level.dimension().equals(KraveDimensions.KRAVE_KOSMOS)) {
+            return isFlatFrameComplete(level, lowerPos, facing);
+        }
+        return isChocolateRoomComplete(level, lowerPos, facing);
+    }
+
+    private boolean isFlatFrameComplete(Level level, BlockPos lowerPos, Direction facing) {
         Direction side = facing.getClockWise();
 
         BlockPos left = lowerPos.relative(side.getOpposite());
@@ -97,6 +110,45 @@ public class KraveDoorBlock extends DoorBlock {
         return isKraveBlock(level, lowerPos.above(2))
                 && isKraveBlock(level, left) && isKraveBlock(level, left.above()) && isKraveBlock(level, left.above(2))
                 && isKraveBlock(level, right) && isKraveBlock(level, right.above()) && isKraveBlock(level, right.above(2));
+    }
+
+    /**
+     * A fully enclosed 3-wide x 3-deep x 3-tall chocolate room, door set into
+     * the middle of one wall - floor and roof included, only the one column
+     * directly behind the door left hollow to actually stand in. Tried on
+     * both sides of the door plane, since a player building this has no way
+     * to know which way {@code FACING} happens to point.
+     */
+    private boolean isChocolateRoomComplete(Level level, BlockPos lowerPos, Direction doorFacing) {
+        return isRoomExtending(level, lowerPos, doorFacing)
+                || isRoomExtending(level, lowerPos, doorFacing.getOpposite());
+    }
+
+    private boolean isRoomExtending(Level level, BlockPos lowerPos, Direction into) {
+        Direction side = into.getClockWise();
+        for (int depth = 0; depth <= 2; depth++) {
+            for (int across = -1; across <= 1; across++) {
+                for (int row = -1; row <= 3; row++) {
+                    BlockPos cell = lowerPos.relative(into, depth).relative(side, across).above(row);
+                    boolean isFloorOrRoof = row == -1 || row == 3;
+                    boolean isDoorCell = !isFloorOrRoof && depth == 0 && across == 0 && row <= 1;
+                    boolean isInterior = !isFloorOrRoof && !isDoorCell && depth == 1 && across == 0;
+
+                    if (isDoorCell) {
+                        if (!level.getBlockState(cell).is(ModBlocks.KRAVE_DOOR.get())) {
+                            return false;
+                        }
+                    } else if (isInterior) {
+                        if (level.getBlockState(cell).blocksMotion()) {
+                            return false;   // has to actually be a room, not a solid block that happens to pass the shell check
+                        }
+                    } else if (!isKraveBlock(level, cell)) {
+                        return false;
+                    }
+                }
+            }
+        }
+        return true;
     }
 
     private boolean isKraveBlock(Level level, BlockPos pos) {
@@ -118,7 +170,14 @@ public class KraveDoorBlock extends DoorBlock {
         persist.putDouble("KraveReturnY", player.getY());
         persist.putDouble("KraveReturnZ", player.getZ());
 
-        Vec3 landing = KraveLanding.findLanding(dest, KraveDimensions.PORTAL_LANDING, 6)
+        // radius 3 (covers the return portal's full reach: 2 blocks behind the
+        // landing spot, plus 1 either side for the frame), height variance 2
+        // (tolerates gentle unevenness, rejects a mountain peak/slope or a
+        // crevice floor), clearance 4 (room for the player plus the 3-tall
+        // frame above). Falls back to the plain search, then the fixed point,
+        // rather than ever leaving a player stuck mid-interaction.
+        Vec3 landing = KraveLanding.findClearLanding(dest, KraveDimensions.PORTAL_LANDING, 10, 3, 2, 4)
+                .or(() -> KraveLanding.findLanding(dest, KraveDimensions.PORTAL_LANDING, 6))
                 .orElse(KraveDimensions.PORTAL_LANDING);
         ensureLandingBoxesExist(dest, landing);
         buildReturnPortal(dest, landing, player.getYRot());
@@ -154,6 +213,16 @@ public class KraveDoorBlock extends DoorBlock {
      * player's persisted arrival point and step them back to it. Only
      * reachable by opening a COMPLETE frame (see use() above), so it can't
      * be triggered by a lone door someone dropped somewhere.
+     *
+     * <p>Goes through {@code changeDimension}/{@code ITeleporter}, the same
+     * mechanism {@link #enterKosmos} uses, rather than the simpler {@code
+     * Player#teleportTo(ServerLevel, ...)} this used to call - that more
+     * primitive path was cutting off the door-open sound queued a moment
+     * earlier in {@code use()}: it does a harder, more immediate level swap
+     * than the portal-teleporter path does, and apparently doesn't give the
+     * sound packet time to actually reach the client before the dimension
+     * changes out from under it. Entering never had this problem because it
+     * already went through {@code changeDimension}.
      */
     private void returnHome(ServerPlayer player) {
         CompoundTag data = player.getPersistentData();
@@ -175,10 +244,19 @@ public class KraveDoorBlock extends DoorBlock {
         double x = persist.getDouble("KraveReturnX");
         double y = persist.getDouble("KraveReturnY");
         double z = persist.getDouble("KraveReturnZ");
+        Vec3 target = new Vec3(x, y, z);
+        float yRot = player.getYRot();
+        float xRot = player.getXRot();
 
         List<Entity> escort = com.barbarajones.dimension.PetEscort.gather(player);
-        player.teleportTo(dest, x, y, z, player.getYRot(), player.getXRot());
-        com.barbarajones.dimension.PetEscort.deliver(escort, dest, new Vec3(x, y, z));
+        player.changeDimension(dest, new ITeleporter() {
+            @Override
+            public PortalInfo getPortalInfo(Entity entity, ServerLevel destLevel,
+                                            java.util.function.Function<ServerLevel, PortalInfo> defaultPortalInfo) {
+                return new PortalInfo(target, Vec3.ZERO, yRot, xRot);
+            }
+        });
+        com.barbarajones.dimension.PetEscort.deliver(escort, dest, target);
     }
 
     /**
@@ -216,11 +294,26 @@ public class KraveDoorBlock extends DoorBlock {
         dest.setBlock(doorLower.above(), doorState.setValue(HALF, DoubleBlockHalf.UPPER), 3);
     }
 
-    /** The Kosmos always has exactly one Krave Monster - spawn him near the boss island the first time. */
+    /**
+     * The Kosmos always has exactly one Krave Monster on door-entry - spawn
+     * him near the boss island the first time, never again after that as
+     * long as he's alive.
+     *
+     * <p>{@code Level#getEntity(UUID)} only finds entities in currently
+     * LOADED chunks - if nobody has been near the den for a while, its
+     * chunks unload and he'd read as "not found" even though he's still
+     * alive out there, which meant a fresh one got spawned on every single
+     * entry instead of just the first. Force-loading his home chunk first
+     * (the same one-line trick {@code KraveLanding} already uses for
+     * terrain) fixes the common case - him just standing near where he
+     * spawned, not actively chasing a player somewhere else entirely.
+     */
     private void ensureBossExists(ServerLevel kosmos) {
         KraveKosmosData data = KraveKosmosData.get(kosmos);
         var id = data.getBossId();
         if (id != null) {
+            Vec3 den = KraveDimensions.BOSS_ISLAND;
+            kosmos.getChunkAt(BlockPos.containing(den.x, den.y, den.z));
             var existing = kosmos.getEntity(id);
             if (existing instanceof KraveMonster monster && monster.isAlive()) {
                 return;

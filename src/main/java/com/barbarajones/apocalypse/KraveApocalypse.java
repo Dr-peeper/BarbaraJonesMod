@@ -523,21 +523,17 @@ public class KraveApocalypse {
             }
         }
 
-        // STAGE 10: the Krave Monster himself crawls out of the ruin - the same
-        // one who lives in the Krave Kosmos, pulled here rather than duplicated.
+        // STAGE 10: the Krave Monster himself crawls out of the ruin. Always a
+        // fresh one, even if the Kosmos-resident boss is alive and well - the
+        // 10th death is its own encounter, not a relocation of whatever's
+        // already out there.
         if (this.stage >= 10) {
             Vec3 spawnAt = new Vec3(this.pos.x, this.pos.y + 1.0D, this.pos.z);
-            KraveMonster monster = com.barbarajones.dimension.KraveKosmosData
-                    .pullBossToOverworld(this.level.getServer(), this.level, spawnAt);
-            if (monster == null) {
-                monster = ModEntities.KRAVE_MONSTER.get().create(this.level);
-                if (monster != null) {
-                    monster.setForm(com.barbarajones.EventHandler.nextKraveForm(this.owner));
-                }
-                if (monster != null) {
-                    monster.setPos(spawnAt.x, spawnAt.y, spawnAt.z);
-                    this.level.addFreshEntity(monster);
-                }
+            KraveMonster monster = ModEntities.KRAVE_MONSTER.get().create(this.level);
+            if (monster != null) {
+                monster.setForm(com.barbarajones.EventHandler.nextKraveForm(this.owner));
+                monster.setPos(spawnAt.x, spawnAt.y, spawnAt.z);
+                this.level.addFreshEntity(monster);
             }
             if (monster != null) {
                 monster.setTarget(this.owner);
