@@ -12,6 +12,7 @@ import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.network.chat.Component;
 import net.minecraft.resources.ResourceLocation;
+import net.minecraft.world.item.ItemStack;
 import net.minecraft.util.Mth;
 
 import javax.annotation.Nullable;
@@ -451,6 +452,25 @@ public class QuestTreeScreen extends Screen {
             y += 4;
         }
 
+
+        // How do I actually make this? The tasks name an item; without the grid
+        // the player has to leave the game to find out, which is exactly the
+        // complaint the old book earned.
+        for (ResourceLocation craftable : QuestRecipes.craftables(quest)) {
+            QuestRecipes.Grid grid = QuestRecipes.forItem(craftable);
+            if (grid == null) {
+                continue;   // not craftable - a drop or a reward, nothing to show
+            }
+            gfx.drawString(this.font, Component.translatable(
+                            grid.shapeless() ? "screen.barbarajones.quests.recipe_shapeless"
+                                             : "screen.barbarajones.quests.recipe",
+                            grid.result().getHoverName())
+                    .copy().withStyle(ChatFormatting.GOLD), x, y, C_TEXT, false);
+            y += 12;
+            y = renderGrid(gfx, grid, x + 2, y, mouseX, mouseY);
+            y += 6;
+        }
+
         // Why is this shut? Named, with a tick against the ones already done.
         if (ClientQuests.status(quest) == ClientQuests.Status.LOCKED) {
             Component header = quest.minDependencies < quest.dependencies.size()
@@ -641,5 +661,63 @@ public class QuestTreeScreen extends Screen {
     @Override
     public boolean isPauseScreen() {
         return false;
+    }
+
+    /**
+     * Draw a 3x3 crafting grid, an arrow, and the result. Returns the y the
+     * caller should continue at.
+     *
+     * <p>Empty trailing rows are skipped: a two-ingredient shapeless recipe draws
+     * one row, not three empty ones. The panel is narrow and vertical space is
+     * the scarce thing here.
+     */
+    private int renderGrid(GuiGraphics gfx, QuestRecipes.Grid grid, int x, int y, int mouseX, int mouseY) {
+        final int cell = 18;
+
+        int rows = 1;
+        for (int r = 0; r < 3; r++) {
+            for (int c = 0; c < 3; c++) {
+                if (!grid.cells()[r * 3 + c].isEmpty()) {
+                    rows = r + 1;
+                }
+            }
+        }
+
+        ItemStack hovered = ItemStack.EMPTY;
+        for (int r = 0; r < rows; r++) {
+            for (int c = 0; c < 3; c++) {
+                int sx = x + c * cell;
+                int sy = y + r * cell;
+                gfx.fill(sx, sy, sx + cell - 2, sy + cell - 2, 0xFF251B21);
+                gfx.renderOutline(sx, sy, cell - 2, cell - 2, 0xFF3D2E36);
+                ItemStack stack = grid.cells()[r * 3 + c];
+                if (stack.isEmpty()) {
+                    continue;
+                }
+                gfx.renderItem(stack, sx + 1, sy + 1);
+                gfx.renderItemDecorations(this.font, stack, sx + 1, sy + 1);
+                if (mouseX >= sx && mouseX < sx + cell - 2 && mouseY >= sy && mouseY < sy + cell - 2) {
+                    hovered = stack;
+                }
+            }
+        }
+
+        int midY = y + (rows * cell) / 2 - 4;
+        gfx.drawString(this.font, "->", x + 3 * cell + 2, midY, C_TEXT, false);
+
+        int rx = x + 3 * cell + 18;
+        gfx.fill(rx, midY - 5, rx + cell - 2, midY + cell - 7, 0xFF251B21);
+        gfx.renderOutline(rx, midY - 5, cell - 2, cell - 2, C_EDGE_DONE);
+        gfx.renderItem(grid.result(), rx + 1, midY - 4);
+        gfx.renderItemDecorations(this.font, grid.result(), rx + 1, midY - 4);
+        if (mouseX >= rx && mouseX < rx + cell - 2 && mouseY >= midY - 5 && mouseY < midY + cell - 7) {
+            hovered = grid.result();
+        }
+
+        // Tooltips last so they sit above every slot drawn this pass.
+        if (!hovered.isEmpty()) {
+            gfx.renderTooltip(this.font, hovered, mouseX, mouseY);
+        }
+        return y + rows * cell;
     }
 }

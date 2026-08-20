@@ -18,7 +18,14 @@ if (-not (Test-Path $jdk)) {
 
 $env:JAVA_HOME = $jdk
 $env:Path = "$jdk\bin;$env:Path"
-$env:GRADLE_OPTS = '-Xmx1200m -Dorg.gradle.daemon=false'
+$env:GRADLE_OPTS = '-Xmx900m -Dorg.gradle.daemon=false'
+# reobfJar shells out to the Forge renamer as a SEPARATE java process, which does
+# not inherit GRADLE_OPTS - it takes the JVM default heap of a quarter of RAM, and
+# on this machine Windows cannot commit that much ("The paging file is too small
+# for this operation to complete"). JAVA_TOOL_OPTIONS is read by every JVM that
+# starts, so it caps the child too. Gradle keeps its bigger heap because its own
+# explicit -Xmx is applied after this one.
+$env:JAVA_TOOL_OPTIONS = '-Xmx512m'
 
 Set-Location $root
 $gradle = Join-Path $root '.tools\gradle\gradle-8.1.1\bin\gradle.bat'

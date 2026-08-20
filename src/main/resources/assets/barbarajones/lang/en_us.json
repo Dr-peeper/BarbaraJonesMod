@@ -554,5 +554,7 @@
   "village.barbarajones.buff.paneling": "Deeply, deeply brown.",
   "village.barbarajones.buff.stash_box": "Great for morale. Bad for the neighbourhood.",
   "village.barbarajones.buff.decor": "A nice touch.",
-  "village.barbarajones.buff.hay": "Feed, of a sort."
+  "village.barbarajones.buff.hay": "Feed, of a sort.",
+  "screen.barbarajones.quests.recipe": "How to make %s:",
+  "screen.barbarajones.quests.recipe_shapeless": "How to make %s (shapeless):"
 }
