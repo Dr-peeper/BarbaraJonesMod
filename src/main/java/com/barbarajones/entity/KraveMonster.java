@@ -195,16 +195,18 @@ public class KraveMonster extends Monster {
             return;
         }
         int form = getForm();
-        if (form < 3 || this.tickCount % 3 != 0) {
+        if (this.tickCount % 3 != 0) {
             return;
         }
         double r = getBbWidth() * 0.6D;
         double h = getBbHeight();
         int count = switch (form) {
-            case 6 -> 12;
-            case 5 -> 9;
-            case 4 -> 6;
-            default -> 2;
+            case 6 -> 14;
+            case 5 -> 10;
+            case 4 -> 7;
+            case 3 -> 4;
+            case 2 -> 2;
+            default -> 1;
         };
         for (int i = 0; i < count; i++) {
             double ang = this.random.nextDouble() * Math.PI * 2.0D;
@@ -239,9 +241,17 @@ public class KraveMonster extends Monster {
                     sl.sendParticles(net.minecraft.core.particles.ParticleTypes.LARGE_SMOKE,
                             x, y, z, 1, 0.03D, 0.06D, 0.03D, 0.005D);
                 }
-                default -> sl.sendParticles(
+                case 3 -> sl.sendParticles(
                         new net.minecraft.core.particles.DustParticleOptions(
                                 new org.joml.Vector3f(1.0F, 0.15F, 0.1F), 1.6F),
+                        x, y, z, 1, 0.02D, 0.05D, 0.02D, 0.0D);
+                // Forms 1-2 read as "just a big monster" no longer - a plain
+                // gold spark, thin and infrequent, the same family as
+                // Cayden's own SSJ/SSJ2 color so the very first transformation
+                // already reads as an escalation rather than nothing at all.
+                default -> sl.sendParticles(
+                        new net.minecraft.core.particles.DustParticleOptions(
+                                new org.joml.Vector3f(1.0F, 0.85F, 0.25F), 1.2F),
                         x, y, z, 1, 0.02D, 0.05D, 0.02D, 0.0D);
             }
         }
@@ -422,6 +432,17 @@ public class KraveMonster extends Monster {
             return;
         }
         this.matchedTier = Math.max(tier, this.matchedTier);
+
+        // AscensionLadder's tiers (SSJ=1 .. ULTRA=6) line up 1:1 with his own
+        // six forms, so a rising tier should physically transform him too -
+        // bigger silhouette, harsher tint (see FORM_SCALE/render() in
+        // KraveMonsterRenderer) - not just quietly buff his stats. Previously
+        // this method only ever touched raw attributes, so the fight could
+        // escalate all the way to Ultra Instinct-tier numbers while he stayed
+        // rendered as whatever form he spawned in.
+        if (newTier) {
+            setForm(tier);
+        }
 
         double caydenDps = c.estimatedDps();
         double targetHealth = Math.max(getMaxHealth(), caydenDps * 20.0D);
@@ -676,7 +697,15 @@ public class KraveMonster extends Monster {
             }
             this.monster.getLookControl().setLookAt(target, 30.0F, 30.0F);
             if (--this.cooldown <= 0) {
-                this.cooldown = 60 + this.monster.random.nextInt(40);
+                // A higher form is a crazier one - he leans on the beam far
+                // harder at Ultra than at his very first transformation
+                // instead of firing at the same lazy rate regardless of how
+                // far the fight has escalated. Form 1: ~3-5s between shots.
+                // Form 6: ~1-1.7s, closer to a barrage than an occasional bolt.
+                int form = this.monster.getForm();
+                int base = Math.max(20, 60 - (form - 1) * 8);
+                int variance = Math.max(10, 40 - (form - 1) * 5);
+                this.cooldown = base + this.monster.random.nextInt(variance);
                 fireBeam(target);
             }
         }

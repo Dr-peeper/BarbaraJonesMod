@@ -42,7 +42,7 @@ public class KraveMonsterRenderer extends MobRenderer<KraveMonster, KraveMonster
     // the escalation between all six forms (one per Cayden rung, SSJ through
     // Ultra Instinct) reads through size and body-color tint: form 1 is
     // barely bigger than a player, form 6 is a nightmare.
-    private static final float[] FORM_SCALE = { 1.1F, 1.5F, 2.0F, 2.6F, 3.2F, 4.0F };
+    private static final float[] FORM_SCALE = { 1.3F, 1.9F, 2.7F, 3.6F, 4.6F, 5.8F };
 
     @Override
     protected void scale(KraveMonster entity, PoseStack pose, float partialTicks) {
@@ -62,23 +62,35 @@ public class KraveMonsterRenderer extends MobRenderer<KraveMonster, KraveMonster
         // darker, so it doesn't read as "form 4 but bigger."
         int form = entity.getForm();
         float t = entity.tickCount + partialTicks;
-        boolean tinted = form >= 3;
-        if (tinted) {
-            switch (form) {
-                case 3 -> com.mojang.blaze3d.systems.RenderSystem.setShaderColor(1.0F, 0.5F, 0.45F, 1.0F);
-                case 4 -> {
-                    float pulse = 0.55F + 0.15F * Mth.sin(t * 0.15F);
-                    com.mojang.blaze3d.systems.RenderSystem.setShaderColor(pulse, 0.12F, 0.12F, 1.0F);
-                }
-                case 5 -> {
-                    float pulse = 0.5F + 0.15F * Mth.sin(t * 0.1F);
-                    com.mojang.blaze3d.systems.RenderSystem.setShaderColor(0.25F, pulse * 0.7F, pulse * 1.3F, 1.0F);
-                }
-                default -> {   // 6: Ultra - flickers toward near-white at random moments
-                    float flicker = (Mth.sin(t * 0.6F) > 0.85F) ? 1.6F : 0.6F;
-                    com.mojang.blaze3d.systems.RenderSystem.setShaderColor(
-                            0.85F * flicker, 0.9F * flicker, 1.0F * flicker, 1.0F);
-                }
+        // Every form now tints, not just 3+ - forms 1-2 previously rendered
+        // completely plain no matter how far the transformation ladder had
+        // climbed, which read as "he just got bigger" instead of an actual
+        // power escalation.
+        switch (form) {
+            case 1 -> {
+                // First transformation: a faint warm gold, barely-there -
+                // the same family as Cayden's own SSJ, subtle on purpose
+                // so form 3+ still reads as the real escalation.
+                float pulse = 0.9F + 0.1F * Mth.sin(t * 0.08F);
+                com.mojang.blaze3d.systems.RenderSystem.setShaderColor(1.0F, pulse * 0.96F, 0.75F, 1.0F);
+            }
+            case 2 -> {
+                float pulse = 0.85F + 0.15F * Mth.sin(t * 0.1F);
+                com.mojang.blaze3d.systems.RenderSystem.setShaderColor(1.0F, pulse * 0.88F, 0.55F, 1.0F);
+            }
+            case 3 -> com.mojang.blaze3d.systems.RenderSystem.setShaderColor(1.0F, 0.5F, 0.45F, 1.0F);
+            case 4 -> {
+                float pulse = 0.55F + 0.15F * Mth.sin(t * 0.15F);
+                com.mojang.blaze3d.systems.RenderSystem.setShaderColor(pulse, 0.12F, 0.12F, 1.0F);
+            }
+            case 5 -> {
+                float pulse = 0.5F + 0.15F * Mth.sin(t * 0.1F);
+                com.mojang.blaze3d.systems.RenderSystem.setShaderColor(0.25F, pulse * 0.7F, pulse * 1.3F, 1.0F);
+            }
+            default -> {   // 6: Ultra - flickers toward near-white at random moments
+                float flicker = (Mth.sin(t * 0.6F) > 0.85F) ? 1.6F : 0.6F;
+                com.mojang.blaze3d.systems.RenderSystem.setShaderColor(
+                        0.85F * flicker, 0.9F * flicker, 1.0F * flicker, 1.0F);
             }
         }
 
@@ -87,9 +99,7 @@ public class KraveMonsterRenderer extends MobRenderer<KraveMonster, KraveMonster
         super.render(entity, yaw, partialTicks, pose, buffers, light);
         pose.popPose();
 
-        if (tinted) {
-            com.mojang.blaze3d.systems.RenderSystem.setShaderColor(1.0F, 1.0F, 1.0F, 1.0F);
-        }
+        com.mojang.blaze3d.systems.RenderSystem.setShaderColor(1.0F, 1.0F, 1.0F, 1.0F);
     }
 
     private void renderGhosts(KraveMonster e, float partial, PoseStack pose,

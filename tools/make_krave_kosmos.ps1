@@ -129,8 +129,16 @@ function Galaxy($b,$base){
 # material. A 2-wide x 4-tall grid of raised squares with dark grooves
 # between them, like a Kit-Kat/Hershey's bar, top and bottom halves reading
 # as one continuous bar when the door is assembled.
-$barBase = C '4A2C18'; $barGroove = C '2A1810'; $barHi = C '6B4226'; $barShine = C '8B5A2B'
+$barBase = C '4A2C18'; $barGroove = C '1E120B'; $barHi = C '7A4B2A'
+$barShine = C '9C6435'; $barShadow = C '32200F'
+$knobBase = C 'C9A66B'; $knobHi = C 'F0E0AE'
 
+# Revamp over the first pass: each segment now gets a real bevel (highlight
+# top+left, shadow bottom+right) instead of two flat strips, so the squares
+# read as embossed rather than just striped. The knob previously sat crammed
+# into the far-right edge, easy to miss as "the handle" versus just another
+# square - it now sits in its own dark inset at the true vertical middle,
+# nudged one pixel right of horizontal center per the requested placement.
 function ChocBarPanel($b, $withHandle){
     Rct $b 0 0 16 16 $barGroove
     for($col=0; $col -lt 2; $col++){ for($row=0; $row -lt 4; $row++){
@@ -138,8 +146,14 @@ function ChocBarPanel($b, $withHandle){
         Rct $b $x $y 6 2 $barBase
         Rct $b $x $y 6 1 $barHi
         Rct $b $x $y 1 2 $barShine
+        Rct $b ($x+5) $y 1 2 $barShadow
+        Rct $b $x ($y+1) 6 1 $barShadow
     }}
-    if($withHandle){ Rct $b 13 7 2 2 (C 'D8C8A0') }
+    if($withHandle){
+        Rct $b 7 6 3 4 $barGroove
+        Rct $b 8 7 2 2 $knobBase
+        Rct $b 8 7 1 1 $knobHi
+    }
 }
 $db = NewImg 16 16; ChocBarPanel $db $true; Save $db "$bdir\krave_door_bottom.png"
 $dt = NewImg 16 16; ChocBarPanel $dt $false; Save $dt "$bdir\krave_door_top.png"
@@ -149,8 +163,12 @@ Rct $icon 2 1 12 14 $barGroove
 for($col=0; $col -lt 2; $col++){ for($row=0; $row -lt 4; $row++){
     Rct $icon (3+$col*5) (2+$row*3) 4 2 $barBase
     Rct $icon (3+$col*5) (2+$row*3) 4 1 $barHi
+    Rct $icon (7+$col*5) (2+$row*3) 1 2 $barShadow
+    Rct $icon (3+$col*5) (3+$row*3) 4 1 $barShadow
 }}
-Rct $icon 11 8 1 1 (C 'D8C8A0')
+Rct $icon 7 7 3 3 $barGroove
+Rct $icon 8 8 2 2 $knobBase
+Rct $icon 8 8 1 1 $knobHi
 Save $icon "$idir\krave_door.png"
 
 foreach($half in 'bottom','top'){

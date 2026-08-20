@@ -16,6 +16,7 @@ import net.minecraft.resources.ResourceKey;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
+import net.minecraft.sounds.SoundSource;
 import net.minecraft.world.InteractionHand;
 import net.minecraft.world.InteractionResult;
 import net.minecraft.world.effect.MobEffectInstance;
@@ -40,11 +41,16 @@ import java.util.List;
 
 /**
  * The Krave Kosmos portal: a 3-wide x 3-tall frame of {@link ModBlocks#KRAVE_BLOCK},
- * bottom-middle two cells replaced by this door. Opening the door with a
- * complete frame around it is bidirectional now, same as a vanilla Nether
- * portal: from anywhere else, it sends you into the Kosmos and builds a
- * matching frame+door right behind where you land; from inside the Kosmos,
- * opening a complete frame sends you back to wherever you stepped in from.
+ * bottom-middle two cells replaced by this door. Until a complete frame
+ * surrounds it, it is just a door - opens, closes, shows the room behind it,
+ * same as any other. Once the chocolate threshold is complete, it stops
+ * being a physical door at all: "opening" it plays the door-open sound and
+ * immediately travels the player instead of ever swinging open. It never
+ * shows what's on the other side, on either end of the trip - that's
+ * deliberate, not a missing animation. Bidirectional like a Nether portal:
+ * from anywhere else, a complete frame sends you into the Kosmos and builds
+ * a matching frame+door right behind where you land; from inside the
+ * Kosmos, a complete frame sends you back to wherever you stepped in from.
  * No consumable item required either direction - the door you arrive next
  * to IS the way back, not a Krave Tether (that item still exists for quest/
  * loot reasons elsewhere in the mod, it's just no longer load-bearing here).
@@ -58,20 +64,27 @@ public class KraveDoorBlock extends DoorBlock {
     @Override
     public InteractionResult use(BlockState state, Level level, BlockPos pos, Player player,
                                  InteractionHand hand, BlockHitResult hit) {
-        InteractionResult result = super.use(state, level, pos, player, hand, hit);
+        BlockPos lowerPos = state.getValue(HALF) == DoubleBlockHalf.LOWER ? pos : pos.below();
+        BlockState lowerState = level.getBlockState(lowerPos);
 
+        if (!isFrameComplete(level, lowerPos, lowerState)) {
+            // No threshold yet - an ordinary door, vanilla behavior untouched.
+            return super.use(state, level, pos, player, hand, hit);
+        }
+
+        // Threshold complete: never call super.use() here, so OPEN never
+        // flips and the door never visually swings - only the sound plays,
+        // then the player travels directly.
         if (!level.isClientSide && player instanceof ServerPlayer serverPlayer) {
-            BlockPos lowerPos = state.getValue(HALF) == DoubleBlockHalf.LOWER ? pos : pos.below();
-            BlockState lowerState = level.getBlockState(lowerPos);
-            if (lowerState.getValue(OPEN) && isFrameComplete(level, lowerPos, lowerState)) {
-                if (level.dimension().equals(KraveDimensions.KRAVE_KOSMOS)) {
-                    returnHome(serverPlayer);
-                } else {
-                    enterKosmos(serverPlayer);
-                }
+            level.playSound(null, lowerPos, type().doorOpen(), SoundSource.BLOCKS,
+                    1.0F, level.random.nextFloat() * 0.1F + 0.9F);
+            if (level.dimension().equals(KraveDimensions.KRAVE_KOSMOS)) {
+                returnHome(serverPlayer);
+            } else {
+                enterKosmos(serverPlayer);
             }
         }
-        return result;
+        return InteractionResult.sidedSuccess(level.isClientSide);
     }
 
     private boolean isFrameComplete(Level level, BlockPos lowerPos, BlockState lowerState) {
