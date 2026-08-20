@@ -44,6 +44,14 @@ public class ManualScreen extends Screen {
     private static final int FOOTER_H = 18;
     private static final int ANIM_MS = 180;
 
+    // Parchment ink. The page interior is the one LIGHT surface in the mod, so the
+    // KraveTheme palette - built for pale text on a dark panel - is unreadable on
+    // it. The rail and the page-turn bar are still on dark chrome and still use
+    // the theme.
+    private static final int INK      = 0xFF2A1C10;
+    private static final int INK_DIM  = 0xFF6B5A44;
+    private static final int INK_HEAD = 0xFF7A3E12;
+
     private static final ResourceLocation PAPER = new ResourceLocation("barbarajones", "textures/gui/manual/manual_paper.png");
     private static final ResourceLocation COVER = new ResourceLocation("barbarajones", "textures/gui/manual/manual_cover.png");
 
@@ -354,10 +362,10 @@ public class ManualScreen extends Screen {
         g.blit(COVER, x, y, 0, 0.0F, 0.0F, Math.min(w, 200), 40, 200, 40);
         RenderSystem.disableBlend();
 
-        g.drawString(this.font, ChatFormatting.BOLD + "" + ChatFormatting.GOLD + "THE KRAVE MANUAL",
-                x + 4, y + 46, KraveTheme.MILK, true);
+        g.drawString(this.font, ChatFormatting.BOLD + "THE KRAVE MANUAL",
+                x + 4, y + 46, INK_HEAD, false);
         g.drawString(this.font, ChatFormatting.ITALIC + "Rule #1: don't let Cayden Cobb die. Everything else is in here.",
-                x + 4, y + 57, KraveTheme.TEXT_DIM, false);
+                x + 4, y + 57, INK_DIM, false);
 
         int rowY = y + 72;
         for (ManualChapter c : ManualBook.CHAPTERS) {
@@ -370,9 +378,9 @@ public class ManualScreen extends Screen {
                 this.tooltipStack = c.icon().stack();
             }
             g.drawString(this.font, ChatFormatting.BOLD + "" + c.number() + ". " + c.title(),
-                    x + 22, rowY + 1, KraveTheme.GOLD, false);
+                    x + 22, rowY + 1, INK_HEAD, false);
             g.drawString(this.font, KraveTheme.trimTo(this.font, c.teaser(), w - 24), x + 22, rowY + 11,
-                    KraveTheme.TEXT_DIM, false);
+                    INK_DIM, false);
             rowY += 22;
         }
     }
@@ -455,11 +463,11 @@ public class ManualScreen extends Screen {
         if (this.searchBox.getValue().length() < 2) {
             g.drawString(this.font, ChatFormatting.ITALIC + "Type at least two letters - try \"Cayden\", "
                             + "\"housing\", \"Krave Syrup\", or \"Ultra Instinct\".",
-                    x + 4, y, KraveTheme.TEXT_DIM, false);
+                    x + 4, y, INK_DIM, false);
             return;
         }
         if (this.searchResults.isEmpty()) {
-            g.drawString(this.font, "Nothing in the book matches that.", x + 4, y, KraveTheme.TEXT_DIM, false);
+            g.drawString(this.font, "Nothing in the book matches that.", x + 4, y, INK_DIM, false);
             return;
         }
         int rowY = y;
@@ -470,9 +478,9 @@ public class ManualScreen extends Screen {
             }
             String head = hit.titleMatch() ? ChatFormatting.GOLD + "" + ChatFormatting.BOLD + hit.chapterTitle()
                     : ChatFormatting.GOLD + hit.chapterTitle();
-            g.drawString(this.font, head, x + 4, rowY + 1, KraveTheme.GOLD, false);
+            g.drawString(this.font, head, x + 4, rowY + 1, INK_HEAD, false);
             g.drawString(this.font, KraveTheme.trimTo(this.font, hit.snippet(), w - 10), x + 4, rowY + 11,
-                    KraveTheme.TEXT_DIM, false);
+                    INK_DIM, false);
             rowY += 20;
             if (rowY > this.contentY + this.contentH) {
                 break;

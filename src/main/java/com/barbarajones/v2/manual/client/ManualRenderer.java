@@ -13,6 +13,7 @@ import java.util.List;
 
 /**
  * Turns one {@link PageElement} into pixels, and separately measures how many
+
  * pixels tall it will be. The two are kept as one method each, called from
  * exactly two places ({@code Paginator} for measuring, {@link ManualScreen}
  * for drawing) - both feed the same {@code width} in, so a wrap computed here
@@ -25,6 +26,23 @@ import java.util.List;
  * Cayden's own upgrade screen, not like a separate wiki bolted on beside it.
  */
 final class ManualRenderer {
+
+    // ---- ink -----------------------------------------------------------------
+    //
+    // The manual is the one surface in this mod that is LIGHT. Everything else -
+    // the quest atlas, the upgrade ledger, the HUD - sits on a dark panel, so
+    // KraveTheme's palette is built for pale text on darkness. This screen was
+    // drawing that same pale cream (TEXT = 0xFFF2E9D8) onto parchment, which is
+    // cream on cream: technically rendering, practically invisible.
+    //
+    // These are the parchment equivalents. Dark brown rather than pure black so
+    // it reads as ink on paper rather than as a UI label, and the heading gold is
+    // darkened well past INK_HEAD, which was chosen to glow on black and
+    // simply disappears on a light page.
+    private static final int INK       = 0xFF2A1C10;   // body text
+    private static final int INK_DIM   = 0xFF6B5A44;   // captions, notes, counts
+    private static final int INK_HEAD  = 0xFF7A3E12;   // chapter and section heads
+    private static final int INK_RULE  = 0x807A3E12;   // hairlines under headings
 
     private ManualRenderer() { }
 
@@ -99,20 +117,20 @@ final class ManualRenderer {
             List<String> lines = KraveTheme.wrap(f, upper(h.text()), w, 0);
             int hy = y + 2;
             for (String line : lines) {
-                g.drawString(f, ChatFormatting.BOLD + line, x, hy, KraveTheme.GOLD, true);
+                g.drawString(f, ChatFormatting.BOLD + line, x, hy, INK_HEAD, false);
                 hy += 11;
             }
             int ruleY = hy + 1;
-            g.fill(x, ruleY, x + w, ruleY + 1, KraveTheme.withAlpha(KraveTheme.GOLD, 0.55F));
+            g.fill(x, ruleY, x + w, ruleY + 1, KraveTheme.withAlpha(INK_HEAD, 0.55F));
             g.fill(x, ruleY + 1, x + w, ruleY + 2, 0x30000000);
             return null;
         }
         if (el instanceof PageElement.Sub s) {
-            g.drawString(f, ChatFormatting.BOLD + s.text(), x, y + 3, KraveTheme.MILK, false);
+            g.drawString(f, ChatFormatting.BOLD + s.text(), x, y + 3, INK, false);
             return null;
         }
         if (el instanceof PageElement.Para p) {
-            int color = p.color() != 0 ? p.color() : KraveTheme.TEXT;
+            int color = p.color() != 0 ? p.color() : INK;
             int yy = y;
             for (String line : KraveTheme.wrap(f, p.text(), w, 0)) {
                 g.drawString(f, line, x, yy, color, false);
@@ -126,9 +144,9 @@ final class ManualRenderer {
                 List<String> lines = KraveTheme.wrap(f, entry, w - 10, 0);
                 for (int i = 0; i < lines.size(); i++) {
                     if (i == 0) {
-                        g.drawString(f, ChatFormatting.GOLD + "•", x, yy, KraveTheme.GOLD, false);
+                        g.drawString(f, "\u2022", x, yy, INK_HEAD, false);
                     }
-                    g.drawString(f, lines.get(i), x + 9, yy, KraveTheme.TEXT, false);
+                    g.drawString(f, lines.get(i), x + 9, yy, INK, false);
                     yy += LINE_H;
                 }
             }
@@ -141,9 +159,9 @@ final class ManualRenderer {
                 List<String> lines = KraveTheme.wrap(f, entry, w - 14, 0);
                 for (int i = 0; i < lines.size(); i++) {
                     if (i == 0) {
-                        g.drawString(f, ChatFormatting.GOLD + "" + n + ".", x, yy, KraveTheme.GOLD, false);
+                        g.drawString(f, n + ".", x, yy, INK_HEAD, false);
                     }
-                    g.drawString(f, lines.get(i), x + 13, yy, KraveTheme.TEXT, false);
+                    g.drawString(f, lines.get(i), x + 13, yy, INK, false);
                     yy += LINE_H;
                 }
                 n++;
@@ -190,14 +208,14 @@ final class ManualRenderer {
             boolean hover = mouseX >= cx && mouseX < cx + ICON_SIZE && mouseY >= cy && mouseY < cy + ICON_SIZE;
             ItemStack stack = icon.stack();
             if (hover) {
-                g.fill(cx - 2, cy - 2, cx + ICON_SIZE + 2, cy + ICON_SIZE + 2, 0x40FFFFFF);
+                g.fill(cx - 2, cy - 2, cx + ICON_SIZE + 2, cy + ICON_SIZE + 2, 0x26000000);
                 hovered = stack;
             }
             g.renderItem(stack, cx, cy);
             if (!icon.label().isEmpty()) {
                 String lbl = KraveTheme.trimTo(f, icon.label(), cellW - 2);
                 g.drawString(f, lbl, x + col * cellW + (cellW - f.width(lbl)) / 2, cy + ICON_SIZE + 2,
-                        KraveTheme.TEXT_DIM, false);
+                        INK_DIM, false);
             }
             i++;
         }
@@ -207,7 +225,7 @@ final class ManualRenderer {
     // ---- callout ------------------------------------------------------------
 
     private static void renderCallout(GuiGraphics g, Font f, PageElement.Callout c, int x, int y, int w) {
-        int accent = c.accent() == 0 ? KraveTheme.GOLD : c.accent();
+        int accent = c.accent() == 0 ? INK_HEAD : c.accent();
         List<String> lines = KraveTheme.wrap(f, c.text(), w - 14, 0);
         int h = 14 + lines.size() * LINE_H + 4;
         g.fill(x, y, x + w, y + h, 0x50000000);
@@ -217,7 +235,7 @@ final class ManualRenderer {
                 x + 6, y + 3, accent, false);
         int yy = y + 14;
         for (String line : lines) {
-            g.drawString(f, line, x + 6, yy, KraveTheme.TEXT, false);
+            g.drawString(f, line, x + 6, yy, INK, false);
             yy += LINE_H;
         }
     }
@@ -264,10 +282,10 @@ final class ManualRenderer {
         int[] xs = colXs(t.widths(), w);
         int yy = y;
         for (int c = 0; c < t.headers().size() && c < xs.length; c++) {
-            g.drawString(f, ChatFormatting.BOLD + upper(t.headers().get(c)), x + xs[c], yy, KraveTheme.GOLD, false);
+            g.drawString(f, ChatFormatting.BOLD + upper(t.headers().get(c)), x + xs[c], yy, INK_HEAD, false);
         }
         yy += LINE_H + 1;
-        g.fill(x, yy, x + w, yy + 1, KraveTheme.withAlpha(KraveTheme.GOLD, 0.35F));
+        g.fill(x, yy, x + w, yy + 1, KraveTheme.withAlpha(INK_HEAD, 0.35F));
         yy += 3;
         boolean stripe = false;
         for (List<String> row : t.rows()) {
@@ -280,14 +298,14 @@ final class ManualRenderer {
             }
             int rowH = rowLines * LINE_H + 3;
             if (stripe) {
-                g.fill(x, yy - 1, x + w, yy + rowH - 3, 0x18FFFFFF);
+                g.fill(x, yy - 1, x + w, yy + rowH - 3, 0x14000000);
             }
             stripe = !stripe;
             for (int c = 0; c < wrapped.size(); c++) {
                 List<String> wl = wrapped.get(c);
                 for (int li = 0; li < wl.size(); li++) {
                     g.drawString(f, wl.get(li), x + xs[c], yy + li * LINE_H,
-                            c == 0 ? KraveTheme.MILK : KraveTheme.TEXT, false);
+                            c == 0 ? INK : INK, false);
                 }
             }
             yy += rowH;
@@ -342,7 +360,7 @@ final class ManualRenderer {
         String caption = cg.note() != null && !cg.note().isEmpty()
                 ? cg.note() : (cg.shapeless() ? "SHAPELESS" : "SHAPED");
         g.drawString(f, ChatFormatting.ITALIC + caption,
-                x, gridY + 3 * SLOT + 4, KraveTheme.TEXT_DIM, false);
+                x, gridY + 3 * SLOT + 4, INK_DIM, false);
         return hovered;
     }
 
@@ -354,7 +372,7 @@ final class ManualRenderer {
 
     private static ItemStack renderFlow(GuiGraphics g, Font f, PageElement.FlowRecipe fr, int x, int y, int w,
                                         int mouseX, int mouseY) {
-        g.drawString(f, ChatFormatting.BOLD + upper(fr.verb()), x, y, KraveTheme.GOLD, false);
+        g.drawString(f, ChatFormatting.BOLD + upper(fr.verb()), x, y, INK_HEAD, false);
         int rowY = y + 11;
         int cx = x;
         ItemStack hovered = null;
@@ -367,7 +385,7 @@ final class ManualRenderer {
             }
             cx += ICON_SIZE + 2;
             if (i < inputs.size() - 1) {
-                g.drawString(f, "+", cx, rowY + 4, KraveTheme.TEXT_DIM, false);
+                g.drawString(f, "+", cx, rowY + 4, INK_DIM, false);
                 cx += 9;
             }
         }
@@ -387,7 +405,7 @@ final class ManualRenderer {
         if (fr.note() != null && !fr.note().isEmpty()) {
             int yy = rowY + ICON_SIZE + 3;
             for (String line : KraveTheme.wrap(f, fr.note(), w, 0)) {
-                g.drawString(f, line, x, yy, KraveTheme.TEXT_DIM, false);
+                g.drawString(f, line, x, yy, INK_DIM, false);
                 yy += LINE_H;
             }
         }

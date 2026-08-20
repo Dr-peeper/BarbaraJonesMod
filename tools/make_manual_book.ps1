@@ -47,8 +47,9 @@ function Rnd([int]$n) { $script:sd = ($script:sd * 1103515245 + 12345) -band 0x7
 # ---- palette (matches client.ui.KraveTheme) --------------------------------
 $paperBase = C 'ECDFB6'
 $paperDark = C 'D8C696'
-$paperLine = C 'C8A868' 110
-$paperMarg = C 'A8402E' 90
+$paperLine = C 'C8A868' 40    # much fainter: a hint of a rule, not a wire
+# $paperMarg removed: a vertical margin line in a TILED texture repeats every
+# 32 pixels, which is not a margin - it is a grid, and it was burying the text.
 $chocDark  = C '2A1508'
 $chocMid   = C '4A2410'
 $bandRed   = C 'C81E24'
@@ -72,11 +73,11 @@ for ($y = 0; $y -lt 32; $y++) {
         if ((Rnd 9) -eq 0) { P $paper $x $y $paperDark }
     }
 }
-# two faint ruled lines, wrapping cleanly at the tile edge
-Rct $paper 0 9  32 1 $paperLine
-Rct $paper 0 21 32 1 $paperLine
-# a warm margin line near the left edge, like ruled notebook paper
-Rct $paper 3 0 1 32 $paperMarg
+# One faint ruled line per tile. There were two, plus a vertical "margin" line
+# at x=3 - but this texture is TILED across the whole page, so a margin line
+# repeats every 32 pixels and stops being a margin: it becomes a grid. Between
+# the two of them the page read as graph paper with the text buried under it.
+Rct $paper 0 15 32 1 $paperLine
 $paper.Save("$gdir\manual_paper.png", [System.Drawing.Imaging.ImageFormat]::Png)
 $paper.Dispose()
 
