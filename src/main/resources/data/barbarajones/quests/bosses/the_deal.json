@@ -1,0 +1,17 @@
+﻿{
+  "chapter": "barbarajones:bosses",
+  "title": "quest.barbarajones.bosses.the_deal.title",
+  "objective": "quest.barbarajones.bosses.the_deal.objective",
+  "lore": "quest.barbarajones.bosses.the_deal.lore",
+  "icon": "barbarajones:five_hundred_dollars",
+  "x": 0,
+  "y": 1,
+  "dependencies": [ "barbarajones:bosses/the_monster", "barbarajones:village/the_stash" ],
+  "tasks": [
+    { "type": "deliver", "item": "barbarajones:five_hundred_dollars", "count": 1 }
+  ],
+  "rewards": [
+    { "type": "item", "item": "barbarajones:ski_mask", "count": 1 },
+    { "type": "krave_xp", "amount": 150 }
+  ]
+}

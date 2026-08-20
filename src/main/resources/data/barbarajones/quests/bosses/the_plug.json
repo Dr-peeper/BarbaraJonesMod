@@ -1,0 +1,17 @@
+﻿{
+  "chapter": "barbarajones:bosses",
+  "title": "quest.barbarajones.bosses.the_plug.title",
+  "objective": "quest.barbarajones.bosses.the_plug.objective",
+  "lore": "quest.barbarajones.bosses.the_plug.lore",
+  "icon": "barbarajones:the_plug_spawn_egg",
+  "x": 1,
+  "y": 2,
+  "dependencies": [ "barbarajones:bosses/the_deal" ],
+  "tasks": [
+    { "type": "defeat_boss", "entity": "barbarajones:the_plug" }
+  ],
+  "rewards": [
+    { "type": "item", "item": "barbarajones:plug_trophy", "count": 1 },
+    { "type": "krave_xp", "amount": 300 }
+  ]
+}

@@ -1,0 +1,19 @@
+﻿{
+  "chapter": "barbarajones:village",
+  "title": "quest.barbarajones.village.living_room.title",
+  "objective": "quest.barbarajones.village.living_room.objective",
+  "lore": "quest.barbarajones.village.living_room.lore",
+  "icon": "barbarajones:television",
+  "x": 1,
+  "y": 2,
+  "dependencies": [ "barbarajones:village/workshop" ],
+  "tasks": [
+    { "type": "place_building", "building": "barbarajones:television", "count": 1 },
+    { "type": "place_building", "building": "barbarajones:recliner", "count": 1 },
+    { "type": "village_tier", "tier": 4 }
+  ],
+  "rewards": [
+    { "type": "item", "item": "barbarajones:mr_pibb", "count": 4 },
+    { "type": "krave_xp", "amount": 80 }
+  ]
+}

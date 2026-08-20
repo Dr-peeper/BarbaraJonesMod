@@ -1,0 +1,10 @@
+{
+  "type": "barbarajones:boxing",
+  "ingredients": [
+    { "item": "barbarajones:krave_cereal", "count": 8 },
+    { "item": "barbarajones:krave_carton", "count": 1 }
+  ],
+  "result": { "item": "barbarajones:boxed_krave", "count": 1 },
+  "time": 200,
+  "fuel_per_tick": 1
+}

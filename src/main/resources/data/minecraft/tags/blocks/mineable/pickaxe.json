@@ -1,0 +1,14 @@
+{
+  "replace": false,
+  "values": [
+    "barbarajones:cocoa_plantation",
+    "barbarajones:krave_grinder",
+    "barbarajones:krave_mixer",
+    "barbarajones:krave_extruder",
+    "barbarajones:krave_toaster",
+    "barbarajones:krave_boxer",
+    "barbarajones:krave_depot",
+    "barbarajones:krave_conveyor",
+    "barbarajones:krave_extractor"
+  ]
+}

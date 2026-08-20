@@ -1,0 +1,9 @@
+{
+  "type": "barbarajones:grinding",
+  "ingredients": [
+    { "item": "barbarajones:cocoa_substitute", "count": 2 }
+  ],
+  "result": { "item": "barbarajones:krave_dust", "count": 1 },
+  "time": 160,
+  "fuel_per_tick": 1
+}

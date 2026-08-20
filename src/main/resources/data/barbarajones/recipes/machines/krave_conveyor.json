@@ -1,0 +1,12 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "pattern": [
+    "III",
+    "PPP"
+  ],
+  "key": {
+    "I": { "item": "minecraft:iron_ingot" },
+    "P": { "item": "barbarajones:krave_planks" }
+  },
+  "result": { "item": "barbarajones:krave_conveyor", "count": 8 }
+}

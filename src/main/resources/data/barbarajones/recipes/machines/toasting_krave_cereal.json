@@ -1,0 +1,9 @@
+{
+  "type": "barbarajones:toasting",
+  "ingredients": [
+    { "item": "barbarajones:raw_krave_piece", "count": 2 }
+  ],
+  "result": { "item": "barbarajones:krave_cereal", "count": 1 },
+  "time": 140,
+  "fuel_per_tick": 2
+}

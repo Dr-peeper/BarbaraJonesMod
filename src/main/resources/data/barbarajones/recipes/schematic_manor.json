@@ -1,0 +1,15 @@
+{
+  "type": "minecraft:crafting_shapeless",
+  "ingredients": [
+    { "item": "barbarajones:krave_block" },
+    { "item": "barbarajones:krave_block" },
+    { "item": "minecraft:stone_bricks" },
+    { "item": "minecraft:stone_bricks" },
+    { "item": "minecraft:iron_ingot" },
+    { "item": "minecraft:iron_ingot" },
+    { "item": "minecraft:gold_ingot" },
+    { "item": "barbarajones:krave_dust" },
+    { "item": "barbarajones:krave_dust" }
+  ],
+  "result": { "item": "barbarajones:schematic_manor", "count": 1 }
+}

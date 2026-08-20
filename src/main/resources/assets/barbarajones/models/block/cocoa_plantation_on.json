@@ -1,0 +1,9 @@
+{
+  "parent": "minecraft:block/orientable_with_bottom",
+  "textures": {
+    "top": "barbarajones:block/krave_machine_top",
+    "bottom": "barbarajones:block/krave_machine_bottom",
+    "side": "barbarajones:block/krave_machine_side",
+    "front": "barbarajones:block/cocoa_plantation_front_on"
+  }
+}

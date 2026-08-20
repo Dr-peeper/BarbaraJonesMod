@@ -1,0 +1,16 @@
+﻿{
+  "chapter": "barbarajones:bosses",
+  "title": "quest.barbarajones.bosses.peace.title",
+  "objective": "quest.barbarajones.bosses.peace.objective",
+  "lore": "quest.barbarajones.bosses.peace.lore",
+  "icon": "barbarajones:barbara_trophy",
+  "x": 0,
+  "y": 4,
+  "dependencies": [ "barbarajones:bosses/the_manager", "barbarajones:bosses/the_plug" ],
+  "auto_claim": true,
+  "rewards": [
+    { "type": "item", "item": "barbarajones:barbara_trophy", "count": 1 },
+    { "type": "ability", "ability": "i_krave_the_krave" },
+    { "type": "krave_xp", "amount": 1000 }
+  ]
+}

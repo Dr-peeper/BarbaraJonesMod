@@ -1,0 +1,18 @@
+{
+  "replace": false,
+  "values": [
+    "minecraft:bedrock",
+    "minecraft:spawner",
+    "minecraft:end_portal_frame",
+    "minecraft:end_portal",
+    "minecraft:nether_portal",
+    "minecraft:obsidian",
+    "minecraft:crying_obsidian",
+    "minecraft:respawn_anchor",
+    "minecraft:reinforced_deepslate",
+    "minecraft:budding_amethyst",
+    { "id": "barbarajones:krave_block", "required": false },
+    { "id": "barbarajones:krave_door", "required": false },
+    { "id": "barbarajones:krafting_bench", "required": false }
+  ]
+}

@@ -1,0 +1,15 @@
+{
+  "type": "minecraft:crafting_shapeless",
+  "ingredients": [
+    { "item": "barbarajones:krave_dust" },
+    { "item": "barbarajones:krave_dust" },
+    { "item": "barbarajones:krave_dust" },
+    { "item": "barbarajones:krave_dust" },
+    { "item": "barbarajones:krave_family_box" },
+    { "item": "barbarajones:krave_family_box" },
+    { "item": "minecraft:magma_cream" },
+    { "item": "minecraft:magma_cream" },
+    { "item": "minecraft:diamond" }
+  ],
+  "result": { "item": "barbarajones:meteor_totem", "count": 1 }
+}

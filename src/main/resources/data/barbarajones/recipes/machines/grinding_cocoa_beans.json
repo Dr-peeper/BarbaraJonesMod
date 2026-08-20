@@ -1,0 +1,9 @@
+{
+  "type": "barbarajones:grinding",
+  "ingredients": [
+    { "item": "minecraft:cocoa_beans", "count": 2 }
+  ],
+  "result": { "item": "barbarajones:krave_dust", "count": 1 },
+  "time": 120,
+  "fuel_per_tick": 1
+}

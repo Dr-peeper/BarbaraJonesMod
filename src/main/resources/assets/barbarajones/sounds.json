@@ -70,5 +70,27 @@
   "evt_ohgod": { "subtitle": "subtitles.barbarajones.barbara", "sounds": [ "barbarajones:va_ohgod" ] },
   "evt_ohgod2": { "subtitle": "subtitles.barbarajones.barbara", "sounds": [ "barbarajones:va_ohgod2" ] },
   "evt_roll": { "subtitle": "subtitles.barbarajones.barbara", "sounds": [ "barbarajones:va_roll" ] },
-  "evt_shower": { "subtitle": "subtitles.barbarajones.barbara", "sounds": [ "barbarajones:va_shower" ] }
+  "evt_shower": { "subtitle": "subtitles.barbarajones.barbara", "sounds": [ "barbarajones:va_shower" ] },
+
+  "craveling_ambient": { "subtitle": "subtitles.barbarajones.craveling", "sounds": [ "barbarajones:craveling_ambient" ] },
+  "craveling_hurt": { "subtitle": "subtitles.barbarajones.craveling", "sounds": [ "barbarajones:craveling_hurt" ] },
+  "craveling_death": { "subtitle": "subtitles.barbarajones.craveling", "sounds": [ "barbarajones:craveling_death" ] },
+  "craveling_step": { "subtitle": "subtitles.barbarajones.craveling", "sounds": [ "barbarajones:craveling_step" ] },
+  "krispbone_ambient": { "subtitle": "subtitles.barbarajones.krispbone", "sounds": [ "barbarajones:krispbone_ambient" ] },
+  "krispbone_hurt": { "subtitle": "subtitles.barbarajones.krispbone", "sounds": [ "barbarajones:krispbone_hurt" ] },
+  "krispbone_death": { "subtitle": "subtitles.barbarajones.krispbone", "sounds": [ "barbarajones:krispbone_death" ] },
+  "krispbone_shoot": { "subtitle": "subtitles.barbarajones.krispbone", "sounds": [ "barbarajones:krispbone_shoot" ] },
+  "loomweaver_ambient": { "subtitle": "subtitles.barbarajones.loomweaver", "sounds": [ "barbarajones:loomweaver_ambient" ] },
+  "loomweaver_hurt": { "subtitle": "subtitles.barbarajones.loomweaver", "sounds": [ "barbarajones:loomweaver_hurt" ] },
+  "loomweaver_death": { "subtitle": "subtitles.barbarajones.loomweaver", "sounds": [ "barbarajones:loomweaver_death" ] },
+  "loomweaver_web": { "subtitle": "subtitles.barbarajones.loomweaver", "sounds": [ "barbarajones:loomweaver_web" ] },
+  "soggy_ambient": { "subtitle": "subtitles.barbarajones.soggy", "sounds": [ "barbarajones:soggy_ambient" ] },
+  "soggy_hurt": { "subtitle": "subtitles.barbarajones.soggy", "sounds": [ "barbarajones:soggy_hurt" ] },
+  "soggy_death": { "subtitle": "subtitles.barbarajones.soggy", "sounds": [ "barbarajones:soggy_death" ] },
+  "soggy_splash": { "subtitle": "subtitles.barbarajones.soggy", "sounds": [ "barbarajones:soggy_splash" ] },
+  "mascot_ambient": { "subtitle": "subtitles.barbarajones.mascot", "sounds": [ "barbarajones:mascot_ambient" ] },
+  "mascot_hurt": { "subtitle": "subtitles.barbarajones.mascot", "sounds": [ "barbarajones:mascot_hurt" ] },
+  "mascot_death": { "subtitle": "subtitles.barbarajones.mascot", "sounds": [ "barbarajones:mascot_death" ] },
+  "mascot_flee": { "subtitle": "subtitles.barbarajones.mascot", "sounds": [ "barbarajones:mascot_flee" ] },
+  "chocolate_flow": { "subtitle": "subtitles.barbarajones.chocolate_flow", "sounds": [ "barbarajones:chocolate_flow" ] }
 }

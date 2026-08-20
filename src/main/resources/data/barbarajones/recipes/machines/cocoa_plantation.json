@@ -1,0 +1,15 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "pattern": [
+    "PIP",
+    "IXI",
+    "PRP"
+  ],
+  "key": {
+    "P": { "item": "barbarajones:krave_planks" },
+    "I": { "item": "minecraft:iron_ingot" },
+    "R": { "item": "minecraft:redstone" },
+    "X": { "item": "minecraft:cocoa_beans" }
+  },
+  "result": { "item": "barbarajones:cocoa_plantation", "count": 1 }
+}

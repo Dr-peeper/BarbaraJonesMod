@@ -1,0 +1,9 @@
+{
+  "type": "barbarajones:extruding",
+  "ingredients": [
+    { "item": "barbarajones:krave_batter", "count": 1 }
+  ],
+  "result": { "item": "barbarajones:raw_krave_piece", "count": 4 },
+  "time": 100,
+  "fuel_per_tick": 2
+}

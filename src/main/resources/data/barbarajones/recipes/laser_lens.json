@@ -1,0 +1,15 @@
+{
+  "type": "minecraft:crafting_shapeless",
+  "ingredients": [
+    { "item": "barbarajones:managers_tie" },
+    { "item": "barbarajones:employee_of_the_month" },
+    { "item": "barbarajones:krave_dust" },
+    { "item": "barbarajones:krave_dust" },
+    { "item": "minecraft:glass" },
+    { "item": "minecraft:glass" },
+    { "item": "minecraft:redstone" },
+    { "item": "minecraft:redstone" },
+    { "item": "minecraft:gold_ingot" }
+  ],
+  "result": { "item": "barbarajones:laser_lens", "count": 1 }
+}

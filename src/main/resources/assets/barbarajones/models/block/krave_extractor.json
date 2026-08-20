@@ -1,0 +1,12 @@
+{
+  "parent": "minecraft:block/cube",
+  "textures": {
+    "particle": "barbarajones:block/krave_extractor_front",
+    "down":  "barbarajones:block/krave_extractor_side",
+    "up":    "barbarajones:block/krave_extractor_side",
+    "north": "barbarajones:block/krave_extractor_front",
+    "south": "barbarajones:block/krave_extractor_back",
+    "east":  "barbarajones:block/krave_extractor_side",
+    "west":  "barbarajones:block/krave_extractor_side"
+  }
+}

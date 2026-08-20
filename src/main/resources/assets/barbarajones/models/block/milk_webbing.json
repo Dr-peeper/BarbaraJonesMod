@@ -1,0 +1,7 @@
+{
+  "parent": "minecraft:block/cross",
+  "textures": {
+    "cross": "barbarajones:block/milk_webbing",
+    "particle": "barbarajones:block/milk_webbing"
+  }
+}

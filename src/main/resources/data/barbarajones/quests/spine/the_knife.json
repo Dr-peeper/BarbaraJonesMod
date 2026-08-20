@@ -1,0 +1,18 @@
+﻿{
+  "chapter": "barbarajones:spine",
+  "title": "quest.barbarajones.spine.the_knife.title",
+  "objective": "quest.barbarajones.spine.the_knife.objective",
+  "lore": "quest.barbarajones.spine.the_knife.lore",
+  "icon": "barbarajones:grass_knife",
+  "x": -1,
+  "y": 2,
+  "dependencies": [ "barbarajones:spine/touch_grass" ],
+  "tasks": [
+    { "type": "craft", "item": "barbarajones:grass_knife", "count": 1 },
+    { "type": "craft", "item": "barbarajones:diced_grass", "count": 2 }
+  ],
+  "rewards": [
+    { "type": "item", "item": "barbarajones:grass_knife", "count": 1 },
+    { "type": "krave_xp", "amount": 20 }
+  ]
+}

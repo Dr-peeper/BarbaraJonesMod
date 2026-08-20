@@ -1,0 +1,15 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "pattern": [
+    "PIP",
+    "IXI",
+    "PRP"
+  ],
+  "key": {
+    "P": { "item": "barbarajones:krave_planks" },
+    "I": { "item": "minecraft:iron_ingot" },
+    "R": { "item": "minecraft:redstone" },
+    "X": { "item": "minecraft:piston" }
+  },
+  "result": { "item": "barbarajones:krave_extruder", "count": 1 }
+}

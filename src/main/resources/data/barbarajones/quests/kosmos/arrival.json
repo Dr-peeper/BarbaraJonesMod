@@ -1,0 +1,17 @@
+﻿{
+  "chapter": "barbarajones:kosmos",
+  "title": "quest.barbarajones.kosmos.arrival.title",
+  "objective": "quest.barbarajones.kosmos.arrival.objective",
+  "lore": "quest.barbarajones.kosmos.arrival.lore",
+  "icon": "barbarajones:krave_tether",
+  "x": 0,
+  "y": 1,
+  "dependencies": [ "barbarajones:kosmos/the_door" ],
+  "tasks": [
+    { "type": "visit_dimension", "dimension": "barbarajones:krave_kosmos" }
+  ],
+  "rewards": [
+    { "type": "ability", "ability": "kosmic_tether" },
+    { "type": "krave_xp", "amount": 120 }
+  ]
+}

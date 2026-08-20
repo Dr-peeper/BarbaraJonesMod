@@ -1,0 +1,18 @@
+﻿{
+  "chapter": "barbarajones:spine",
+  "title": "quest.barbarajones.spine.the_cereal.title",
+  "objective": "quest.barbarajones.spine.the_cereal.objective",
+  "lore": "quest.barbarajones.spine.the_cereal.lore",
+  "icon": "barbarajones:krave_cereal",
+  "x": 1,
+  "y": 2,
+  "dependencies": [ "barbarajones:spine/touch_grass" ],
+  "tasks": [
+    { "type": "craft", "item": "barbarajones:krave_cereal", "count": 4 },
+    { "type": "craft", "item": "barbarajones:krave_milk", "count": 1 }
+  ],
+  "rewards": [
+    { "type": "item", "item": "barbarajones:krave_cereal", "count": 4 },
+    { "type": "krave_xp", "amount": 25 }
+  ]
+}

@@ -1,0 +1,17 @@
+﻿{
+  "chapter": "barbarajones:kosmos",
+  "title": "quest.barbarajones.kosmos.cravelings.title",
+  "objective": "quest.barbarajones.kosmos.cravelings.objective",
+  "lore": "quest.barbarajones.kosmos.cravelings.lore",
+  "icon": "barbarajones:krave_minion_spawn_egg",
+  "x": -1,
+  "y": 2,
+  "dependencies": [ "barbarajones:kosmos/arrival" ],
+  "tasks": [
+    { "type": "kill", "entity": "barbarajones:krave_minion", "count": 8 }
+  ],
+  "rewards": [
+    { "type": "item", "item": "barbarajones:krave_dust", "count": 16 },
+    { "type": "krave_xp", "amount": 100 }
+  ]
+}

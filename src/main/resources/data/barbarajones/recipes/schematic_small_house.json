@@ -1,0 +1,13 @@
+{
+  "type": "minecraft:crafting_shapeless",
+  "ingredients": [
+    { "item": "barbarajones:krave_planks" },
+    { "item": "barbarajones:krave_planks" },
+    { "item": "barbarajones:krave_planks" },
+    { "item": "barbarajones:krave_planks" },
+    { "item": "barbarajones:krave_log" },
+    { "item": "barbarajones:krave_log" },
+    { "item": "minecraft:torch" }
+  ],
+  "result": { "item": "barbarajones:schematic_small_house", "count": 1 }
+}

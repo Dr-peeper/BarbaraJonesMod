@@ -1,0 +1,19 @@
+﻿{
+  "chapter": "barbarajones:bosses",
+  "title": "quest.barbarajones.bosses.the_monster.title",
+  "objective": "quest.barbarajones.bosses.the_monster.objective",
+  "lore": "quest.barbarajones.bosses.the_monster.lore",
+  "icon": "barbarajones:krave_monster_spawn_egg",
+  "x": 0,
+  "y": 0,
+  "dependencies": [ "barbarajones:kosmos/arrival", "barbarajones:village/feed_the_kid" ],
+  "min_dependencies": 1,
+  "tasks": [
+    { "type": "craft", "item": "barbarajones:krave_box", "count": 1 },
+    { "type": "defeat_boss", "entity": "barbarajones:krave_monster" }
+  ],
+  "rewards": [
+    { "type": "item", "item": "barbarajones:krave_monster_trophy", "count": 1 },
+    { "type": "krave_xp", "amount": 250 }
+  ]
+}

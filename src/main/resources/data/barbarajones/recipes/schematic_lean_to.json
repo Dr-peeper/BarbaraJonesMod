@@ -1,0 +1,9 @@
+{
+  "type": "minecraft:crafting_shapeless",
+  "ingredients": [
+    { "item": "barbarajones:krave_planks" },
+    { "item": "barbarajones:krave_planks" },
+    { "item": "minecraft:stick" }
+  ],
+  "result": { "item": "barbarajones:schematic_lean_to", "count": 1 }
+}

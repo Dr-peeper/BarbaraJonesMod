@@ -1,0 +1,8 @@
+{
+  "parent": "minecraft:block/orientable",
+  "textures": {
+    "top": "barbarajones:block/service_call_box_top",
+    "front": "barbarajones:block/service_call_box_front",
+    "side": "barbarajones:block/service_call_box_side"
+  }
+}

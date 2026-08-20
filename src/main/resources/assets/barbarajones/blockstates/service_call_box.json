@@ -1,0 +1,8 @@
+{
+  "variants": {
+    "facing=north": { "model": "barbarajones:block/service_call_box" },
+    "facing=east": { "model": "barbarajones:block/service_call_box", "y": 90 },
+    "facing=south": { "model": "barbarajones:block/service_call_box", "y": 180 },
+    "facing=west": { "model": "barbarajones:block/service_call_box", "y": 270 }
+  }
+}

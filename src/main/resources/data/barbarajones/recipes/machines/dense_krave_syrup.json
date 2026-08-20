@@ -1,0 +1,11 @@
+{
+  "type": "minecraft:crafting_shapeless",
+  "ingredients": [
+    { "item": "barbarajones:krave_syrup" },
+    { "item": "barbarajones:krave_syrup" },
+    { "item": "barbarajones:krave_syrup" },
+    { "item": "barbarajones:krave_syrup" },
+    { "item": "barbarajones:krave_dust" }
+  ],
+  "result": { "item": "barbarajones:dense_krave_syrup", "count": 1 }
+}

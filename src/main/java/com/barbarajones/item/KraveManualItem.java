@@ -36,6 +36,8 @@ public class KraveManualItem extends Item {
     public void appendHoverText(ItemStack stack, @Nullable Level level,
                                 List<Component> tooltip, TooltipFlag flag) {
         tooltip.add(Component.literal(ChatFormatting.GRAY + "Right-click: read the manual"));
+        tooltip.add(Component.literal(ChatFormatting.DARK_GRAY
+                + "Eleven chapters. Search built in. Press / to find anything."));
         tooltip.add(Component.literal(ChatFormatting.DARK_RED
                 + "Rule #1: don't let Cayden Cobb die."));
     }

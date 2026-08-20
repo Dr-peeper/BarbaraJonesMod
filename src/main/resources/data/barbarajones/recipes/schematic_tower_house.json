@@ -1,0 +1,15 @@
+{
+  "type": "minecraft:crafting_shapeless",
+  "ingredients": [
+    { "item": "minecraft:stone_bricks" },
+    { "item": "minecraft:stone_bricks" },
+    { "item": "minecraft:stone_bricks" },
+    { "item": "barbarajones:krave_log" },
+    { "item": "barbarajones:krave_log" },
+    { "item": "minecraft:iron_bars" },
+    { "item": "minecraft:iron_ingot" },
+    { "item": "barbarajones:krave_dust" },
+    { "item": "barbarajones:krave_dust" }
+  ],
+  "result": { "item": "barbarajones:schematic_tower_house", "count": 1 }
+}

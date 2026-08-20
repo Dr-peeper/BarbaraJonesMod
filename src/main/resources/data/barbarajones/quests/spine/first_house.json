@@ -1,0 +1,19 @@
+﻿{
+  "chapter": "barbarajones:spine",
+  "title": "quest.barbarajones.spine.first_house.title",
+  "objective": "quest.barbarajones.spine.first_house.objective",
+  "lore": "quest.barbarajones.spine.first_house.lore",
+  "icon": "barbarajones:stash_box",
+  "x": 0,
+  "y": 4,
+  "dependencies": [ "barbarajones:spine/the_knife", "barbarajones:spine/first_bowl" ],
+  "tasks": [
+    { "type": "place_building", "building": "barbarajones:shag_carpet", "count": 3 },
+    { "type": "place_building", "building": "barbarajones:stash_box", "count": 1 }
+  ],
+  "rewards": [
+    { "type": "item", "item": "barbarajones:housing_query", "count": 1 },
+    { "type": "schematic", "schematic": "barbarajones:starter_shack" },
+    { "type": "krave_xp", "amount": 50 }
+  ]
+}

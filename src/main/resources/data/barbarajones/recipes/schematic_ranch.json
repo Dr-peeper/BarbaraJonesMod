@@ -1,0 +1,15 @@
+{
+  "type": "minecraft:crafting_shapeless",
+  "ingredients": [
+    { "item": "barbarajones:krave_planks" },
+    { "item": "barbarajones:krave_planks" },
+    { "item": "barbarajones:krave_planks" },
+    { "item": "barbarajones:krave_log" },
+    { "item": "barbarajones:krave_log" },
+    { "item": "minecraft:hay_block" },
+    { "item": "minecraft:iron_ingot" },
+    { "item": "barbarajones:krave_dust" },
+    { "item": "barbarajones:krave_dust" }
+  ],
+  "result": { "item": "barbarajones:schematic_ranch", "count": 1 }
+}

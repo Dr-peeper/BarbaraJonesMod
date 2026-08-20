@@ -1,0 +1,15 @@
+{
+  "type": "minecraft:crafting_shapeless",
+  "ingredients": [
+    { "item": "barbarajones:severance_check" },
+    { "item": "barbarajones:five_hundred_dollars" },
+    { "item": "barbarajones:adoption_papers" },
+    { "item": "barbarajones:krave_syrup" },
+    { "item": "barbarajones:krave_syrup" },
+    { "item": "barbarajones:krave_syrup" },
+    { "item": "barbarajones:krave_dust" },
+    { "item": "barbarajones:krave_dust" },
+    { "item": "minecraft:netherite_ingot" }
+  ],
+  "result": { "item": "barbarajones:god_core", "count": 1 }
+}

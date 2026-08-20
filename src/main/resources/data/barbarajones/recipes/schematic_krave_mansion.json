@@ -1,0 +1,15 @@
+{
+  "type": "minecraft:crafting_shapeless",
+  "ingredients": [
+    { "item": "barbarajones:krave_block" },
+    { "item": "barbarajones:krave_block" },
+    { "item": "barbarajones:krave_planks" },
+    { "item": "minecraft:gold_ingot" },
+    { "item": "minecraft:diamond" },
+    { "item": "minecraft:emerald" },
+    { "item": "barbarajones:krave_dust" },
+    { "item": "barbarajones:krave_dust" },
+    { "item": "barbarajones:dollars" }
+  ],
+  "result": { "item": "barbarajones:schematic_krave_mansion", "count": 1 }
+}

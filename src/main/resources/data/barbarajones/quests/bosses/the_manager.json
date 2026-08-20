@@ -1,0 +1,17 @@
+﻿{
+  "chapter": "barbarajones:bosses",
+  "title": "quest.barbarajones.bosses.the_manager.title",
+  "objective": "quest.barbarajones.bosses.the_manager.objective",
+  "lore": "quest.barbarajones.bosses.the_manager.lore",
+  "icon": "barbarajones:the_manager_spawn_egg",
+  "x": -1,
+  "y": 3,
+  "dependencies": [ "barbarajones:bosses/mom" ],
+  "tasks": [
+    { "type": "defeat_boss", "entity": "barbarajones:the_manager" }
+  ],
+  "rewards": [
+    { "type": "item", "item": "barbarajones:employee_of_the_month", "count": 1 },
+    { "type": "krave_xp", "amount": 400 }
+  ]
+}

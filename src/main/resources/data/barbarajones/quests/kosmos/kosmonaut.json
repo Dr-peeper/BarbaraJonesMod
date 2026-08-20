@@ -1,0 +1,15 @@
+﻿{
+  "chapter": "barbarajones:kosmos",
+  "title": "quest.barbarajones.kosmos.kosmonaut.title",
+  "objective": "quest.barbarajones.kosmos.kosmonaut.objective",
+  "lore": "quest.barbarajones.kosmos.kosmonaut.lore",
+  "icon": "barbarajones:krave_tether",
+  "x": 0,
+  "y": 3,
+  "dependencies": [ "barbarajones:kosmos/cravelings", "barbarajones:kosmos/deep_krave" ],
+  "auto_claim": true,
+  "rewards": [
+    { "type": "schematic", "schematic": "barbarajones:kosmic_gate" },
+    { "type": "krave_xp", "amount": 200 }
+  ]
+}

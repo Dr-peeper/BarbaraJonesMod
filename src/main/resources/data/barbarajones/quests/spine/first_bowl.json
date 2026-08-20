@@ -1,0 +1,17 @@
+﻿{
+  "chapter": "barbarajones:spine",
+  "title": "quest.barbarajones.spine.first_bowl.title",
+  "objective": "quest.barbarajones.spine.first_bowl.objective",
+  "lore": "quest.barbarajones.spine.first_bowl.lore",
+  "icon": "barbarajones:cereal_bowl",
+  "x": 1,
+  "y": 3,
+  "dependencies": [ "barbarajones:spine/the_cereal" ],
+  "tasks": [
+    { "type": "craft", "item": "barbarajones:cereal_bowl", "count": 1 }
+  ],
+  "rewards": [
+    { "type": "item", "item": "barbarajones:cayden_compass", "count": 1 },
+    { "type": "krave_xp", "amount": 30 }
+  ]
+}

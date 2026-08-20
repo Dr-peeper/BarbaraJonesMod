@@ -1,0 +1,10 @@
+{
+  "variants": {
+    "facing=north": { "model": "barbarajones:block/krave_extractor" },
+    "facing=east":  { "model": "barbarajones:block/krave_extractor", "y": 90 },
+    "facing=south": { "model": "barbarajones:block/krave_extractor", "y": 180 },
+    "facing=west":  { "model": "barbarajones:block/krave_extractor", "y": 270 },
+    "facing=up":    { "model": "barbarajones:block/krave_extractor", "x": 270 },
+    "facing=down":  { "model": "barbarajones:block/krave_extractor", "x": 90 }
+  }
+}

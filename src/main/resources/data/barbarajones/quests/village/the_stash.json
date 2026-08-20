@@ -1,0 +1,20 @@
+﻿{
+  "chapter": "barbarajones:village",
+  "title": "quest.barbarajones.village.the_stash.title",
+  "objective": "quest.barbarajones.village.the_stash.objective",
+  "lore": "quest.barbarajones.village.the_stash.lore",
+  "icon": "barbarajones:krafting_bench",
+  "x": 0,
+  "y": 3,
+  "dependencies": [ "barbarajones:village/living_room", "barbarajones:village/feed_the_kid" ],
+  "tasks": [
+    { "type": "place_building", "building": "barbarajones:krafting_bench", "count": 1 },
+    { "type": "village_tier", "tier": 5 }
+  ],
+  "rewards": [
+    { "type": "item", "item": "barbarajones:five_hundred_dollars", "count": 1 },
+    { "type": "item", "item": "barbarajones:stash_box", "count": 1 },
+    { "type": "schematic", "schematic": "barbarajones:krave_workshop" },
+    { "type": "krave_xp", "amount": 120 }
+  ]
+}

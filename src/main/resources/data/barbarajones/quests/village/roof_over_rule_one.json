@@ -1,0 +1,17 @@
+﻿{
+  "chapter": "barbarajones:village",
+  "title": "quest.barbarajones.village.roof.title",
+  "objective": "quest.barbarajones.village.roof.objective",
+  "lore": "quest.barbarajones.village.roof.lore",
+  "icon": "barbarajones:cayden_cobb_spawn_egg",
+  "x": 0,
+  "y": 0,
+  "dependencies": [ "barbarajones:spine/first_house" ],
+  "tasks": [
+    { "type": "village_tier", "tier": 2 }
+  ],
+  "rewards": [
+    { "type": "item", "item": "barbarajones:chicken_nuggets", "count": 8 },
+    { "type": "krave_xp", "amount": 60 }
+  ]
+}

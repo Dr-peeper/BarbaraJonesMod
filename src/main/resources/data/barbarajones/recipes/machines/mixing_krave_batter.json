@@ -1,0 +1,11 @@
+{
+  "type": "barbarajones:mixing",
+  "ingredients": [
+    { "item": "barbarajones:krave_dust", "count": 2 },
+    { "item": "barbarajones:krave_milk", "count": 1 },
+    { "item": "minecraft:sugar", "count": 1 }
+  ],
+  "result": { "item": "barbarajones:krave_batter", "count": 2 },
+  "time": 160,
+  "fuel_per_tick": 1
+}

@@ -1,0 +1,18 @@
+﻿{
+  "chapter": "barbarajones:village",
+  "title": "quest.barbarajones.village.workshop.title",
+  "objective": "quest.barbarajones.village.workshop.objective",
+  "lore": "quest.barbarajones.village.workshop.lore",
+  "icon": "barbarajones:wood_paneling",
+  "x": 1,
+  "y": 1,
+  "dependencies": [ "barbarajones:village/roof_over_rule_one" ],
+  "tasks": [
+    { "type": "place_building", "building": "barbarajones:wood_paneling", "count": 8 },
+    { "type": "village_tier", "tier": 3 }
+  ],
+  "rewards": [
+    { "type": "item", "item": "barbarajones:krave_dust", "count": 8 },
+    { "type": "krave_xp", "amount": 70 }
+  ]
+}

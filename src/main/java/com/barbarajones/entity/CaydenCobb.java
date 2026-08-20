@@ -895,6 +895,22 @@ public class CaydenCobb extends TamableAnimal {
             return net.minecraft.world.InteractionResult.sidedSuccess(level().isClientSide);
         }
 
+        // The crafted mid-tier from the Krave Crafting Economy module
+        // (com.barbarajones.v2.economy.KraveEconomy.RICH_KRAVE) - better than a
+        // plain box, not the one-in-a-hundred-thousand golden one.
+        if (held.is(com.barbarajones.v2.economy.KraveEconomy.RICH_KRAVE.get())) {
+            if (!level().isClientSide) {
+                if (!isTame()) {
+                    tame(player);
+                }
+                feedRichKrave(player);
+            }
+            if (!player.getAbilities().instabuild) {
+                held.shrink(1);
+            }
+            return net.minecraft.world.InteractionResult.sidedSuccess(level().isClientSide);
+        }
+
         if (held.is(com.barbarajones.content.ModItems.KRAVE_CEREAL.get())) {
             if (!level().isClientSide) {
                 if (!isTame()) {
@@ -934,6 +950,26 @@ public class CaydenCobb extends TamableAnimal {
         player.sendSystemMessage(Component.literal(ChatFormatting.GOLD
                 + "The golden box. +" + AscensionLadder.KI_PER_GOLDEN_KRAVE + " Ki. ("
                 + getKi() + " banked)"));
+    }
+
+    /** Ki banked per Rich Krave box - between a plain box and the golden one. */
+    private static final int KI_PER_RICH_KRAVE = 5;
+
+    /** Rich Krave: better than the plain box, well short of the golden one. */
+    private void feedRichKrave(Player player) {
+        this.entityData.set(FED, getKraveFed() + 1);
+        heal(7.0F);
+        addKi(KI_PER_RICH_KRAVE);
+        applyKraveStats();
+        playSound(SoundEvents.GENERIC_EAT, 1.0F, 1.0F);
+        level().playSound(null, blockPosition(), ModSounds.CAYDEN_SHOUT.get(),
+                getSoundSource(), 1.1F, 1.0F);
+        if (level() instanceof ServerLevel sl) {
+            sl.sendParticles(ParticleTypes.HAPPY_VILLAGER,
+                    getX(), getY() + getBbHeight() * 0.7D, getZ(), 10, 0.4D, 0.5D, 0.4D, 0.0D);
+        }
+        player.sendSystemMessage(Component.literal(ChatFormatting.GOLD
+                + "Rich Krave. +" + KI_PER_RICH_KRAVE + " Ki. (" + getKi() + " banked)"));
     }
 
     private void feedKrave(Player player) {

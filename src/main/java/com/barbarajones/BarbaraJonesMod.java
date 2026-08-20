@@ -37,6 +37,22 @@ public class BarbaraJonesMod {
         ModTabs.TABS.register(bus);
         ModMenus.MENUS.register(bus);
 
+        // ---- Krave 2.0 modules -------------------------------------------
+        // Each module owns its own DeferredRegisters and exposes exactly one
+        // init(bus). That is what let a dozen agents build these in parallel
+        // without twelve-way conflicts in this file.
+        com.barbarajones.v2.mobs.Mobs.init(bus);
+        com.barbarajones.v2.economy.KraveEconomy.init(bus);
+        com.barbarajones.v2.build.KraveBuild.init(bus);
+        com.barbarajones.v2.houses.KraveHouses.init(bus);
+        com.barbarajones.v2.village.KraveVillage.init(bus);
+        com.barbarajones.v2.quests.QuestModule.init(bus);
+        com.barbarajones.v2.internet.InternetContent.init(bus);
+        com.barbarajones.v2.machines.KraveMachines.init(bus);
+        com.barbarajones.v2.abilities.PlayerAbilities.init(bus);
+        com.barbarajones.v2.bonds.BondsRegistry.init(bus);
+        com.barbarajones.v2.manual.ManualModule.init(bus);
+
         ModLoadingContext.get().registerConfig(ModConfig.Type.COMMON, Config.SPEC);
 
         bus.addListener(this::commonSetup);

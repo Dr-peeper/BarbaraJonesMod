@@ -1,0 +1,14 @@
+﻿{
+  "chapter": "barbarajones:spine",
+  "title": "quest.barbarajones.spine.wake_up.title",
+  "objective": "quest.barbarajones.spine.wake_up.objective",
+  "lore": "quest.barbarajones.spine.wake_up.lore",
+  "icon": "barbarajones:krave_manual",
+  "x": 0,
+  "y": 0,
+  "auto_claim": true,
+  "rewards": [
+    { "type": "item", "item": "barbarajones:krave_manual", "count": 1 },
+    { "type": "krave_xp", "amount": 10 }
+  ]
+}

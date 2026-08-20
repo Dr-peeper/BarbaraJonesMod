@@ -1,0 +1,17 @@
+﻿{
+  "chapter": "barbarajones:kosmos",
+  "title": "quest.barbarajones.kosmos.the_door.title",
+  "objective": "quest.barbarajones.kosmos.the_door.objective",
+  "lore": "quest.barbarajones.kosmos.the_door.lore",
+  "icon": "barbarajones:krave_door",
+  "x": 0,
+  "y": 0,
+  "dependencies": [ "barbarajones:spine/first_house" ],
+  "tasks": [
+    { "type": "place_building", "building": "barbarajones:krave_door", "count": 1 }
+  ],
+  "rewards": [
+    { "type": "item", "item": "barbarajones:krave_tether", "count": 2 },
+    { "type": "krave_xp", "amount": 90 }
+  ]
+}

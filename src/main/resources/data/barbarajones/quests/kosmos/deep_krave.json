@@ -1,0 +1,18 @@
+﻿{
+  "chapter": "barbarajones:kosmos",
+  "title": "quest.barbarajones.kosmos.deep_krave.title",
+  "objective": "quest.barbarajones.kosmos.deep_krave.objective",
+  "lore": "quest.barbarajones.kosmos.deep_krave.lore",
+  "icon": "barbarajones:krave_dust",
+  "x": 1,
+  "y": 2,
+  "dependencies": [ "barbarajones:kosmos/arrival" ],
+  "tasks": [
+    { "type": "craft", "item": "barbarajones:krave_dust", "count": 24 },
+    { "type": "krave_level", "level": 8 }
+  ],
+  "rewards": [
+    { "type": "item", "item": "barbarajones:golden_krave", "count": 1 },
+    { "type": "krave_xp", "amount": 110 }
+  ]
+}

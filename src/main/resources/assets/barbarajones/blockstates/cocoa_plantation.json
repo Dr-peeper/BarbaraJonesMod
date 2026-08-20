@@ -1,0 +1,12 @@
+{
+  "variants": {
+    "facing=north,running=false": { "model": "barbarajones:block/cocoa_plantation" },
+    "facing=east,running=false":  { "model": "barbarajones:block/cocoa_plantation", "y": 90 },
+    "facing=south,running=false": { "model": "barbarajones:block/cocoa_plantation", "y": 180 },
+    "facing=west,running=false":  { "model": "barbarajones:block/cocoa_plantation", "y": 270 },
+    "facing=north,running=true":  { "model": "barbarajones:block/cocoa_plantation_on" },
+    "facing=east,running=true":   { "model": "barbarajones:block/cocoa_plantation_on", "y": 90 },
+    "facing=south,running=true":  { "model": "barbarajones:block/cocoa_plantation_on", "y": 180 },
+    "facing=west,running=true":   { "model": "barbarajones:block/cocoa_plantation_on", "y": 270 }
+  }
+}
