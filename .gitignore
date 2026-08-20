@@ -1,5 +1,8 @@
-# Build output
-build/
+# Build output - root-anchored so it doesn't also swallow any source
+# package that happens to be named "build" (it did: com.barbarajones.v2.build
+# lives at src/main/java/com/barbarajones/v2/build/ and was being silently
+# ignored, never committed, despite ~15 other files depending on it).
+/build/
 .gradle/
 
 # Local toolchain: a bundled JDK 17 + Gradle 8.1.1 (~740 MB). Not source.
