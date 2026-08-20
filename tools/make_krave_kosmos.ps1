@@ -123,20 +123,34 @@ function Galaxy($b,$base){
 "@ | Set-Content "$midir\krave_grass.json" -Encoding utf8
 "  krave_grass + krave_dirt: textures + blockstates + models"
 
-# ---- Krave Door -------------------------------------------------------------
-function DoorPanel($b, $withHandle){
-    Speckle $b $hide
-    Rct $b 1 1 14 6 $hideL
-    Rct $b 1 9 14 6 $hideL
-    if($withHandle){ Rct $b 12 8 2 2 $bone }
+# ---- Krave Door: a segmented chocolate bar, not a galaxy panel --------------
+# Still purple/speckled before this for no real reason - it's the one door
+# in the mod, it opens a portal, it should look like the mod's actual
+# material. A 2-wide x 4-tall grid of raised squares with dark grooves
+# between them, like a Kit-Kat/Hershey's bar, top and bottom halves reading
+# as one continuous bar when the door is assembled.
+$barBase = C '4A2C18'; $barGroove = C '2A1810'; $barHi = C '6B4226'; $barShine = C '8B5A2B'
+
+function ChocBarPanel($b, $withHandle){
+    Rct $b 0 0 16 16 $barGroove
+    for($col=0; $col -lt 2; $col++){ for($row=0; $row -lt 4; $row++){
+        $x = 1 + $col*7; $y = 1 + $row*3
+        Rct $b $x $y 6 2 $barBase
+        Rct $b $x $y 6 1 $barHi
+        Rct $b $x $y 1 2 $barShine
+    }}
+    if($withHandle){ Rct $b 13 7 2 2 (C 'D8C8A0') }
 }
-$db = NewImg 16 16; DoorPanel $db $true; Save $db "$bdir\krave_door_bottom.png"
-$dt = NewImg 16 16; DoorPanel $dt $false; Save $dt "$bdir\krave_door_top.png"
+$db = NewImg 16 16; ChocBarPanel $db $true; Save $db "$bdir\krave_door_bottom.png"
+$dt = NewImg 16 16; ChocBarPanel $dt $false; Save $dt "$bdir\krave_door_top.png"
 
 $icon = NewImg 16 16
-Rct $icon 2 1 12 14 $hide
-Rct $icon 3 2 10 12 $hideL
-Rct $icon 11 8 1 1 $bone
+Rct $icon 2 1 12 14 $barGroove
+for($col=0; $col -lt 2; $col++){ for($row=0; $row -lt 4; $row++){
+    Rct $icon (3+$col*5) (2+$row*3) 4 2 $barBase
+    Rct $icon (3+$col*5) (2+$row*3) 4 1 $barHi
+}}
+Rct $icon 11 8 1 1 (C 'D8C8A0')
 Save $icon "$idir\krave_door.png"
 
 foreach($half in 'bottom','top'){
@@ -367,8 +381,8 @@ Save $shield "$edir\krave_shield.png"
 @"
 {
   "type": "minecraft:crafting_shaped",
-  "pattern": [ "#X", "#X", "#X" ],
-  "key": { "#": { "item": "barbarajones:krave_block" }, "X": { "item": "minecraft:amethyst_shard" } },
+  "pattern": [ "##", "##", "##" ],
+  "key": { "#": { "item": "barbarajones:krave_planks" } },
   "result": { "item": "barbarajones:krave_door", "count": 3 }
 }
 "@ | Set-Content "$rdir\krave_door.json" -Encoding utf8

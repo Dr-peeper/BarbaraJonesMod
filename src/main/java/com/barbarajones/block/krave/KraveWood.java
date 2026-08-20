@@ -2,7 +2,6 @@ package com.barbarajones.block.krave;
 
 import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.ButtonBlock;
-import net.minecraft.world.level.block.DoorBlock;
 import net.minecraft.world.level.block.FenceBlock;
 import net.minecraft.world.level.block.FenceGateBlock;
 import net.minecraft.world.level.block.LeavesBlock;
@@ -94,9 +93,15 @@ public final class KraveWood {
     public static final FenceGateBlock FENCE_GATE =
             new FenceGateBlock(BlockBehaviour.Properties.copy(PLANKS), WoodType.OAK);
 
-    public static final DoorBlock DOOR = new DoorBlock(BlockBehaviour.Properties.copy(PLANKS)
-            .noOcclusion()
-            .pushReaction(PushReaction.DESTROY), BlockSetType.OAK);
+    // No plain wood DOOR here on purpose - the mod already has exactly one
+    // door (ModBlocks.KRAVE_DOOR, the Kosmos portal door), now craftable
+    // from krave_planks. A second, purely decorative wood door was
+    // confusing (two visually-similar "Krave Door"s, only one of which
+    // actually did anything) and this class had no way to make the plain
+    // one look any different anyway - see KraveDoorBlock's own new
+    // chocolate-bar texture. Same intrusive-holder rule as the leaves
+    // field note above: this field simply doesn't exist now, rather than
+    // being constructed and left unregistered.
 
     public static final TrapDoorBlock TRAPDOOR = new TrapDoorBlock(BlockBehaviour.Properties.copy(PLANKS)
             .noOcclusion()

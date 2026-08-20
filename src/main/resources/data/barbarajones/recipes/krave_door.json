@@ -1,6 +1,6 @@
 ﻿{
   "type": "minecraft:crafting_shaped",
-  "pattern": [ "#X", "#X", "#X" ],
-  "key": { "#": { "item": "barbarajones:krave_block" }, "X": { "item": "minecraft:amethyst_shard" } },
+  "pattern": [ "##", "##", "##" ],
+  "key": { "#": { "item": "barbarajones:krave_planks" } },
   "result": { "item": "barbarajones:krave_door", "count": 3 }
 }

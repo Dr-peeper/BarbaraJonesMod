@@ -442,8 +442,6 @@ public final class ModItems {
             () -> new BlockItem(ModBlocks.KRAVE_FENCE.get(), props()));
     public static final RegistryObject<Item> KRAVE_FENCE_GATE_ITEM = ITEMS.register("krave_fence_gate",
             () -> new BlockItem(ModBlocks.KRAVE_FENCE_GATE.get(), props()));
-    public static final RegistryObject<Item> KRAVE_DOOR_BLOCK_ITEM = ITEMS.register("krave_door_block",
-            () -> new BlockItem(ModBlocks.KRAVE_DOOR_BLOCK.get(), props()));
     public static final RegistryObject<Item> KRAVE_TRAPDOOR_ITEM = ITEMS.register("krave_trapdoor",
             () -> new BlockItem(ModBlocks.KRAVE_TRAPDOOR.get(), props()));
     public static final RegistryObject<Item> KRAVE_BUTTON_ITEM = ITEMS.register("krave_button",
