@@ -1,23 +1,19 @@
 package com.barbarajones.dimension;
 
-import com.barbarajones.entity.KraveMonster;
-
 import net.minecraft.nbt.CompoundTag;
-import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.level.ServerLevel;
-import net.minecraft.world.level.portal.PortalInfo;
 import net.minecraft.world.level.saveddata.SavedData;
-import net.minecraft.world.phys.Vec3;
-import net.minecraftforge.common.util.ITeleporter;
 
 import javax.annotation.Nullable;
 import java.util.UUID;
 
 /**
- * Tracks the Krave Kosmos's one singleton Krave Monster, so the Overworld
- * pull triggers (Krave Box's SUMMON_KRAVE, the 10th Cayden death) can
- * relocate the SAME boss instead of spawning a duplicate, and so a second one
- * never gets created if a player re-enters the Kosmos while he's away.
+ * Tracks which Krave Monster is the Kosmos's own resident boss, so
+ * {@code KraveDoorBlock}'s door-entry spawn never creates a second one while
+ * he's still alive. The two Overworld summon triggers (Krave Box's
+ * SUMMON_KRAVE, the 10th Cayden death) deliberately do NOT go through this -
+ * they always spawn their own fresh encounter regardless of whether the
+ * Kosmos-resident boss is alive, so this class has nothing to do with them.
  */
 public class KraveKosmosData extends SavedData {
 
@@ -49,42 +45,6 @@ public class KraveKosmosData extends SavedData {
     public void setLandingBoxesSpawned(boolean value) {
         this.landingBoxesSpawned = value;
         setDirty();
-    }
-
-    /**
-     * The two Overworld triggers (Krave Box summon, 10th Cayden death) call
-     * this instead of spawning a fresh boss - it finds the SAME Kosmos-resident
-     * Krave Monster (if he's alive and home) and relocates him. Returns null
-     * if there's no living boss to pull, so callers can fall back to spawning
-     * one fresh rather than softlocking the quest.
-     */
-    @Nullable
-    public static KraveMonster pullBossToOverworld(MinecraftServer server, ServerLevel destLevel, Vec3 pos) {
-        ServerLevel kosmos = server.getLevel(KraveDimensions.KRAVE_KOSMOS);
-        if (kosmos == null) {
-            return null;
-        }
-        KraveKosmosData data = get(kosmos);
-        UUID id = data.getBossId();
-        if (id == null) {
-            return null;
-        }
-        if (!(kosmos.getEntity(id) instanceof KraveMonster monster) || !monster.isAlive()) {
-            return null;
-        }
-        if (monster.level() == destLevel) {
-            // already out here somehow - just reposition it
-            monster.teleportTo(pos.x, pos.y, pos.z);
-            return monster;
-        }
-        var moved = monster.changeDimension(destLevel, new ITeleporter() {
-            @Override
-            public PortalInfo getPortalInfo(net.minecraft.world.entity.Entity entity, ServerLevel dest,
-                                            java.util.function.Function<ServerLevel, PortalInfo> defaultPortalInfo) {
-                return new PortalInfo(pos, Vec3.ZERO, entity.getYRot(), entity.getXRot());
-            }
-        });
-        return moved instanceof KraveMonster m ? m : null;
     }
 
     private static KraveKosmosData load(CompoundTag tag) {
