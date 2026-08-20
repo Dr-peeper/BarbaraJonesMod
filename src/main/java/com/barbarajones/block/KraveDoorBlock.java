@@ -67,7 +67,7 @@ public class KraveDoorBlock extends DoorBlock {
         BlockPos lowerPos = state.getValue(HALF) == DoubleBlockHalf.LOWER ? pos : pos.below();
         BlockState lowerState = level.getBlockState(lowerPos);
 
-        if (!isFrameComplete(level, lowerPos, lowerState)) {
+        if (!isFrameComplete(level, lowerPos, lowerState, player)) {
             // No threshold yet - an ordinary door, vanilla behavior untouched.
             return super.use(state, level, pos, player, hand, hit);
         }
@@ -93,12 +93,12 @@ public class KraveDoorBlock extends DoorBlock {
      * needs a real enclosed chocolate room around the door, not just a
      * frame someone could build in open air with nothing behind it.
      */
-    private boolean isFrameComplete(Level level, BlockPos lowerPos, BlockState lowerState) {
+    private boolean isFrameComplete(Level level, BlockPos lowerPos, BlockState lowerState, Player player) {
         Direction facing = lowerState.getValue(FACING);
         if (level.dimension().equals(KraveDimensions.KRAVE_KOSMOS)) {
             return isFlatFrameComplete(level, lowerPos, facing);
         }
-        return isChocolateRoomComplete(level, lowerPos, facing);
+        return isChocolateRoomComplete(level, lowerPos, facing, player);
     }
 
     private boolean isFlatFrameComplete(Level level, BlockPos lowerPos, Direction facing) {
@@ -119,12 +119,28 @@ public class KraveDoorBlock extends DoorBlock {
      * both sides of the door plane, since a player building this has no way
      * to know which way {@code FACING} happens to point.
      */
-    private boolean isChocolateRoomComplete(Level level, BlockPos lowerPos, Direction doorFacing) {
-        return isRoomExtending(level, lowerPos, doorFacing)
-                || isRoomExtending(level, lowerPos, doorFacing.getOpposite());
+    private boolean isChocolateRoomComplete(Level level, BlockPos lowerPos, Direction doorFacing, Player player) {
+        String failA = isRoomExtending(level, lowerPos, doorFacing);
+        if (failA == null) {
+            return true;
+        }
+        String failB = isRoomExtending(level, lowerPos, doorFacing.getOpposite());
+        if (failB == null) {
+            return true;
+        }
+        // TEMPORARY diagnostic (see the "the door only makes a sound" report) -
+        // reports the first thing wrong on whichever of the two attempts got
+        // further, so we can see exactly what a real, in-game "complete" room
+        // is missing instead of guessing blind. Strip once confirmed fixed.
+        if (!level.isClientSide && player != null) {
+            player.displayClientMessage(net.minecraft.network.chat.Component.literal(
+                    "[Krave Door] " + failA + " | " + failB), false);
+        }
+        return false;
     }
 
-    private boolean isRoomExtending(Level level, BlockPos lowerPos, Direction into) {
+    /** Returns null if the room is complete extending {@code into}, or a description of the first problem found. */
+    private String isRoomExtending(Level level, BlockPos lowerPos, Direction into) {
         Direction side = into.getClockWise();
         for (int depth = 0; depth <= 2; depth++) {
             for (int across = -1; across <= 1; across++) {
@@ -136,19 +152,23 @@ public class KraveDoorBlock extends DoorBlock {
 
                     if (isDoorCell) {
                         if (!level.getBlockState(cell).is(ModBlocks.KRAVE_DOOR.get())) {
-                            return false;
+                            return "expected door at " + cell.toShortString() + " (into=" + into
+                                    + "), found " + level.getBlockState(cell).getBlock();
                         }
                     } else if (isInterior) {
                         if (level.getBlockState(cell).blocksMotion()) {
-                            return false;   // has to actually be a room, not a solid block that happens to pass the shell check
+                            return "expected open interior at " + cell.toShortString() + " (into=" + into
+                                    + "), found " + level.getBlockState(cell).getBlock();
                         }
                     } else if (!isKraveBlock(level, cell)) {
-                        return false;
+                        return "expected chocolate block at " + cell.toShortString() + " (into=" + into
+                                + ", depth=" + depth + ", across=" + across + ", row=" + row
+                                + "), found " + level.getBlockState(cell).getBlock();
                     }
                 }
             }
         }
-        return true;
+        return null;
     }
 
     private boolean isKraveBlock(Level level, BlockPos pos) {
