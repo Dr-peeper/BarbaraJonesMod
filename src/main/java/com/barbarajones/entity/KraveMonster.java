@@ -588,7 +588,7 @@ public class KraveMonster extends Monster {
         // which form you are missing. What he cannot do is finish it. Without the
         // floor he simply grinds any form down eventually and "he cannot beat it"
         // quietly degrades into "it takes him a while".
-        if (source.getEntity() instanceof CaydenCobb attacker && attacker.isOutmatched()) {
+        if (source.getEntity() instanceof CaydenCobb attacker && attacker.isMortallyOutmatched()) {
             applied *= attacker.outmatchedDealtScale();
             float floor = getMaxHealth() * attacker.outmatchedFloor();
             float headroom = getHealth() - floor;

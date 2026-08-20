@@ -1161,6 +1161,12 @@ public class CaydenCobb extends TamableAnimal {
             base = KRAVE_FORM_DEMAND[form - 1];
         } else if (foe instanceof net.minecraft.world.entity.boss.enderdragon.EnderDragon) {
             base = AscensionLadder.SSJ3;                  // it flies, so he has to
+        } else if (foe instanceof com.barbarajones.v2.internet.InternetManagerBoss) {
+            // The outage boss. Its own module suggested God; Blue is what was
+            // asked for, and it reads better anyway - Blue is God power held
+            // perfectly still, which is the right answer to a man whose whole
+            // threat is latency and throttling.
+            base = AscensionLadder.BLUE;
         } else if (foe instanceof net.minecraft.world.entity.monster.warden.Warden
                 || foe instanceof com.barbarajones.boss.manager.TheManager) {
             base = AscensionLadder.SSJ2;                  // above a Wither
@@ -1812,7 +1818,7 @@ public class CaydenCobb extends TamableAnimal {
         // earned the right form: walk into Form 3 without Super Saiyan 3 and he
         // is as mortal as anybody.
         int shortfall = shortfall();
-        if (isSuperSaiyan() && this.ssjUntilBossDies && shortfall == 0) {
+        if (isSuperSaiyan() && this.ssjUntilBossDies && !isMortallyOutmatched()) {
             return false;
         }
         // 30 seconds of total immunity after he claws his way back out. He respawns
@@ -2076,5 +2082,21 @@ public class CaydenCobb extends TamableAnimal {
     /** Fraction of a boss's max health he cannot get it below while outclassed. */
     public float outmatchedFloor() {
         return band(OUTMATCHED_FLOOR, shortfall());
+    }
+
+    /**
+     * Whether being outclassed can actually get him KILLED, as opposed to merely
+     * beaten up.
+     *
+     * <p>Deliberately narrower than {@link #isOutmatched()}. The brief was that
+     * the Krave Monster should be able to kill him if he cannot match its form,
+     * and that is a fight the player chooses, walks into, and can walk out of.
+     * The outage boss is not: it arrives on a random timer, and now demands Super
+     * Saiyan Blue, so a universal rule would mean most players lose Cayden to an
+     * event they never opted into. Rule #1 gets exactly one exception, and it is
+     * the one that was asked for.
+     */
+    public boolean isMortallyOutmatched() {
+        return isOutmatched() && getTarget() instanceof KraveMonster;
     }
 }
