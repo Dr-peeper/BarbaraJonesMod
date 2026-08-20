@@ -77,7 +77,7 @@ public final class VillageBuffs {
                 Blocks.BAMBOO_DOOR, Blocks.CRIMSON_DOOR, Blocks.WARPED_DOOR, Blocks.IRON_DOOR}) {
             KraveVillage.registerVillageBuff(block, door);
         }
-        KraveVillage.registerVillageBuff(ModBlocks.KRAVE_DOOR_BLOCK, door);
+        KraveVillage.registerVillageBuff(ModBlocks.KRAVE_DOOR, door);
     }
 
     // ---- workstations: what makes a village more than a dormitory ------------

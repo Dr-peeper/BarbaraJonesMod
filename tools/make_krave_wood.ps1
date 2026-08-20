@@ -238,39 +238,9 @@ foreach ($facing in @('north','south','west','east')) {
 WriteJson "$bs\krave_fence_gate.json" "{`n  `"variants`": {`n$($gateVars -join ",`n")`n  }`n}"
 WriteJson "$imod\krave_fence_gate.json" "{ `"parent`": `"$BLK/krave_fence_gate`" }"
 
-# door - registered as krave_door_block to avoid clashing with the portal item
-#
-# The eight krave_door_{top,bottom}_{left,right}[_open] models are the correct
-# 1.20.1 set and already exist, so this only writes the blockstate that picks
-# between them. The four models this used to write pointed at 1.12-era vanilla
-# parents (door_top, door_bottom and their _hinge variants) which no longer
-# exist under those names, so every single door state resolved to the missing
-# model - and because there was no _open model at all, an open door was drawn
-# closed even when the parent did resolve.
-$doorVars = New-Object System.Collections.Generic.List[string]
-# Vanilla's own table: a base yaw per facing, and an open door takes a further
-# quarter turn, whose direction depends on which side the hinge is on.
-$doorYaw = @{ east = 0; south = 90; west = 180; north = 270 }
-foreach ($facing in @('north','south','west','east')) {
-    foreach ($half in @('lower','upper')) {
-        foreach ($hinge in @('left','right')) {
-            foreach ($open in @('false','true')) {
-                $part = $(if ($half -eq 'upper') { 'top' } else { 'bottom' })
-                $m = "$BLK/krave_door_${part}_$hinge"
-                $y = $doorYaw[$facing]
-                if ($open -eq 'true') {
-                    $m += '_open'
-                    $y = ($y + $(if ($hinge -eq 'left') { 90 } else { 270 })) % 360
-                }
-                $parts = @("`"model`": `"$m`"")
-                if ($y -ne 0) { $parts += "`"y`": $y" }
-                $doorVars.Add("    `"facing=$facing,half=$half,hinge=$hinge,open=$open`": { $($parts -join ', ') }")
-            }
-        }
-    }
-}
-WriteJson "$bs\krave_door_block.json" "{`n  `"variants`": {`n$($doorVars -join ",`n")`n  }`n}"
-WriteJson "$imod\krave_door_block.json" "{`n  `"parent`": `"minecraft:item/generated`",`n  `"textures`": { `"layer0`": `"barbarajones:item/krave_door_block`" }`n}"
+# The Krave door is unified as 'krave_door' on the other branch now, and that
+# branch owns its blockstate, models and texture. This script must not write a
+# second door - doing so resurrects the id that was deliberately removed.
 
 # door needs its own two-part texture and an inventory sprite
 $b = NewImg
@@ -287,7 +257,7 @@ $b = NewImg
 Rct $b 0 0 16 16 (C '000000' 0)
 Rct $b 4 1 8 14 (C '5C3F28'); Rct $b 5 2 6 5 (C '3A1E6E'); Rct $b 6 3 4 3 (C 'B060D0')
 Rct $b 5 8 6 6 (C '4A3220'); Rct $b 10 10 1 2 (C 'D8A63A')
-Save $b "$idir\krave_door_block.png"
+# krave_door_block.png intentionally not written: the unified krave_door owns it.
 
 # trapdoor
 foreach ($n in @(@('krave_trapdoor_bottom','template_orientable_trapdoor_bottom'),
@@ -370,7 +340,7 @@ WriteJson "$imod\krave_pod.json" "{`n  `"parent`": `"minecraft:item/generated`",
 # ---- verify ----------------------------------------------------------------
 $ids = @('krave_log','krave_wood','stripped_krave_log','stripped_krave_wood',
          'krave_sapling','krave_planks','krave_stairs','krave_slab','krave_fence',
-         'krave_fence_gate','krave_door_block','krave_trapdoor','krave_button',
+         'krave_fence_gate','krave_trapdoor','krave_button',
          'krave_pressure_plate','krave_pod','krave_ore','deepslate_krave_ore')
 $missing = 0
 foreach ($id in $ids) {

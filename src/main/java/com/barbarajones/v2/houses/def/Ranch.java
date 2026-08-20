@@ -56,7 +56,7 @@ final class Ranch {
                 b.set(x, 1, 4, GLASS_PANE);
             }
         }
-        b.door(5, 0, 4, ModBlocks.KRAVE_DOOR_BLOCK);
+        b.door(5, 0, 4, ModBlocks.KRAVE_DOOR);
 
         RoofKit.gableAlongX(b, 0, 10, 0, 4, ROOF_Y, ROOF_WOOD_N, ROOF_WOOD_S, ROOF_WOOD_RIDGE);
         RoofKit.gableEndWallX(b, 0, 4, 0, ROOF_Y, PLANKS);

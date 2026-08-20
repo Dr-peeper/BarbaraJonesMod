@@ -52,7 +52,7 @@ final class TwoStoreyHouse {
         b.fill(1, 0, 1, 4, 0, 4, PLANKS);
         b.set(0, 1, 3, GLASS_PANE);
         b.set(5, 1, 3, GLASS_PANE);
-        b.door(3, 0, 5, ModBlocks.KRAVE_DOOR_BLOCK);
+        b.door(3, 0, 5, ModBlocks.KRAVE_DOOR);
 
         // ---- second floor slab, walls, stairwell -----------------------------
         b.walls(0, FLOOR2, 0, 5, EAVE2, 5, PLANKS);

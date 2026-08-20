@@ -52,7 +52,7 @@ final class SmallHouse {
         // Windows on both side walls, door centred on the front (z=4).
         b.set(0, 1, 2, GLASS_PANE);
         b.set(4, 1, 2, GLASS_PANE);
-        b.door(2, 0, 4, ModBlocks.KRAVE_DOOR_BLOCK);
+        b.door(2, 0, 4, ModBlocks.KRAVE_DOOR);
 
         // Gable roof, ridge along Z, glazed triangle over the door.
         RoofKit.gableAlongZ(b, 0, 4, 0, 4, ROOF_Y, ROOF_WOOD_W, ROOF_WOOD_E, ROOF_WOOD_RIDGE);

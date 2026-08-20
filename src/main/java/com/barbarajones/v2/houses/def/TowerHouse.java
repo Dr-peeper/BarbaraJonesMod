@@ -83,7 +83,7 @@ final class TowerHouse {
         b.set(4, F4 + 1, 2, GLASS_PANE);
         b.set(2, F4 + 1, 4, GLASS_PANE);
 
-        b.door(2, F1, 4, ModBlocks.KRAVE_DOOR_BLOCK);
+        b.door(2, F1, 4, ModBlocks.KRAVE_DOOR);
 
         // ---- flat battlemented top, no pitched roof at all -------------------
         int parapetY = TOP + 1;

@@ -57,7 +57,7 @@ final class Cottage {
         b.set(6, 1, 1, GLASS_PANE);
         b.set(6, 1, 4, GLASS_PANE);
 
-        b.door(3, 0, 5, ModBlocks.KRAVE_DOOR_BLOCK);
+        b.door(3, 0, 5, ModBlocks.KRAVE_DOOR);
 
         // Main roof: gable, ridge front-to-back.
         RoofKit.gableAlongZ(b, 0, 6, 0, 5, ROOF_Y, ROOF_WOOD_W, ROOF_WOOD_E, ROOF_WOOD_RIDGE);

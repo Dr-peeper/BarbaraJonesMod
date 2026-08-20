@@ -522,7 +522,7 @@ public final class ManualBook {
         ));
         e.add(gal(regBlock(ModBlocks.KRAVE_BLOCK, "Krave Block"),
                 regBlock(ModBlocks.KRAFTING_BENCH, "Krafting Bench"),
-                regBlock(ModBlocks.KRAVE_DOOR_BLOCK, "Krave Door"),
+                regBlock(ModBlocks.KRAVE_DOOR, "Krave Door"),
                 regBlock(ModBlocks.STASH_BOX, "Stash Box"),
                 regBlock(ModBlocks.RECLINER, "Recliner"),
                 regBlock(ModBlocks.TELEVISION, "Television")));
@@ -545,7 +545,7 @@ public final class ManualBook {
 
         return new ManualChapter("village", 4, "Building the Village",
                 "No blueprints yet - just beds, doors, lights, and Krave.",
-                regBlock(ModBlocks.KRAVE_DOOR_BLOCK, "Krave Door"), 0xFF8A5A2A, e);
+                regBlock(ModBlocks.KRAVE_DOOR, "Krave Door"), 0xFF8A5A2A, e);
     }
 
     // ==========================================================================
@@ -1005,7 +1005,7 @@ public final class ManualBook {
                 + "replaced by the Krave Door. Open the door with the frame complete around it "
                 + "and you step straight through."));
         e.add(shaped3x3("KKK\nK.K\nK.K", java.util.Map.of('K', regBlock(ModBlocks.KRAVE_BLOCK, "Krave Block")),
-                regBlock(ModBlocks.KRAVE_DOOR_BLOCK, "Krave Door goes in the two empty cells"), 1,
+                regBlock(ModBlocks.KRAVE_DOOR, "Krave Door goes in the two empty cells"), 1,
                 "FRAME SHAPE - not a crafting recipe, a build layout"));
         e.add(note("YOUR VILLAGE HAS TO EARN THIS FIRST", "The door only actually opens once your nearest "
                 + "settlement reads as VILLAGE tier or higher. Building the frame early just gets "
@@ -1043,6 +1043,6 @@ public final class ManualBook {
 
         return new ManualChapter("dimension", 11, "The Krave Dimension",
                 "A real portal, a real gate condition, and a boss's den waiting on the other side.",
-                regBlock(ModBlocks.KRAVE_DOOR_BLOCK, "Krave Door"), 0xFF6B3FA0, e);
+                regBlock(ModBlocks.KRAVE_DOOR, "Krave Door"), 0xFF6B3FA0, e);
     }
 }

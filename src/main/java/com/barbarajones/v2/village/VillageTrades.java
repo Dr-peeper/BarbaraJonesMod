@@ -183,7 +183,7 @@ public final class VillageTrades {
             }
             case 2 -> {
                 add(out, stack(ModItems.DOLLARS.get(), vary(random, 5, 1)), ItemStack.EMPTY,
-                        stack(ModItems.KRAVE_DOOR_BLOCK_ITEM.get(), 1), 10, 3, 2);
+                        stack(ModItems.KRAVE_DOOR_ITEM.get(), 1), 10, 3, 2);
                 add(out, stack(ModItems.DOLLARS.get(), vary(random, 4, 1)), ItemStack.EMPTY,
                         stack(ModItems.KRAVE_FENCE_ITEM.get(), 6), 10, 3, 2);
             }

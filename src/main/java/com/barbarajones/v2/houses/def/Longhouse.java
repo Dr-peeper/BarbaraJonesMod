@@ -64,8 +64,8 @@ final class Longhouse {
                 b.set(x, 1, 4, GLASS_PANE);
             }
         }
-        b.door(6, 0, 4, ModBlocks.KRAVE_DOOR_BLOCK, Direction.SOUTH, false);
-        b.door(7, 0, 4, ModBlocks.KRAVE_DOOR_BLOCK, Direction.SOUTH, true);
+        b.door(6, 0, 4, ModBlocks.KRAVE_DOOR, Direction.SOUTH, false);
+        b.door(7, 0, 4, ModBlocks.KRAVE_DOOR, Direction.SOUTH, true);
 
         // ---- steep roof, exposed ridge beam ----------------------------------
         RoofKit.gableAlongX(b, 0, 12, 0, 4, ROOF_Y, ROOF_WOOD_N, ROOF_WOOD_S, ROOF_WOOD_RIDGE);
