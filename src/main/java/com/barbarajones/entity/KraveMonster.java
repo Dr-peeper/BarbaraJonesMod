@@ -582,6 +582,25 @@ public class KraveMonster extends Monster {
                 && !(source.getEntity() instanceof CaydenCobb cayden && cayden.isSuperSaiyan())) {
             applied = amount * 0.05F;
         }
+        // A Cayden who cannot match this form fights well and still loses. He is
+        // allowed to hurt it - at one tier short he can take it to a sliver, which
+        // is the whole point, because a fight lost at 10% teaches you exactly
+        // which form you are missing. What he cannot do is finish it. Without the
+        // floor he simply grinds any form down eventually and "he cannot beat it"
+        // quietly degrades into "it takes him a while".
+        if (source.getEntity() instanceof CaydenCobb attacker && attacker.isOutmatched()) {
+            applied *= attacker.outmatchedDealtScale();
+            float floor = getMaxHealth() * attacker.outmatchedFloor();
+            float headroom = getHealth() - floor;
+            if (headroom <= 0.0F) {
+                applied = 0.0F;
+                if (!level().isClientSide && this.random.nextInt(20) == 0) {
+                    playSound(screechSound(), 1.2F, 0.7F);
+                }
+            } else {
+                applied = Math.min(applied, headroom);
+            }
+        }
         return super.hurt(source, applied);
     }
 

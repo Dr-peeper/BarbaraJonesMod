@@ -668,6 +668,14 @@ public class CaydenCobb extends TamableAnimal {
                         + " and finds nothing there."));
                 p.sendSystemMessage(Component.literal(ChatFormatting.GRAY
                         + "  Open his ascension ledger and teach it to him."));
+                // The stakes changed: outclassed against the Monster he can now
+                // actually die. Saying so is the difference between a player who
+                // pulls him out and one who watches Rule #1 break and wonders why.
+                if (getTarget() instanceof KraveMonster monster) {
+                    p.sendSystemMessage(Component.literal(ChatFormatting.RED + "" + ChatFormatting.BOLD
+                            + "  He cannot win Form " + monster.getForm()
+                            + " without it. Get him out of there."));
+                }
             }
         }
     }
@@ -1797,10 +1805,14 @@ public class CaydenCobb extends TamableAnimal {
             this.dodgeFlash = 6;
             return false;
         }
-        // Ascended for the Kosmos showdown he simply cannot be killed. That is
-        // the deal the user asked for: this is the one fight where he gets the
-        // full apocalypse arsenal and does not die for using it.
-        if (isSuperSaiyan() && this.ssjUntilBossDies) {
+        // Ascended, he is untouchable for the length of a boss fight - but ONLY
+        // while he can match what he is fighting. That invulnerability used to
+        // be unconditional, which is the real reason the Krave Monster could
+        // never kill him whatever form it wore. It is now the reward for having
+        // earned the right form: walk into Form 3 without Super Saiyan 3 and he
+        // is as mortal as anybody.
+        int shortfall = shortfall();
+        if (isSuperSaiyan() && this.ssjUntilBossDies && shortfall == 0) {
             return false;
         }
         // 30 seconds of total immunity after he claws his way back out. He respawns
@@ -1818,7 +1830,13 @@ public class CaydenCobb extends TamableAnimal {
         // The divine forms do not dodge - they simply refuse most of what lands.
         // Applied as a multiplier rather than a resistance effect so it stacks
         // predictably with the desperation resistance he may already be holding.
-        return super.hurt(source, (float) (amount * rung.damageTaken()));
+        float taken = (float) (amount * rung.damageTaken());
+        if (shortfall > 0) {
+            // Outclassed, everything lands harder. This is most of what makes an
+            // unmatched form actually WIN rather than merely take longer to lose to.
+            taken *= outmatchedTakenScale();
+        }
+        return super.hurt(source, taken);
     }
 
     /** Make him untouchable for a while (used on post-death respawn). */
@@ -2002,5 +2020,61 @@ public class CaydenCobb extends TamableAnimal {
                 this.cayden.getNavigation().moveTo(owner, 1.1D);
             }
         }
+    }
+
+    // ---- being outclassed ---------------------------------------------------
+    //
+    // Rule #1 of this mod is that Cayden must not die, and every other system
+    // here defends that. This is the deliberate exception: against the Krave
+    // Monster he is only safe while he can MATCH the form in front of him. Meet
+    // Form 3 without Super Saiyan 3 and the fight is still his to lose, but it
+    // is genuinely losable.
+    //
+    // Indexed by how many tiers short he is. One tier short is a real fight he
+    // narrowly drops; two is a beating; three or more is a formality. The point
+    // is that the first one FEELS close - a stomp teaches nothing, whereas
+    // losing at 10% health teaches you exactly which form you still need.
+    private static final float[] OUTMATCHED_DEALT = { 1.00F, 0.55F, 0.30F, 0.15F };
+    private static final float[] OUTMATCHED_TAKEN = { 1.00F, 1.60F, 2.20F, 3.00F };
+
+    /**
+     * The floor, as a fraction of the boss's max health, that an outclassed
+     * Cayden cannot punch through. He can take Form 3 to a sliver at one tier
+     * short - and then not finish it. Without this he still eventually grinds
+     * any form down, and "he cannot beat it" becomes "it takes him longer".
+     */
+    private static final float[] OUTMATCHED_FLOOR = { 0.00F, 0.10F, 0.32F, 0.55F };
+
+    /** How many ascension tiers short he is for the fight he is in. 0 is fair. */
+    public int shortfall() {
+        LivingEntity foe = getTarget();
+        if (foe == null || !foe.isAlive()) {
+            return 0;
+        }
+        return Math.max(0, demandFor(foe) - highestUnlockedTier());
+    }
+
+    /** True when the thing he is fighting is above anything he has been taught. */
+    public boolean isOutmatched() {
+        return shortfall() > 0;
+    }
+
+    private static float band(float[] table, int shortfall) {
+        return table[Math.max(0, Math.min(table.length - 1, shortfall))];
+    }
+
+    /** Multiplier on damage he DEALS while outclassed. */
+    public float outmatchedDealtScale() {
+        return band(OUTMATCHED_DEALT, shortfall());
+    }
+
+    /** Multiplier on damage he TAKES while outclassed. */
+    public float outmatchedTakenScale() {
+        return band(OUTMATCHED_TAKEN, shortfall());
+    }
+
+    /** Fraction of a boss's max health he cannot get it below while outclassed. */
+    public float outmatchedFloor() {
+        return band(OUTMATCHED_FLOOR, shortfall());
     }
 }
