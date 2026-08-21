@@ -21,7 +21,6 @@ import com.barbarajones.entity.KraveMouthBeam;
 import com.barbarajones.entity.KraveMeteor;
 import com.barbarajones.entity.KraveMinion;
 import com.barbarajones.entity.KraveMonster;
-import com.barbarajones.entity.KraveRedStar;
 import com.barbarajones.entity.KraveTornado;
 import com.barbarajones.entity.MomCobb;
 import com.barbarajones.entity.Nugget;
@@ -85,12 +84,6 @@ public final class ModEntities {
                     // entity to anyone, which read as "it never spawns."
                     .sized(2.0F, 2.0F).clientTrackingRange(320).updateInterval(1)
                     .build("krave_leviathan"));
-
-    public static final RegistryObject<EntityType<KraveRedStar>> KRAVE_RED_STAR =
-            ENTITIES.register("krave_red_star", () -> EntityType.Builder
-                    .<KraveRedStar>of(KraveRedStar::new, MobCategory.MISC)
-                    .sized(1.0F, 1.0F).clientTrackingRange(320).updateInterval(20)
-                    .build("krave_red_star"));
 
     public static final RegistryObject<EntityType<Nugget>> NUGGET =
             ENTITIES.register("nugget", () -> EntityType.Builder

@@ -492,7 +492,6 @@ public class KraveDoorBlock extends DoorBlock {
      */
     private void ensureLeviathansExist(ServerLevel kosmos) {
         com.barbarajones.entity.KraveLeviathan.ensureSpawned(kosmos);
-        com.barbarajones.entity.KraveRedStar.ensureSpawned(kosmos);
     }
 
     /**
