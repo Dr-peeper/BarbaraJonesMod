@@ -2,6 +2,7 @@ package com.barbarajones.block;
 
 import com.barbarajones.content.ModBlocks;
 import com.barbarajones.content.ModEntities;
+import com.barbarajones.content.ModSounds;
 import com.barbarajones.dimension.KraveDimensions;
 import com.barbarajones.dimension.KraveKosmosData;
 import com.barbarajones.dimension.KraveLanding;
@@ -15,6 +16,7 @@ import net.minecraft.core.GlobalPos;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
+import net.minecraft.sounds.SoundSource;
 import net.minecraft.world.InteractionHand;
 import net.minecraft.world.InteractionResult;
 import net.minecraft.world.entity.Entity;
@@ -58,6 +60,13 @@ public class KraveDoorBlock extends DoorBlock {
     /** The fixed orientation every auto-built Kosmos-side room copy uses - arbitrary, just has to be consistent with itself. */
     private static final Direction KOSMOS_ROOM_INTO = Direction.NORTH;
 
+    /** Pause between the door actually closing and the trip firing, so the close animation/sound have a moment to land first. */
+    private static final int DOOR_CLOSE_DELAY_TICKS = 15;
+    /** How long a companion who didn't make it through with the player gets to catch up before being forced along. */
+    private static final int STRAGGLER_DELAY_TICKS = 140;
+    /** How close a companion has to actually be, at the moment the door shuts, to count as "ran in with you." */
+    private static final double COMPANION_MUST_BE_CLOSE_RADIUS = 3.0D;
+
     public KraveDoorBlock(BlockBehaviour.Properties props, BlockSetType setType) {
         super(props, setType);
     }
@@ -86,11 +95,24 @@ public class KraveDoorBlock extends DoorBlock {
         if (into == null || !playerInInterior(player, lowerPos, into)) {
             return;
         }
-        if (level.dimension().equals(KraveDimensions.KRAVE_KOSMOS)) {
-            travelFromKosmos(level, lowerPos, player);
-        } else {
-            travelToKosmos(level, lowerPos, into, player);
-        }
+        // A short pause before the trip actually fires - triggering it the
+        // instant the door shuts (the same tick, same method call) never
+        // gave the close animation or its sound any time to actually land
+        // before the world swapped out from under the player.
+        KraveDoorScheduler.schedule(DOOR_CLOSE_DELAY_TICKS, () -> {
+            if (!player.isAlive() || player.level() != level) {
+                return;
+            }
+            BlockState recheck = level.getBlockState(lowerPos);
+            if (!(recheck.getBlock() instanceof KraveDoorBlock) || recheck.getValue(OPEN)) {
+                return;   // reopened, broken, replaced - something changed in the meantime, don't force it
+            }
+            if (level.dimension().equals(KraveDimensions.KRAVE_KOSMOS)) {
+                travelFromKosmos(level, lowerPos, player);
+            } else {
+                travelToKosmos(level, lowerPos, into, player);
+            }
+        });
     }
 
     // ---- room geometry: validate + locate --------------------------------
@@ -253,7 +275,20 @@ public class KraveDoorBlock extends DoorBlock {
         Vec3 target = new Vec3(interior.getX() + 0.5D, interior.getY(), interior.getZ() + 0.5D);
         float yRot = into.getOpposite().toYRot();   // face back toward the door you just walked through
 
-        List<Entity> escort = com.barbarajones.dimension.PetEscort.gather(player);
+        // Force-loads the arrival chunks server-side, before the client ever
+        // asks for them - the part of "loading terrain" that's actually
+        // within a mod's reach without deep client-side changes.
+        preloadChunks(dest, doorLowerPos);
+
+        // Only companions actually within a few blocks at the moment the
+        // door shut count as having "run in with you" and travel instantly.
+        // Anyone farther off gets a real grace period below instead of being
+        // yanked along regardless of distance, which never read as them
+        // running anywhere at all.
+        List<Entity> withPlayer = com.barbarajones.dimension.PetEscort.gatherWithin(player, COMPANION_MUST_BE_CLOSE_RADIUS);
+        List<Entity> stragglers = com.barbarajones.dimension.PetEscort.gather(player);
+        stragglers.removeIf(withPlayer::contains);
+
         player.changeDimension(dest, new ITeleporter() {
             @Override
             public PortalInfo getPortalInfo(Entity entity, ServerLevel destLevel,
@@ -263,9 +298,38 @@ public class KraveDoorBlock extends DoorBlock {
         });
         player.fallDistance = 0.0F;
 
-        for (Entity arrived : com.barbarajones.dimension.PetEscort.deliver(escort, dest, target)) {
+        for (Entity arrived : com.barbarajones.dimension.PetEscort.deliver(withPlayer, dest, target)) {
             if (enteringKosmos && arrived instanceof CaydenCobb cayden) {
                 cayden.onEnterKosmos();
+            }
+        }
+
+        for (Entity straggler : stragglers) {
+            KraveDoorScheduler.schedule(STRAGGLER_DELAY_TICKS, () -> {
+                if (straggler == null || !straggler.isAlive() || straggler.level() == dest) {
+                    return;   // already gone, or already got there some other way
+                }
+                List<Entity> late = com.barbarajones.dimension.PetEscort.deliver(List.of(straggler), dest, target);
+                if (late.isEmpty()) {
+                    return;
+                }
+                for (Entity arrived : late) {
+                    if (enteringKosmos && arrived instanceof CaydenCobb cayden) {
+                        cayden.onEnterKosmos();
+                    }
+                }
+                dest.playSound(null, doorLowerPos, ModSounds.KRAVE_ROAR.get(), SoundSource.NEUTRAL, 1.0F, 1.0F);
+            });
+        }
+    }
+
+    /** Loads (and generates, if needed) the 3x3 chunk block around the arrival point ahead of the player actually landing there. */
+    private void preloadChunks(ServerLevel level, BlockPos center) {
+        int cx = center.getX() >> 4;
+        int cz = center.getZ() >> 4;
+        for (int dx = -1; dx <= 1; dx++) {
+            for (int dz = -1; dz <= 1; dz++) {
+                level.getChunk(cx + dx, cz + dz);
             }
         }
     }
