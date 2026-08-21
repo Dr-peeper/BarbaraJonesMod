@@ -4,29 +4,34 @@ import net.minecraft.client.renderer.DimensionSpecialEffects;
 import net.minecraft.world.phys.Vec3;
 
 /**
- * The Krave Kosmos's own sky: red instead of the plain void-black the
- * dimension_type's old borrowed "minecraft:the_end" effects gave it, and
- * with an actual cloud layer, which the End's effects never render at all
- * (their own cloud height is set specifically to suppress them). Still no
- * ground plane and no bright lightmap forcing - same void-with-floating-
- * islands feel, just red instead of black and with clouds now overhead.
+ * The Krave Kosmos's own sky. Was {@code SkyType.END} at first, reusing the
+ * End's own minimal void-and-stars rendering - but that sky type barely
+ * shows a real sky color at all (mostly void-black with the barest tint),
+ * which is why an earlier attempt at "red sky" here read as "still looks
+ * weird" rather than actually red. {@code SkyType.NORMAL} is what actually
+ * paints a full gradient sky dome from the biome's {@code sky_color} (see
+ * krave_void.json) the way the Overworld's own sky does - the real fix for
+ * "make the sky red" is this switch, not the color value, which was already
+ * correct. Trade-off: NORMAL also draws the sun/moon sprites, which END's
+ * sky type doesn't - with {@code fixed_time} locking the clock in the
+ * dimension_type, they just sit still rather than crossing the sky, a minor
+ * cosmetic side effect rather than the day/night cycle actually running.
  *
- * <p>Cloud LEVEL and the sky-dome TYPE are separate, independent settings
- * on the constructor - swapping this in doesn't require moving off
- * {@link DimensionSpecialEffects.SkyType#END}'s minimal dome rendering
- * (stars, no sun/moon sprite, no day/night gradient) just to get clouds; a
- * real finite cloud height is enough on its own.
- *
- * <p>The actual sky colour comes from the biome's own {@code sky_color}
- * (see krave_void.json), not from here - this class only controls the
- * cloud layer, fog behaviour, and sunrise band. Registered under
- * {@code barbarajones:krave_kosmos}, referenced from the dimension_type's
- * {@code effects} field.
+ * <p>Cloud LEVEL is a separate, independent constructor argument from the
+ * sky type - already enabled here regardless of which SkyType is picked.
+ * The cloud TEXTURE/color itself is a different matter entirely: it comes
+ * from {@code ClientLevel.getCloudColor()}, a concrete vanilla method with
+ * no Forge hook and no per-dimension override point at all - not something
+ * reachable without a client-side rendering patch (a mixin), which is
+ * beyond what this mod does anywhere else. Clouds here are real, but they
+ * are vanilla's white cloud texture, not a chocolate-colored one - that
+ * part of the original ask genuinely cannot be delivered through data or
+ * any exposed Forge API.
  */
 public class KraveKosmosEffects extends DimensionSpecialEffects {
 
     public KraveKosmosEffects() {
-        super(160.0F, false, SkyType.END, false, true);
+        super(160.0F, false, SkyType.NORMAL, false, true);
     }
 
     @Override

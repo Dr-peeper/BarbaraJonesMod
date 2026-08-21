@@ -4,6 +4,7 @@ import com.barbarajones.content.ModSounds;
 import com.barbarajones.dimension.KraveDimensions;
 
 import net.minecraft.nbt.CompoundTag;
+import net.minecraft.server.level.ServerLevel;
 import net.minecraft.sounds.SoundEvent;
 import net.minecraft.sounds.SoundSource;
 import net.minecraft.util.Mth;
@@ -11,6 +12,7 @@ import net.minecraft.world.damagesource.DamageSource;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.EntityType;
 import net.minecraft.world.entity.MoverType;
+import net.minecraft.world.level.ChunkPos;
 import net.minecraft.world.level.Level;
 
 /**
@@ -33,6 +35,16 @@ import net.minecraft.world.level.Level;
  * boss island (see KraveDoorBlock#buildKosmosRoomCopy) - so a player would
  * have to deliberately fly for minutes in a straight line away from
  * everything to ever get close, which is the point.
+ *
+ * <p>An entity only ticks (and only gets sent to any client, tracking range
+ * or not) while its own chunk is loaded, and normal chunk loading follows
+ * players - it never reaches 300+ blocks out where this thing spends its
+ * whole life. Without forcing something to keep that chunk loaded, this
+ * simply never runs and never renders no matter how correct everything
+ * else about it is. {@link #tick()} force-loads a small bubble around its
+ * own current position each tick and releases the previous one as it moves,
+ * so it keeps animating (and can be sent to anyone within tracking range)
+ * regardless of where any player actually is.
  */
 public class KraveLeviathan extends Entity {
 
@@ -57,6 +69,7 @@ public class KraveLeviathan extends Entity {
     private double phase;
     private double direction;   // +1 or -1, which way around the circle
     private int nextCallTick;
+    private long forcedChunkKey = Long.MIN_VALUE;   // ChunkPos.asLong() of whatever's currently forced, or the sentinel for "none yet"
 
     public KraveLeviathan(EntityType<? extends KraveLeviathan> type, Level level) {
         super(type, level);
@@ -96,11 +109,50 @@ public class KraveLeviathan extends Entity {
         setPos(x, y, z);
         move(MoverType.SELF, net.minecraft.world.phys.Vec3.ZERO);
 
-        if (!level().isClientSide && --this.nextCallTick <= 0) {
-            call();
-            this.nextCallTick = randomCallDelay();
+        if (!level().isClientSide && level() instanceof ServerLevel serverLevel) {
+            keepChunkLoaded(serverLevel, x, z);
+
+            if (--this.nextCallTick <= 0) {
+                call();
+                this.nextCallTick = randomCallDelay();
+            }
         }
     }
+
+    /**
+     * Forces a 3x3 bubble of chunks around wherever it currently is, and
+     * releases the previous bubble once it's actually moved into a new
+     * chunk - not every tick, since the orbit is slow enough (one chunk
+     * roughly every 5-6 seconds) that re-forcing the same chunks each tick
+     * would just be wasted ticket churn.
+     */
+    private void keepChunkLoaded(ServerLevel serverLevel, double x, double z) {
+        long chunkKey = ChunkPos.asLong(Mth.floor(x) >> 4, Mth.floor(z) >> 4);
+        if (chunkKey == this.forcedChunkKey) {
+            return;
+        }
+        if (this.forcedChunkKey != Long.MIN_VALUE) {
+            setBubbleForced(serverLevel, this.forcedChunkKey, false);
+        }
+        setBubbleForced(serverLevel, chunkKey, true);
+        this.forcedChunkKey = chunkKey;
+    }
+
+    private static void setBubbleForced(ServerLevel serverLevel, long chunkKey, boolean forced) {
+        int cx = ChunkPos.getX(chunkKey);
+        int cz = ChunkPos.getZ(chunkKey);
+        for (int dx = -1; dx <= 1; dx++) {
+            for (int dz = -1; dz <= 1; dz++) {
+                serverLevel.setChunkForced(cx + dx, cz + dz, forced);
+            }
+        }
+    }
+
+    // No cleanup hook on removal: these are permanent ambient decorations
+    // with no despawn path in normal play, so the only way one goes away is
+    // an admin command - a genuinely rare edge case not worth chasing a
+    // working override point for right now. Worst case then, its last
+    // forced chunk bubble sits loaded until server restart.
 
     private void call() {
         SoundEvent[] calls = {
