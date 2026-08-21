@@ -18,12 +18,13 @@ import java.util.Map;
 import java.util.UUID;
 
 /**
- * Tracks which Krave Monster is the Kosmos's own resident boss, so
- * {@code KraveDoorBlock}'s door-entry spawn never creates a second one while
- * he's still alive. The two Overworld summon triggers (Krave Box's
- * SUMMON_KRAVE, the 10th Cayden death) deliberately do NOT go through this -
- * they always spawn their own fresh encounter regardless of whether the
- * Kosmos-resident boss is alive, so this class has nothing to do with them.
+ * Tracks whether the Kosmos's own resident boss has ever been spawned, so
+ * {@code KraveDoorBlock}'s door-entry spawn only ever builds the den and its
+ * boss once, world-wide - never again after that, whether he's still alive,
+ * dead, or just unloaded somewhere. The two Overworld summon triggers (Krave
+ * Box's SUMMON_KRAVE, the 10th Cayden death) deliberately do NOT go through
+ * this - they always spawn their own fresh encounter regardless, so this
+ * class has nothing to do with them.
  *
  * <p>Also the permanent registry of portal pairs: every chocolate room a
  * player builds anywhere gets its own independent partner room here in the
@@ -37,6 +38,7 @@ public class KraveKosmosData extends SavedData {
     @Nullable
     private UUID bossId;
     private boolean landingBoxesSpawned;
+    private boolean bossEverSpawned;
 
     private final Map<BlockPos, GlobalPos> kosmosToExternal = new HashMap<>();
     private final Map<GlobalPos, BlockPos> externalToKosmos = new HashMap<>();
@@ -65,6 +67,24 @@ public class KraveKosmosData extends SavedData {
         setDirty();
     }
 
+    /**
+     * Guards KraveDoorBlock.ensureBossExists so the den and its boss are only
+     * ever built once, world-wide - deliberately independent of whether the
+     * boss is currently alive or locatable. {@code getEntity(UUID)} only
+     * finds currently-loaded entities, so gating on "is he still around"
+     * meant every entry where he'd wandered off (or nobody had been near the
+     * den in a while) looked like "no boss" and rebuilt the den from
+     * scratch, silently erasing any changes a player had made near it.
+     */
+    public boolean isBossEverSpawned() {
+        return this.bossEverSpawned;
+    }
+
+    public void setBossEverSpawned(boolean value) {
+        this.bossEverSpawned = value;
+        setDirty();
+    }
+
     /** The Kosmos-side door paired with this overworld (or other-dimension) door, or null if it has never been used. */
     @Nullable
     public BlockPos kosmosDoorFor(GlobalPos external) {
@@ -90,6 +110,11 @@ public class KraveKosmosData extends SavedData {
             data.bossId = tag.getUUID("BossId");
         }
         data.landingBoxesSpawned = tag.getBoolean("LandingBoxesSpawned");
+        // Existing worlds saved before this flag existed still have a
+        // recorded BossId if the boss was ever spawned - treat that as
+        // "already spawned" too, so upgrading doesn't rebuild the den once
+        // more on the next entry.
+        data.bossEverSpawned = tag.getBoolean("BossEverSpawned") || tag.hasUUID("BossId");
 
         if (tag.contains("PortalLinks")) {
             ListTag links = tag.getList("PortalLinks", Tag.TAG_COMPOUND);
@@ -113,6 +138,7 @@ public class KraveKosmosData extends SavedData {
             tag.putUUID("BossId", this.bossId);
         }
         tag.putBoolean("LandingBoxesSpawned", this.landingBoxesSpawned);
+        tag.putBoolean("BossEverSpawned", this.bossEverSpawned);
 
         ListTag links = new ListTag();
         for (Map.Entry<BlockPos, GlobalPos> e : this.kosmosToExternal.entrySet()) {

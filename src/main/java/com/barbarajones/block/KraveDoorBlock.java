@@ -61,7 +61,7 @@ public class KraveDoorBlock extends DoorBlock {
     private static final Direction AUTO_ROOM_INTO = Direction.NORTH;
 
     /** Pause between the door actually closing and the trip firing, so the close animation/sound have a moment to land first. */
-    private static final int DOOR_CLOSE_DELAY_TICKS = 15;
+    private static final int DOOR_CLOSE_DELAY_TICKS = 8;
     /** How long a companion who didn't make it through with the player gets to catch up before being forced along. */
     private static final int STRAGGLER_DELAY_TICKS = 140;
     /** How close a companion has to actually be, at the moment the door shuts, to count as "ran in with you." */
@@ -406,30 +406,26 @@ public class KraveDoorBlock extends DoorBlock {
     }
 
     /**
-     * The Kosmos always has exactly one Krave Monster on door-entry - spawn
-     * him near the boss island the first time, never again after that as
-     * long as he's alive.
-     *
-     * <p>{@code Level#getEntity(UUID)} only finds entities in currently
-     * LOADED chunks - if nobody has been near the den for a while, its
-     * chunks unload and he'd read as "not found" even though he's still
-     * alive out there, which meant a fresh one got spawned on every single
-     * entry instead of just the first. Force-loading his home chunk first
-     * (the same one-line trick {@code KraveLanding} already uses for
-     * terrain) fixes the common case - him just standing near where he
-     * spawned, not actively chasing a player somewhere else entirely.
+     * The Kosmos gets exactly one Krave Monster and one den, ever, built the
+     * very first time any door leads into the Kosmos - never rebuilt after
+     * that, no matter how many times this runs.
      */
     private void ensureBossExists(ServerLevel kosmos) {
         KraveKosmosData data = KraveKosmosData.get(kosmos);
-        var id = data.getBossId();
-        if (id != null) {
-            Vec3 den = KraveDimensions.BOSS_ISLAND;
-            kosmos.getChunkAt(BlockPos.containing(den.x, den.y, den.z));
-            var existing = kosmos.getEntity(id);
-            if (existing instanceof KraveMonster monster && monster.isAlive()) {
-                return;
-            }
+        if (data.isBossEverSpawned()) {
+            // One-time only, permanently - deliberately NOT re-checked
+            // against whether he's still alive or currently loaded.
+            // getEntity(UUID) only finds currently-loaded entities, so
+            // gating this on "is he still around" meant almost every entry
+            // where he'd wandered off read as "no boss" and rebuilt the den
+            // from scratch, silently erasing anything a player had changed
+            // near it - and spawned a duplicate on top of him besides.
+            // Bringing him back after death is what the Krave Box summon
+            // and the 10th Cayden death are for, not a door walk-through.
+            return;
         }
+        data.setBossEverSpawned(true);
+
         Vec3 pos = KraveDimensions.BOSS_ISLAND;
         BlockPos denCenter = BlockPos.containing(pos.x, pos.y, pos.z);
         // Build the den (and its guaranteed-solid platform) before the boss
