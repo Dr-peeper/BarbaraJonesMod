@@ -11,9 +11,11 @@ import java.util.List;
 
 import static com.barbarajones.boss.krave.KraveAttacks.announce;
 import static com.barbarajones.boss.krave.KraveAttacks.blast;
+import static com.barbarajones.boss.krave.KraveAttacks.cataclysm;
 import static com.barbarajones.boss.krave.KraveAttacks.delayedEruption;
 import static com.barbarajones.boss.krave.KraveAttacks.devourMinions;
 import static com.barbarajones.boss.krave.KraveAttacks.milkSlow;
+import static com.barbarajones.boss.krave.KraveAttacks.pillars;
 import static com.barbarajones.boss.krave.KraveAttacks.puddle;
 import static com.barbarajones.boss.krave.KraveAttacks.pullToward;
 import static com.barbarajones.boss.krave.KraveAttacks.ring;
@@ -71,7 +73,7 @@ public final class KraveMovesets {
                             Vec3 reach = boss.position()
                                     .add(boss.getViewVector(1.0F).scale(boss.getBbWidth() * 0.7D));
                             blast(level, boss, target, reach, 4.5D, 6.0F, 0.3D);
-                            ring(level, reach, 2.0D + swipe * 0.4D, ParticleTypes.CRIT, 12);
+                            ring(level, boss, reach, 4.5D, ParticleTypes.CRIT, 12);
                             sound(level, boss, ModSounds.KRAVE_SCREECH.get(), 0.9F, 1.4F + swipe * 0.15F);
                         });
                     }
@@ -115,7 +117,7 @@ public final class KraveMovesets {
                 KraveMove.close("Chocolate Burst", 12, 45, 35, 5.5D, (level, boss, target) -> {
                     Vec3 at = boss.position().add(boss.getViewVector(1.0F).scale(2.0D));
                     blast(level, boss, target, at, 5.0D, 7.0F, 0.6D);
-                    ring(level, at, 4.0D, ParticleTypes.FALLING_HONEY, 26);
+                    ring(level, boss, at, 5.0D, ParticleTypes.FALLING_HONEY, 26);
                     puddle(level, boss, at, 3.0F, 8, milkSlow(3, 1));
                     sound(level, boss, ModSounds.KRAVE_BOOM.get(), 1.1F, 1.3F);
                 }),
@@ -217,7 +219,7 @@ public final class KraveMovesets {
                             }
                             double a = step * 0.5D;
                             Vec3 at = boss.position().add(Math.cos(a) * 5.0D, 1.0D, Math.sin(a) * 5.0D);
-                            ring(level, at, 0.8D, ParticleTypes.CRIT, 6);
+                            ring(level, boss, at, 2.0D, ParticleTypes.CRIT, 6);
                             blast(level, boss, target, at, 2.0D, 4.0F, 0.4D);
                         });
                     }
@@ -233,7 +235,7 @@ public final class KraveMovesets {
                                 if (!boss.isAlive() || !target.isAlive()) {
                                     return;
                                 }
-                                ring(level, portal, 1.4D, ParticleTypes.PORTAL, 14);
+                                ring(level, boss, portal, 2.5D, ParticleTypes.PORTAL, 14);
                                 blast(level, boss, target, portal, 2.5D, 3.5F, 0.2D);
                             });
                         }
@@ -300,7 +302,7 @@ public final class KraveMovesets {
                                 return;
                             }
                             pullToward(level, boss, target, boss.position(), 16.0D, 0.14D);
-                            ring(level, boss.position(), 8.0D, ParticleTypes.FALLING_WATER, 22);
+                            ring(level, boss, boss.position(), 16.0D, ParticleTypes.FALLING_WATER, 22);
                         });
                     }
                 })
@@ -354,12 +356,17 @@ public final class KraveMovesets {
                 KraveMove.any("Chocolate Core Detonation", 36, 260, 30, (level, boss, target) -> {
                     announce(level, boss, "The core is charging.");
                     for (int r = 1; r <= 5; r++) {
-                        final double radius = r * 3.0D;
+                        final double radius = r * 5.0D;
                         com.barbarajones.behavior.DelayedEffects.scheduleWorld(level, 30 + r * 6, () -> {
                             if (!boss.isAlive()) {
                                 return;
                             }
-                            ring(level, boss.position(), radius, ParticleTypes.SOUL_FIRE_FLAME, 30);
+                            Vec3 from = boss.position();
+                            ring(level, from, radius, ParticleTypes.SOUL_FIRE_FLAME, 30);
+                            ring(level, from, radius * 0.93D, ParticleTypes.LARGE_SMOKE, 24);
+                            pillars(level, from, radius, 26, 5.0D, ParticleTypes.FLAME);
+                            KraveDemolition.carve(level, boss, from, radius, 6, 2,
+                                    KraveDemolition.BUDGET);
                             // Only the expanding ring hurts, not the whole disc -
                             // so it is escaped by moving THROUGH it, which is the
                             // only reason an expanding ring is interesting.
@@ -448,7 +455,7 @@ public final class KraveMovesets {
                         if (!boss.isAlive()) {
                             return;
                         }
-                        blast(level, boss, target, core, 10.0D, 20.0F, 1.6D);
+                        cataclysm(level, boss, target, core, 10.0D, 20.0F);
                         announce(level, boss, "It burst.");
                     });
                 }),
@@ -494,7 +501,7 @@ public final class KraveMovesets {
                     com.barbarajones.behavior.DelayedEffects.scheduleWorld(level, 20, () ->
                             announce(level, boss, "THE MOUTH OPENS AROUND THE ARENA."));
                     for (int t = 0; t < 60; t++) {
-                        final double closing = 18.0D - (t * 0.2D);
+                        final double closing = 26.0D - (t * 0.3D);
                         com.barbarajones.behavior.DelayedEffects.scheduleWorld(level, 20 + t, () -> {
                             if (!boss.isAlive()) {
                                 return;
@@ -502,6 +509,8 @@ public final class KraveMovesets {
                             // The ring tightening IS the timer - it is the only
                             // thing telling you how long the window still is.
                             ring(level, boss.position(), closing, ParticleTypes.SOUL_FIRE_FLAME, 40);
+                            pillars(level, boss.position(), closing, 32, 6.0D,
+                                    ParticleTypes.SOUL_FIRE_FLAME);
                         });
                     }
                     com.barbarajones.behavior.DelayedEffects.scheduleWorld(level, 100, () -> {
@@ -509,7 +518,7 @@ public final class KraveMovesets {
                             return;   // you finished him inside the window
                         }
                         announce(level, boss, "HE SWALLOWS THE BATTLEFIELD.");
-                        blast(level, boss, target, boss.position(), 22.0D, 40.0F, 2.0D);
+                        cataclysm(level, boss, target, boss.position(), 22.0D, 40.0F);
                         boss.heal(boss.getMaxHealth() * 0.25F);
                     });
                 })

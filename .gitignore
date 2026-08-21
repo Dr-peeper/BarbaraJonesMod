@@ -25,3 +25,8 @@ run/
 # OS
 Thumbs.db
 .DS_Store
+
+# JVM crash artifacts. The build caps its heap because this machine is tight
+# on RAM, and when it loses anyway the JVM drops these in the repo root.
+hs_err_pid*.log
+replay_pid*.log

@@ -104,6 +104,7 @@ public final class KraveKosmosBattle {
             return true;
         }
 
+        catchTheFallen();
         // The apocalypse arsenal, pointed at someone who deserves it. This is
         // the one place he can throw it without dying for it.
         if (--this.meteorTimer <= 0) {
@@ -124,6 +125,44 @@ public final class KraveKosmosBattle {
             }
         }
         return false;
+    }
+
+
+    /** How far below the boss counts as having left the world. */
+    private static final double VOID_LINE = 24.0D;
+
+    /**
+     * Puts anyone who fell out of the arena back into it.
+     *
+     * <p>His attacks demolish the ground now, and the Kosmos is floating islands
+     * over open void: between a crater and a knockback the fight can throw you
+     * off the edge of the world with no way back and no body to recover. The
+     * demolition already refuses to dig below the slab it started on, so the
+     * arena itself cannot be destroyed out from under the fight - this covers
+     * the other way out, which is being knocked over the side of it.
+     *
+     * <p>Only while the fight is running, and only in the fight, so it never
+     * becomes a general no-fall-damage rule that quietly breaks the rest of the
+     * dimension.
+     */
+    private void catchTheFallen() {
+        double line = this.boss.getY() - VOID_LINE;
+        for (Player p : this.level.getEntitiesOfClass(Player.class,
+                this.boss.getBoundingBox().inflate(160.0D))) {
+            if (p.getY() > line || p.isSpectator() || p.isCreative()) {
+                continue;
+            }
+            Vec3 back = this.boss.position().add(
+                    (this.level.random.nextDouble() - 0.5D) * 12.0D,
+                    6.0D,
+                    (this.level.random.nextDouble() - 0.5D) * 12.0D);
+            p.teleportTo(back.x, back.y, back.z);
+            p.setDeltaMovement(0.0D, 0.0D, 0.0D);
+            p.fallDistance = 0.0F;
+            p.hurtMarked = true;
+            p.sendSystemMessage(Component.literal(
+                    ChatFormatting.DARK_RED + "The Kosmos is not done with you."));
+        }
     }
 
     private int countNearby(Class<? extends net.minecraft.world.entity.Entity> type) {

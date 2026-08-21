@@ -161,6 +161,12 @@ public class KraveMonster extends Monster {
             default -> 8.0D;
         };
         double speed = switch (f) {
+            // Health and attack both got a case 7 when he grew from six forms to
+            // seven. This did not, so the KRAVE GOD fell through to default and
+            // fought at 0.32 - the slowest speed in the table, shared with his
+            // weakest form. The final boss was the easiest thing in the fight to
+            // walk away from.
+            case 7 -> 0.90D;
             case 6 -> 0.82D;
             case 5 -> 0.74D;
             case 4 -> 0.66D;
@@ -337,6 +343,7 @@ public class KraveMonster extends Monster {
         if (!level().isClientSide) {
             matchRival();
             tickGauntletReset();
+            tickArenaAnchor();
         }
         pushGhost();
 
@@ -402,6 +409,59 @@ public class KraveMonster extends Monster {
 
     public void setBossFightActive(boolean active) {
         this.bossFightActive = active;
+    }
+
+    /**
+     * The height his attacks are allowed to dig down to, remembered from where
+     * he first stood.
+     *
+     * <p>His moves tear the arena apart on purpose, and the Kosmos is floating
+     * islands over open void. Measured against his CURRENT feet the floor sinks
+     * with him as the ground gives way, so the island gets dug out from under
+     * the fight one attack at a time until everyone falls out of the world.
+     * Anchored to where the fight began, the arena erodes to a scarred plate
+     * and stops there.
+     *
+     * <p>Set lazily rather than at spawn: he can be summoned in mid-air or on a
+     * pillar he then steps off, and the height that matters is the one he is
+     * actually fighting at.
+     */
+    private int arenaFloor = Integer.MAX_VALUE;
+
+    /** Grounded ticks, not necessarily in a row, before the anchor is left alone. */
+    private static final int ARENA_SETTLE = 20;
+    private int arenaSettleTicks;
+
+    public int arenaFloor() {
+        if (this.arenaFloor == Integer.MAX_VALUE) {
+            this.arenaFloor = net.minecraft.util.Mth.floor(getY()) - 8;
+        }
+        return this.arenaFloor;
+    }
+
+    /**
+     * Re-anchors the floor while he is still settling onto the arena.
+     *
+     * <p>A boss that spawns a few blocks up and falls would otherwise anchor to
+     * his spawn height and protect a slab of empty air above the ground,
+     * leaving his attacks unable to scratch the surface he stands on.
+     *
+     * <p>Grounded ticks are counted cumulatively rather than consecutively, and
+     * that distinction is the whole safety of it. Requiring an unbroken run he
+     * never gets - he jumps constantly - the anchor would keep following him,
+     * and since each re-anchor sits eight blocks under wherever he landed, and
+     * he lands lower every time his own craters take the ground away, the arena
+     * would walk itself into the void one attack at a time. Counted this way it
+     * settles once, early, and never moves again.
+     */
+    private void tickArenaAnchor() {
+        if (this.arenaSettleTicks >= ARENA_SETTLE) {
+            return;
+        }
+        if (onGround()) {
+            this.arenaSettleTicks++;
+            this.arenaFloor = net.minecraft.util.Mth.floor(getY()) - 8;
+        }
     }
 
     /**

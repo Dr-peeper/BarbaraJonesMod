@@ -10,6 +10,7 @@ import net.minecraft.core.particles.ParticleTypes;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.sounds.SoundEvent;
 import net.minecraft.sounds.SoundSource;
+import net.minecraft.util.Mth;
 import net.minecraft.world.effect.MobEffectInstance;
 import net.minecraft.world.effect.MobEffects;
 import net.minecraft.world.entity.Entity;
@@ -39,10 +40,39 @@ public final class KraveAttacks {
 
     private KraveAttacks() { }
 
-    // ---- reading the attack ------------------------------------------------
+    // ---- how big an attack actually is -------------------------------------
 
     /** Form one's collision width, the baseline every radius was tuned against. */
     private static final double BASE_WIDTH = 4.2D;
+
+    /**
+     * The gap between "a boss move" and "a catastrophe".
+     *
+     * <p>The movesets were written at a sane, readable scale - a five-block
+     * sweep, a seven-block wave. At that size the attacks are perfectly correct
+     * and completely unremarkable: they land inside the patch of ground you are
+     * already standing on, and the only way to tell one from another is the
+     * particle colour. This multiplier is what turns them into weather.
+     */
+    private static final double SPECTACLE = 2.4D;
+
+    /**
+     * Nothing he throws covers less than this.
+     *
+     * <p>A floor rather than a bigger multiplier, because the small moves are
+     * the ones that need it most: scaling a two-block minefield tick by anything
+     * still leaves a two-block minefield tick. Every attack now sweeps ground
+     * you have to actually run out of.
+     */
+    private static final double MIN_REACH = 10.0D;
+
+    /**
+     * And a ceiling, because the top-form finisher multiplied out past a hundred
+     * blocks - which is not more impressive than twenty-four, it just means the
+     * attack has no edge and there is nowhere to stand that is not already
+     * inside it. A move you cannot escape is not a move.
+     */
+    private static final double MAX_REACH = 24.0D;
 
     /**
      * How much bigger he is than the form the numbers were written for.
@@ -50,18 +80,17 @@ public final class KraveAttacks {
      * <p>Every radius in the movesets was picked against a monster about four
      * blocks wide. By the Krave God he is eleven wide and twenty-two tall, so a
      * ring at radius four was being drawn INSIDE him and a shockwave finished
-     * before it cleared his own feet. That is the whole reason the attacks were
-     * invisible - not that they were subtle, but that they were happening under
-     * the model.
+     * before it cleared his own feet.
      */
     public static double sizeFactor(KraveMonster boss) {
         return Math.max(1.0D, boss.getBbWidth() / BASE_WIDTH);
     }
 
-    /** A tuned radius, grown to match whatever size he currently is. */
+    /** A tuned radius, grown to what he is now and to what the fight should look like. */
     public static double reach(KraveMonster boss, double base) {
-        return base * sizeFactor(boss);
+        return Mth.clamp(base * sizeFactor(boss) * SPECTACLE, MIN_REACH, MAX_REACH);
     }
+
     // ---- targeting ---------------------------------------------------------
 
     /**
@@ -97,41 +126,125 @@ public final class KraveAttacks {
         return out;
     }
 
-    // ---- primitives --------------------------------------------------------
+    // ---- drawing -----------------------------------------------------------
 
-    /** A ring of particles on the ground - the readable footprint of an attack. */
+    /**
+     * A ring of particles on the ground - the readable footprint of an attack.
+     *
+     * <p>Takes an exact radius. Callers working from a moveset number want the
+     * boss-aware overload below, so the circle they draw is the circle that hits.
+     */
     public static void ring(ServerLevel level, Vec3 centre, double radius,
                             ParticleOptions type, int points) {
         // Density scales with circumference. A fixed point count draws a solid
         // ring at radius two and a dotted line of six specks at radius twenty,
         // which is exactly backwards - the big attacks are the ones that need
         // to read.
-        int drawn = Math.max(points, (int) Math.ceil(radius * 6.0D));
+        // One position is one packet, however many particles it carries, so a
+        // ring at radius twenty-four costs five hundred packets at a point per
+        // seven degrees. Fewer positions each carrying more particles, spread a
+        // little wider, draws the same solid ring for a quarter of the traffic.
+        int drawn = Math.max(points, (int) Math.ceil(radius * 4.0D));
         for (int i = 0; i < drawn; i++) {
             double a = (i / (double) drawn) * Math.PI * 2.0D;
-            // Lifted a little: at ground level most of it is swallowed by the
-            // floor mesh and by his own feet.
-            level.sendParticles(type,
-                    centre.x + Math.cos(a) * radius, centre.y + 0.9D, centre.z + Math.sin(a) * radius,
-                    2, 0.08D, 0.25D, 0.08D, 0.01D);
+            double x = centre.x + Math.cos(a) * radius;
+            double z = centre.z + Math.sin(a) * radius;
+            // Lifted clear of the ground: down at floor level most of it is
+            // swallowed by the terrain mesh and by his own feet.
+            level.sendParticles(type, x, centre.y + 0.9D, z, 5, 0.22D, 0.45D, 0.22D, 0.01D);
         }
     }
 
-    /** Damage plus knockback away from a point. The shape of every slam and burst. */
+    /** The same ring, sized the way the attack that draws it is sized. */
+    public static void ring(ServerLevel level, KraveMonster boss, Vec3 centre,
+                            double baseRadius, ParticleOptions type, int points) {
+        ring(level, centre, reach(boss, baseRadius), type, points);
+    }
+
+    /**
+     * A wall of vertical columns standing on the ring.
+     *
+     * <p>A flat circle on the floor is invisible from anywhere except directly
+     * above it, and the fight is not fought from above. Columns are what make a
+     * twenty-block attack legible while you are standing inside it, and what
+     * gives the edge of the move a shape you can watch yourself crossing.
+     */
+    public static void pillars(ServerLevel level, Vec3 centre, double radius,
+                               int count, double height, ParticleOptions type) {
+        for (int i = 0; i < count; i++) {
+            double a = (i / (double) count) * Math.PI * 2.0D;
+            double x = centre.x + Math.cos(a) * radius;
+            double z = centre.z + Math.sin(a) * radius;
+            for (double y = 0.0D; y < height; y += 0.7D) {
+                level.sendParticles(type, x, centre.y + y, z, 2, 0.12D, 0.12D, 0.12D, 0.02D);
+            }
+        }
+    }
+
+    /**
+     * A hemisphere shell, for the bursts meant to swallow the arena rather than
+     * sweep across it.
+     */
+    public static void dome(ServerLevel level, Vec3 centre, double radius, ParticleOptions type) {
+        int rings = Math.max(4, (int) (radius / 2.5D));
+        for (int r = 0; r < rings; r++) {
+            double lat = (r / (double) rings) * (Math.PI / 2.0D);
+            double y = Math.sin(lat) * radius;
+            double band = Math.cos(lat) * radius;
+            int points = Math.max(10, (int) (band * 4.0D));
+            for (int i = 0; i < points; i++) {
+                double a = (i / (double) points) * Math.PI * 2.0D;
+                level.sendParticles(type,
+                        centre.x + Math.cos(a) * band, centre.y + y, centre.z + Math.sin(a) * band,
+                        1, 0.05D, 0.05D, 0.05D, 0.01D);
+            }
+        }
+    }
+
+    // ---- primitives --------------------------------------------------------
+
+    /**
+     * Damage plus knockback away from a point, and the ground where it landed.
+     *
+     * <p>The shape of every slam and burst. Takes a moveset radius and grows it;
+     * see {@link #blastExact} for the callers that have already done that.
+     */
     public static void blast(ServerLevel level, KraveMonster boss, LivingEntity target,
                              Vec3 centre, double baseRadius, float damage, double knock) {
-        // Grown to his current size, so a sweep that clears a four-block monster
-        // still clears an eleven-block one instead of landing inside him.
-        double radius = reach(boss, baseRadius);
+        blastExact(level, boss, target, centre, reach(boss, baseRadius), damage, knock);
+    }
+
+    /**
+     * The same hit, at a radius that is already final.
+     *
+     * <p>This exists because scaling twice is a real bug with an unfair outcome:
+     * a move that draws its warning circle at one size and then hits at another
+     * reads as the boss cheating. Any caller that has drawn the circle itself
+     * must land the hit through here.
+     */
+    public static void blastExact(ServerLevel level, KraveMonster boss, LivingEntity target,
+                                  Vec3 centre, double radius, float damage, double knock) {
         for (LivingEntity victim : victims(level, boss, centre, radius, target)) {
             victim.hurt(victim.damageSources().mobAttack(boss), damage);
             Vec3 away = victim.position().subtract(centre).normalize();
             victim.knockback(knock, -away.x, -away.z);
             victim.hurtMarked = true;
         }
+        // And it takes the scenery with it. Shallow and on the small budget: a
+        // passing hit scours off what is standing rather than digging, because
+        // the craters belong to the moves that earn them - and because this one
+        // fires several times a second during a claw combo.
+        KraveDemolition.carve(level, boss, centre, radius, 5, 1,
+                KraveDemolition.BUDGET_LIGHT);
     }
 
-    /** An expanding shockwave, drawn and applied over several ticks. */
+    /**
+     * An expanding shockwave: drawn, applied, and carved as it travels.
+     *
+     * <p>The one move that should never be mistaken for a particle effect. The
+     * ring is walled in columns so it reads from ground level, and the terrain
+     * it crosses does not survive it.
+     */
     public static void shockwave(ServerLevel level, KraveMonster boss, LivingEntity target,
                                  Vec3 centre, double baseRadius, float damage, int rings) {
         double maxRadius = reach(boss, baseRadius);
@@ -140,10 +253,20 @@ public final class KraveAttacks {
         // what makes it read as a wave travelling toward you.
         for (int r = 1; r <= rings; r++) {
             final double radius = maxRadius * (r / (double) rings);
-            com.barbarajones.behavior.DelayedEffects.scheduleWorld(level, r * 3, () ->
-                    ring(level, centre, radius, ParticleTypes.CRIT, 20));
+            final boolean front = r == rings;
+            com.barbarajones.behavior.DelayedEffects.scheduleWorld(level, r * 3, () -> {
+                ring(level, centre, radius, ParticleTypes.CRIT, 24);
+                ring(level, centre, radius * 0.94D, ParticleTypes.LARGE_SMOKE, 20);
+                // Only the leading edge gets the wall, so it reads as a front
+                // moving outward rather than a solid cylinder of particles.
+                if (front) {
+                    pillars(level, centre, radius, 28, 4.5D, ParticleTypes.SOUL_FIRE_FLAME);
+                }
+            });
         }
-        blast(level, boss, target, centre, baseRadius, damage, 0.55D);
+        blastExact(level, boss, target, centre, maxRadius, damage, 0.55D);
+        KraveDemolition.carveWave(level, boss, centre, maxRadius, rings, 6, 2);
+        sound(level, boss, ModSounds.KRAVE_BOOM.get(), 1.6F, 0.7F);
     }
 
     /**
@@ -178,16 +301,21 @@ public final class KraveAttacks {
      * A patch of ground that hurts to stand on, for chocolate trails and milk.
      *
      * <p>Built as an area-effect cloud rather than by placing blocks. Placing
-     * blocks in an arena means permanently rearranging it every fight, and this
-     * boss already has one attack whose whole point is that it destroys terrain -
-     * the hazards should not be quietly doing it too.
+     * blocks means a lingering hazard permanently rearranging the arena, and this
+     * boss already tears it up quite enough on the beats that mean to.
      */
     public static void puddle(ServerLevel level, KraveMonster boss, Vec3 at,
                               float radius, int seconds, MobEffectInstance effect) {
         net.minecraft.world.entity.AreaEffectCloud cloud =
                 new net.minecraft.world.entity.AreaEffectCloud(level, at.x, at.y, at.z);
         cloud.setOwner(boss);
-        cloud.setRadius(radius);
+        // Grown, but NOT through reach() - that has a ten-block floor, which is
+        // right for a hit that lands once and wrong for a hazard that sits on
+        // the arena for twenty seconds. The Last Bowl drops a dozen of these,
+        // and at ten blocks apiece they merge into one unbroken carpet with no
+        // gaps to stand in, which is the move's entire mechanic gone. Scaled to
+        // his size only, and capped.
+        cloud.setRadius((float) Math.min(radius * sizeFactor(boss), 9.0D));
         cloud.setDuration(seconds * 20);
         cloud.setRadiusPerTick(0.0F);
         cloud.setParticle(ParticleTypes.FALLING_HONEY);
@@ -231,29 +359,60 @@ public final class KraveAttacks {
         return eaten;
     }
 
-    /** A telegraphed circle that erupts after a delay - geysers and minefields. */
+    /**
+     * A telegraphed circle that erupts after a delay - geysers and minefields.
+     *
+     * <p>The warning and the hit are the same size on purpose. The radius is
+     * grown once, here, and both the circle and the damage use that one number.
+     */
     public static void delayedEruption(ServerLevel level, KraveMonster boss, LivingEntity target,
-                                       Vec3 at, double radius, float damage, int delayTicks,
+                                       Vec3 at, double baseRadius, float damage, int delayTicks,
                                        ParticleOptions warning, ParticleOptions blast) {
-        // The warning is drawn immediately and the hit lands later; the gap is
-        // the entire fairness of the attack.
-        ring(level, at, radius, warning, 20);
+        double radius = reach(boss, baseRadius);
+        // The warning is drawn now and the hit lands later; that gap is the
+        // entire fairness of the attack, and at this size the circle needs a wall
+        // on it or you will not notice you are standing inside one.
+        ring(level, at, radius, warning, 24);
+        pillars(level, at, radius, 20, 2.5D, warning);
+
         com.barbarajones.behavior.DelayedEffects.scheduleWorld(level, delayTicks, () -> {
             if (!boss.isAlive()) {
                 return;
             }
-            for (int i = 0; i < 3; i++) {
-                ring(level, at.add(0.0D, i * 0.6D, 0.0D), radius * (1.0D - i * 0.15D), blast, 24);
+            // A column going up, not a disc lying down: this one is supposed to
+            // erupt, and it should be visible from the far side of the arena.
+            for (int i = 0; i < 6; i++) {
+                ring(level, at.add(0.0D, i * 1.2D, 0.0D), radius * (1.0D - i * 0.10D), blast, 26);
             }
-            blast(level, boss, target, at, radius, damage, 0.8D);
+            pillars(level, at, radius * 0.5D, 16, 9.0D, blast);
+            blastExact(level, boss, target, at, radius, damage, 0.8D);
+            KraveDemolition.crater(level, boss, at, radius * 0.8D, 5);
             level.playSound(null, BlockPos.containing(at), ModSounds.KRAVE_BOOM.get(),
-                    SoundSource.HOSTILE, 1.3F, 1.1F);
+                    SoundSource.HOSTILE, 1.5F, 1.1F);
         });
+    }
+
+    /**
+     * The arena-ending hit: a dome, a full-radius wave, and a crater under it.
+     *
+     * <p>For the finishers, where the intended outcome is that the ground stops
+     * being there.
+     */
+    public static void cataclysm(ServerLevel level, KraveMonster boss, LivingEntity target,
+                                 Vec3 centre, double baseRadius, float damage) {
+        double radius = reach(boss, baseRadius);
+        dome(level, centre, radius, ParticleTypes.SOUL_FIRE_FLAME);
+        pillars(level, centre, radius, 40, 12.0D, ParticleTypes.FLAME);
+        blastExact(level, boss, target, centre, radius, damage, 2.0D);
+        KraveDemolition.carveWave(level, boss, centre, radius, 6, 14, 3);
+        KraveDemolition.crater(level, boss, centre, radius * 0.45D, 7);
+        sound(level, boss, ModSounds.KRAVE_BOOM.get(), 2.0F, 0.5F);
     }
 
     /** Drags everything toward a point - whirlpool and singularity. */
     public static void pullToward(ServerLevel level, KraveMonster boss, LivingEntity target,
-                                  Vec3 centre, double radius, double strength) {
+                                  Vec3 centre, double baseRadius, double strength) {
+        double radius = reach(boss, baseRadius);
         for (LivingEntity victim : victims(level, boss, centre, radius, target)) {
             Vec3 toward = centre.subtract(victim.position()).normalize().scale(strength);
             victim.setDeltaMovement(victim.getDeltaMovement().add(toward.x, toward.y * 0.3D, toward.z));
