@@ -115,7 +115,10 @@ public class KraveDoorBlock extends DoorBlock {
         Direction side = into.getClockWise();
         for (int depth = 0; depth <= 2; depth++) {
             for (int across = -1; across <= 1; across++) {
-                for (int row = -1; row <= 3; row++) {
+                // 4 rows total, floor to roof: -1 (floor), 0-1 (door height,
+                // 2 tall), 2 (roof, sitting directly on the door/interior -
+                // no separate lintel row buffering it).
+                for (int row = -1; row <= 2; row++) {
                     // Everywhere else in the shell sits under a wall column
                     // that's often buried anyway - only the two cells someone
                     // actually stands or walks on (under the door, under the
@@ -126,14 +129,9 @@ public class KraveDoorBlock extends DoorBlock {
                         continue;
                     }
                     BlockPos cell = lowerPos.relative(into, depth).relative(side, across).above(row);
-                    boolean isRoof = row == 3;
-                    boolean isDoorCell = row != -1 && !isRoof && depth == 0 && across == 0 && row <= 1;
-                    // Matches the door's own height exactly (rows 0-1, 2 tall) -
-                    // row 2 at depth=1 is a solid low ceiling, not more interior,
-                    // so the whole passage through the room reads as one uniform
-                    // 2-tall tunnel instead of the interior briefly ballooning to
-                    // 3 tall right past the door.
-                    boolean isInterior = row != -1 && !isRoof && !isDoorCell && depth == 1 && across == 0 && row <= 1;
+                    boolean isRoof = row == 2;
+                    boolean isDoorCell = row != -1 && !isRoof && depth == 0 && across == 0;
+                    boolean isInterior = row != -1 && !isRoof && !isDoorCell && depth == 1 && across == 0;
 
                     if (isDoorCell) {
                         if (!level.getBlockState(cell).is(ModBlocks.KRAVE_DOOR.get())) {
@@ -170,10 +168,10 @@ public class KraveDoorBlock extends DoorBlock {
         BlockState kraveBlock = ModBlocks.KRAVE_BLOCK.get().defaultBlockState();
         for (int depth = 0; depth <= 2; depth++) {
             for (int across = -1; across <= 1; across++) {
-                for (int row = -1; row <= 3; row++) {
-                    boolean isFloorOrRoof = row == -1 || row == 3;
-                    boolean isDoorCell = !isFloorOrRoof && depth == 0 && across == 0 && row <= 1;
-                    boolean isInterior = !isFloorOrRoof && !isDoorCell && depth == 1 && across == 0 && row <= 1;
+                for (int row = -1; row <= 2; row++) {
+                    boolean isFloorOrRoof = row == -1 || row == 2;
+                    boolean isDoorCell = !isFloorOrRoof && depth == 0 && across == 0;
+                    boolean isInterior = !isFloorOrRoof && !isDoorCell && depth == 1 && across == 0;
                     if (isDoorCell || isInterior) {
                         continue;
                     }
