@@ -40,6 +40,7 @@ public class KraveKosmosData extends SavedData {
     private boolean landingBoxesSpawned;
     private boolean bossEverSpawned;
     private boolean bossEverDefeated;
+    private boolean leviathansEverSpawned;
 
     private final Map<BlockPos, GlobalPos> kosmosToExternal = new HashMap<>();
     private final Map<GlobalPos, BlockPos> externalToKosmos = new HashMap<>();
@@ -86,6 +87,16 @@ public class KraveKosmosData extends SavedData {
         setDirty();
     }
 
+    /** One-time flag: the Krave Leviathans are spawned exactly once, ever, the same way the boss is. */
+    public boolean isLeviathansEverSpawned() {
+        return this.leviathansEverSpawned;
+    }
+
+    public void setLeviathansEverSpawned(boolean value) {
+        this.leviathansEverSpawned = value;
+        setDirty();
+    }
+
     /** True once the Kosmos-resident boss (the one this class's own bossId names) has died at final form at least once. */
     public boolean isBossEverDefeated() {
         return this.bossEverDefeated;
@@ -127,6 +138,7 @@ public class KraveKosmosData extends SavedData {
         // more on the next entry.
         data.bossEverSpawned = tag.getBoolean("BossEverSpawned") || tag.hasUUID("BossId");
         data.bossEverDefeated = tag.getBoolean("BossEverDefeated");
+        data.leviathansEverSpawned = tag.getBoolean("LeviathansEverSpawned");
 
         if (tag.contains("PortalLinks")) {
             ListTag links = tag.getList("PortalLinks", Tag.TAG_COMPOUND);
@@ -152,6 +164,7 @@ public class KraveKosmosData extends SavedData {
         tag.putBoolean("LandingBoxesSpawned", this.landingBoxesSpawned);
         tag.putBoolean("BossEverSpawned", this.bossEverSpawned);
         tag.putBoolean("BossEverDefeated", this.bossEverDefeated);
+        tag.putBoolean("LeviathansEverSpawned", this.leviathansEverSpawned);
 
         ListTag links = new ListTag();
         for (Map.Entry<BlockPos, GlobalPos> e : this.kosmosToExternal.entrySet()) {

@@ -11,6 +11,8 @@ import com.barbarajones.client.render.GiantKraveBoxRenderer;
 import com.barbarajones.client.render.HumanoidLikeRenderer;
 import com.barbarajones.client.render.KraveHealingBoxRenderer;
 import com.barbarajones.client.render.KraveLaserRenderer;
+import com.barbarajones.client.render.KraveLeviathanModel;
+import com.barbarajones.client.render.KraveLeviathanRenderer;
 import com.barbarajones.client.render.KraveMouthBeamRenderer;
 import com.barbarajones.client.render.KraveMeteorRenderer;
 import com.barbarajones.client.render.KraveMonsterModel;
@@ -86,11 +88,13 @@ public final class ClientSetup {
                 ctx -> new HumanoidLikeRenderer<>(ctx, "manager_minion", 0.5F));
         event.registerEntityRenderer(ModEntities.TERMINATION_NOTICE.get(), TerminationNoticeRenderer::new);
         event.registerEntityRenderer(ModEntities.FILING_CABINET.get(), FilingCabinetRenderer::new);
+        event.registerEntityRenderer(ModEntities.KRAVE_LEVIATHAN.get(), KraveLeviathanRenderer::new);
     }
 
     @SubscribeEvent
     public static void registerLayers(EntityRenderersEvent.RegisterLayerDefinitions event) {
         event.registerLayerDefinition(KraveMonsterModel.LAYER_LOCATION, KraveMonsterModel::createBodyLayer);
+        event.registerLayerDefinition(KraveLeviathanModel.LAYER_LOCATION, KraveLeviathanModel::createBodyLayer);
         event.registerLayerDefinition(ManagerModel.LAYER_LOCATION, ManagerModel::createBodyLayer);
         event.registerLayerDefinition(com.barbarajones.client.render.BarbaraModel.LAYER,
                 com.barbarajones.client.render.BarbaraModel::createBodyLayer);

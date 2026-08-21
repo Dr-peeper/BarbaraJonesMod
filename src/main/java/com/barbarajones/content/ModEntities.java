@@ -16,6 +16,7 @@ import com.barbarajones.entity.DuhlWolCar;
 import com.barbarajones.entity.GiantKraveBox;
 import com.barbarajones.entity.KraveHealingBox;
 import com.barbarajones.entity.KraveLaser;
+import com.barbarajones.entity.KraveLeviathan;
 import com.barbarajones.entity.KraveMouthBeam;
 import com.barbarajones.entity.KraveMeteor;
 import com.barbarajones.entity.KraveMinion;
@@ -68,6 +69,17 @@ public final class ModEntities {
                     // real gap (his head was clearing the old 3.0 box).
                     .sized(1.5F, 3.3F).clientTrackingRange(16).fireImmune()
                     .build("krave_monster"));
+
+    public static final RegistryObject<EntityType<KraveLeviathan>> KRAVE_LEVIATHAN =
+            ENTITIES.register("krave_leviathan", () -> EntityType.Builder
+                    .<KraveLeviathan>of(KraveLeviathan::new, MobCategory.MISC)
+                    // The hitbox stays small on purpose - nothing ever collides
+                    // with this thing, and a many-block box would only make
+                    // chunk tracking/entity culling more expensive for no
+                    // benefit. KraveLeviathanRenderer scales the model itself
+                    // up to den-size, the same trick KRAVE_MONSTER uses.
+                    .sized(2.0F, 2.0F).clientTrackingRange(160).updateInterval(1)
+                    .build("krave_leviathan"));
 
     public static final RegistryObject<EntityType<Nugget>> NUGGET =
             ENTITIES.register("nugget", () -> EntityType.Builder

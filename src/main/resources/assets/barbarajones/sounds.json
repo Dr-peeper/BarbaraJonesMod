@@ -588,5 +588,23 @@
     "sounds": [
       "barbarajones:kravajo_miss"
     ]
+  },
+  "krave_leviathan_call_1": {
+    "subtitle": "subtitles.barbarajones.leviathan",
+    "sounds": [
+      "barbarajones:krave_leviathan_call_1"
+    ]
+  },
+  "krave_leviathan_call_2": {
+    "subtitle": "subtitles.barbarajones.leviathan",
+    "sounds": [
+      "barbarajones:krave_leviathan_call_2"
+    ]
+  },
+  "krave_leviathan_call_3": {
+    "subtitle": "subtitles.barbarajones.leviathan",
+    "sounds": [
+      "barbarajones:krave_leviathan_call_3"
+    ]
   }
 }

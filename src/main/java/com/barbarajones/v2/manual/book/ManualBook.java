@@ -1102,13 +1102,18 @@ public final class ManualBook {
         e.add(brk());
         e.add(sub("WHAT LIVES OUT THERE"));
         e.add(p("Ambient wildlife draws from the whole Kraveling family plus Krave Minion, all "
-                + "at one shared rate, capped at ten nearby creatures per player within a wide "
+                + "at one shared rate, capped at fifteen nearby creatures per player within a wide "
                 + "radius - there to give you plenty to run into while exploring. Kravajo shows "
                 + "up noticeably more often than the rest of the family; everything else is "
                 + "spread evenly. Cayden ignores all of it; it's yours to handle."));
         e.add(p("Cave pockets scattered through the terrain sometimes hide a Krave Healing Box "
                 + "and a scattering of Krave Cereal - explore, don't just beeline for the "
                 + "island.", DIM));
+        e.add(p("Far out past where anything else generates, something enormous drifts in "
+                + "slow circles: the Krave Leviathan. It never comes near the island and it "
+                + "cannot be reached, fought, or hurt - it is not going anywhere and neither "
+                + "are you. Every so often it calls, a long low sound that carries a long way. "
+                + "That is the whole encounter.", PURPLE));
 
         e.add(brk());
         e.add(sub("FIGHTING THE KRAVE MONSTER HERE"));

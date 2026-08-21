@@ -45,6 +45,11 @@ public final class ModSounds {
     public static final RegistryObject<SoundEvent> KRAVE_HURT    = reg("krave_hurt");
     public static final RegistryObject<SoundEvent> KRAVE_DEATH   = reg("krave_death");
 
+    // the Kosmos leviathan - three distinct low calls, different lengths/frequencies
+    public static final RegistryObject<SoundEvent> LEVIATHAN_CALL_1 = reg("krave_leviathan_call_1");
+    public static final RegistryObject<SoundEvent> LEVIATHAN_CALL_2 = reg("krave_leviathan_call_2");
+    public static final RegistryObject<SoundEvent> LEVIATHAN_CALL_3 = reg("krave_leviathan_call_3");
+
     // original synthesized cues, not part of the reused horror set above -
     // see tools/make_krave_audio.ps1
     public static final RegistryObject<SoundEvent> KRAVE_BEAM_FIRE = reg("krave_beam_fire");

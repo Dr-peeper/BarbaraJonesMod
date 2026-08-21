@@ -472,6 +472,30 @@ public class KraveDoorBlock extends DoorBlock {
         // had no target to latch onto yet - KraveHealingBox.resolveTarget()'s
         // KraveKosmosData fallback picks him up automatically on their next
         // heal tick now that setBossId() above has run, no extra wiring needed.
+
+        ensureLeviathansExist(kosmos, data);
+    }
+
+    /**
+     * Three Krave Leviathans, spawned once, ever - same one-time-flag
+     * pattern as the boss, just its own independent flag. Each one picks
+     * its own random orbit (radius/altitude/phase/direction) in its own
+     * constructor, so no position needs to be worked out here at all;
+     * they correct onto their real flight path on their very first tick.
+     */
+    private void ensureLeviathansExist(ServerLevel kosmos, KraveKosmosData data) {
+        if (data.isLeviathansEverSpawned()) {
+            return;
+        }
+        data.setLeviathansEverSpawned(true);
+
+        for (int i = 0; i < 3; i++) {
+            com.barbarajones.entity.KraveLeviathan leviathan =
+                    com.barbarajones.content.ModEntities.KRAVE_LEVIATHAN.get().create(kosmos);
+            if (leviathan != null) {
+                kosmos.addFreshEntity(leviathan);
+            }
+        }
     }
 
     /**
