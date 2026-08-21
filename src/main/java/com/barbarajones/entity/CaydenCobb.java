@@ -170,6 +170,15 @@ public class CaydenCobb extends TamableAnimal {
     private int laserTimer;
     private int burstTimer;
     private int flightTicks;
+
+    /**
+     * Obstacle-aware steering, shared by combatFlight and SsjFlyAttackGoal.
+     *
+     * <p>One instance, not one per caller: both were flying him at the same
+     * moment, and two navigators would each commit to their own detour and pull
+     * him in different directions.
+     */
+    private final CaydenFlight flight = new CaydenFlight();
     private int waveTimer;
     private int dodgeFlash;
     private int arsenalTimer = 60;
@@ -1152,6 +1161,37 @@ public class CaydenCobb extends TamableAnimal {
         return this.entityData.get(TIER);
     }
 
+    /**
+     * Puts him on a specific rung, for the scripted beats of the boss fight.
+     *
+     * <p>{@link #updateTier()} derives a rung from whatever he is facing, which
+     * is right for ordinary combat and wrong for a cinematic - the confrontation
+     * and each form transition need him to ascend on a particular tick, not
+     * whenever the fight happens to demand it.
+     *
+     * <p>Only ever upward, and never past what he has been taught. A form he
+     * does not own cannot be handed to him by a script any more than by a fight,
+     * or the ladder stops meaning anything. Re-entering a rung he already holds
+     * is a no-op rather than a second announcement and another spectacle: this is
+     * called from a controller that ticks twenty times a second.
+     */
+    public void ascendTo(int tier) {
+        int want = Math.min(tier, highestUnlockedTier());
+        if (want <= getTier()) {
+            if (tier > highestUnlockedTier()) {
+                nagLocked(tier);
+            }
+            return;
+        }
+        this.entityData.set(TIER, want);
+        if (!isSuperSaiyan()) {
+            becomeSuperSaiyan();
+        }
+        this.ssjUntilBossDies = true;
+        applyKraveStats();
+        announceTier(want);
+    }
+
     /** True on the far side of the Krave Door. The Kosmos is divine ground. */
     private boolean inKosmos() {
         return level().dimension().equals(KraveDimensions.KRAVE_KOSMOS);
@@ -1187,6 +1227,15 @@ public class CaydenCobb extends TamableAnimal {
         }
         int base;
         if (foe instanceof com.barbarajones.entity.KraveMonster monster) {
+            // A Monster who has not been confronted yet is not a fight. His boss
+            // scan reaches far past his follow range - it has to, an Ender Dragon
+            // circles hundreds of blocks out - so without this he spots the
+            // Monster the moment a player enters the dimension and flies off to
+            // fight him alone. Waking the encounter is the confrontation
+            // trigger's job and nothing else's.
+            if (!monster.getBattleState().hostile()) {
+                return 0;
+            }
             int form = Math.max(1, Math.min(KRAVE_FORM_DEMAND.length, monster.getForm()));
             base = KRAVE_FORM_DEMAND[form - 1];
         } else if (foe instanceof net.minecraft.world.entity.boss.enderdragon.EnderDragon) {
@@ -1212,12 +1261,24 @@ public class CaydenCobb extends TamableAnimal {
             }
             base = Math.min(cap, highestUnlockedTier());
         }
-        if (inKosmos()) {
-            // Nothing is fought in the Kosmos below Super Saiyan God, and
-            // anything that already demanded God there demands Blue. This is the
-            // only place either of those two forms is ever required, which is
-            // what makes the dimension the back half of the ladder.
-            base = Math.max(base + 1, AscensionLadder.GOD);
+        // There used to be a blanket floor here: anything fought in the Kosmos
+        // demanded at least Super Saiyan God. That single line is why every
+        // transformation looked like God - not the aura layer, which switches on
+        // getTier() correctly and always did. In the Kosmos the floor overwrote
+        // whatever the fight actually asked for, INCLUDING the Field Power cap
+        // the player had just chosen in the menu, so selecting Super Saiyan 1
+        // and selecting Blue both produced tier 4 and both rendered red.
+        //
+        // It also made the form ladder impossible: the Krave Monster fight is
+        // meant to run SSJ1 against form one up to Ultra Instinct against form
+        // six, and a floor of God meant the first four rungs could never be
+        // reached in the only dimension the fight happens in.
+        //
+        // The Krave Monster now carries his own demand per form (KRAVE_FORM_DEMAND
+        // above), which is the thing the floor was standing in for, and the
+        // Kosmos gets a gentler nudge that cannot overwrite an explicit cap.
+        if (inKosmos() && !(foe instanceof com.barbarajones.entity.KraveMonster)) {
+            base = Math.min(base + 1, AscensionLadder.MAX);
         }
         return Math.min(base, AscensionLadder.MAX);
     }
@@ -1254,7 +1315,13 @@ public class CaydenCobb extends TamableAnimal {
             // old check also demanded a null target - between them he never
             // powered down at all. Give it a moment in case the boss simply
             // blinked out of sight, then drop him all the way back.
-            if (++this.tierIdle > 40) {
+            if (inScriptedBossBeat()) {
+                // A scripted beat deliberately makes the boss invisible to
+                // targeting, so demand reads 0 through every confrontation,
+                // prompt, finisher and transition. Without this he powers all
+                // the way down between forms and the ladder resets itself.
+                this.tierIdle = 0;
+            } else if (++this.tierIdle > 40) {
                 this.tierIdle = 0;
                 this.entityData.set(TIER, 0);
                 this.ssjUntilBossDies = false;
@@ -1290,6 +1357,24 @@ public class CaydenCobb extends TamableAnimal {
      * <p>The aura layer draws the shape; this draws the colour he leaves behind
      * him, which is the part that survives being twenty blocks away.
      */
+    /**
+     * Whether a Krave Monster nearby is mid-cinematic.
+     *
+     * <p>Derived from the Monster's own authoritative state rather than from a
+     * flag the battle controller sets on him - a second copy of the truth is
+     * exactly what the state machine exists to remove, and it would be the copy
+     * that goes stale when he dies mid-transition.
+     */
+    private boolean inScriptedBossBeat() {
+        for (com.barbarajones.entity.KraveMonster boss : level().getEntitiesOfClass(
+                com.barbarajones.entity.KraveMonster.class, getBoundingBox().inflate(96.0D))) {
+            if (boss.isAlive() && boss.getBattleState().scripted()) {
+                return true;
+            }
+        }
+        return false;
+    }
+
     private void formTrail() {
         int tier = getTier();
         if (tier < AscensionLadder.GOD || this.tickCount % 2 != 0
@@ -1573,6 +1658,11 @@ public class CaydenCobb extends TamableAnimal {
                     .subtract(position());
             double len = to.length();
             if (len > 0.5D) {
+                // Steered rather than aimed. This used to add the raw vector to
+                // the target, which is why a single block between them was
+                // enough to hold him: the direction he wanted never changed, so
+                // he pressed into the same face every tick forever.
+                Vec3 heading = this.flight.headingToward(this, target);
                 // Bias upward while he is below them, or he skims along underneath
                 // a hovering boss forever without ever arriving.
                 // Chase speed scales with the form. At the old flat rate an Ender
@@ -1584,7 +1674,7 @@ public class CaydenCobb extends TamableAnimal {
                 double pull = 0.22D + chase * 0.16D;
                 double lift = to.y > 0.5D ? 0.06D + chase * 0.05D : 0.0D;
                 setDeltaMovement(getDeltaMovement().scale(0.72D)
-                        .add(to.scale(pull / len))
+                        .add(heading.scale(pull))
                         .add(0.0D, lift, 0.0D));
             }
             this.fallDistance = 0.0F;
@@ -1973,15 +2063,6 @@ public class CaydenCobb extends TamableAnimal {
             setFlags(EnumSet.of(Flag.MOVE, Flag.LOOK));
         }
 
-        @Override
-        public boolean canUse() {
-            // Any target, not just the Krave Monster. This is his only goal that
-            // can engage something airborne - gating it to one boss left him with
-            // no behaviour whatsoever against a Wither, since MeleeAttackGoal
-            // cannot path to a flying entity.
-            LivingEntity target = this.cayden.getTarget();
-            return this.cayden.isSuperSaiyan() && target != null && target.isAlive();
-        }
 
         @Override
         public boolean canContinueToUse() {
@@ -1989,11 +2070,15 @@ public class CaydenCobb extends TamableAnimal {
         }
 
         @Override
-        public void start() {
-            if (this.cayden.getTarget() instanceof KraveMonster boss
-                    && this.cayden.level() instanceof ServerLevel sl) {
-                com.barbarajones.apocalypse.KraveKosmosBattle.start(sl, boss, this.cayden);
+        public boolean canUse() {
+            LivingEntity target = this.cayden.getTarget();
+            if (target instanceof KraveMonster boss && !boss.getBattleState().hostile()) {
+                // Scripted beats own his movement. Letting the attack goal keep
+                // steering during the confrontation or a finisher drags him out
+                // of position mid-cinematic.
+                return false;
             }
+            return this.cayden.isSuperSaiyan() && target != null && target.isAlive();
         }
 
         @Override
@@ -2009,7 +2094,13 @@ public class CaydenCobb extends TamableAnimal {
             double dist = to.length();
 
             if (dist > RANGE) {
-                Vec3 dir = to.scale(1.0D / Math.max(dist, 0.01D));
+                // Through the navigator, for the same reason combatFlight is:
+                // scaling the straight-line vector is exactly the behaviour that
+                // parked him against a wall.
+                Vec3 dir = this.cayden.flight.headingToward(this.cayden, target);
+                if (dir.lengthSqr() < 1.0E-6D) {
+                    dir = to.scale(1.0D / Math.max(dist, 0.01D));
+                }
                 this.cayden.setDeltaMovement(dir.scale(0.5D));
                 if (--this.laserCooldown <= 0) {
                     this.laserCooldown = 25;

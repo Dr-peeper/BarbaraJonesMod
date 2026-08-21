@@ -6,10 +6,12 @@ import com.barbarajones.entity.KraveHealingBox;
 import com.barbarajones.entity.KraveMonster;
 
 import net.minecraft.core.BlockPos;
+import net.minecraft.core.Vec3i;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.level.block.state.BlockState;
+import net.minecraft.world.level.levelgen.structure.BoundingBox;
 import net.minecraft.world.level.levelgen.structure.templatesystem.StructurePlaceSettings;
 import net.minecraft.world.level.levelgen.structure.templatesystem.StructureTemplate;
 import net.minecraft.world.level.levelgen.structure.templatesystem.StructureTemplateManager;
@@ -211,6 +213,16 @@ public final class KraveDenBuilder {
                 .setIgnoreEntities(true)
                 .setKeepLiquids(false);
         template.get().placeInWorld(kosmos, origin, origin, settings, kosmos.getRandom(), 2);
+
+        // Declare it off-limits to the fight that happens on top of it. This is
+        // the whole reason the castle used to lose walls: the courtyard IS the
+        // boss arena, and the arena is full of things that destroy terrain.
+        // Taken from the template's real size rather than from the constants
+        // above, so the protected volume cannot drift away from the building.
+        Vec3i size = template.get().getSize();
+        KraveArena.protectCastle(kosmos, new BoundingBox(
+                origin.getX(), origin.getY(), origin.getZ(),
+                origin.getX() + size.getX(), origin.getY() + size.getY(), origin.getZ() + size.getZ()));
     }
 
     /**

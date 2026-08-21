@@ -243,6 +243,12 @@ public final class KraveDemolition {
         if (state.getDestroySpeed(level, pos) < 0.0F) {
             return false;
         }
+        // The Kraved Castle is not scenery to be cleared. Its courtyard is
+        // this arena, so without this the boss demolishes the building he is
+        // standing in - which is exactly what was happening.
+        if (com.barbarajones.dimension.KraveArena.isProtected(level, pos)) {
+            return false;
+        }
         if (state.hasBlockEntity()) {
             // Break it properly so a chest spills rather than being deleted.
             // Rare enough that the extra cost does not matter.

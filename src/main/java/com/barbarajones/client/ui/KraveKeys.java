@@ -12,7 +12,8 @@ import net.minecraftforge.eventbus.api.SubscribeEvent;
 import net.minecraftforge.fml.common.Mod;
 
 /**
- * The mod's keybinds. Right now there is exactly one: K opens the Krave Codex.
+ * The mod's keybinds: K opens the Krave Codex, G answers the boss-fight
+ * finisher prompt.
  *
  * <p>Registration has to happen on the MOD bus and the key poll on the FORGE bus,
  * which is why the registrar is a nested subscriber rather than another method here.
@@ -27,6 +28,29 @@ public final class KraveKeys {
             InputConstants.Type.KEYSYM,
             InputConstants.KEY_K,
             CATEGORY);
+
+    /**
+     * The boss-fight finisher prompt.
+     *
+     * <p>G rather than a mouse button or a movement key: the prompt appears
+     * mid-fight while the player is already holding something down, and binding
+     * it to anything they might be pressing anyway would let the game answer the
+     * prompt for them.
+     */
+    public static final KeyMapping FINISHER = new KeyMapping(
+            "key." + BarbaraJonesMod.MODID + ".finisher",
+            InputConstants.Type.KEYSYM,
+            InputConstants.KEY_G,
+            CATEGORY);
+
+    /** The bound key as the player would read it, for the on-screen prompt. */
+    public static String finisherKeyName() {
+        try {
+            return FINISHER.getTranslatedKeyMessage().getString().toUpperCase(java.util.Locale.ROOT);
+        } catch (Throwable ignored) {
+            return "G";
+        }
+    }
 
     private KraveKeys() { }
 
@@ -71,6 +95,7 @@ public final class KraveKeys {
         @SubscribeEvent
         public static void onRegisterKeyMappings(RegisterKeyMappingsEvent event) {
             event.register(OPEN_CODEX);
+            event.register(FINISHER);
         }
     }
 }

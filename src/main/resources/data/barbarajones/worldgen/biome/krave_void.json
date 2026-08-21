@@ -1,11 +1,11 @@
 {
   "carvers": {},
-  "downfall": 0.0,
+  "downfall": 0,
   "effects": {
     "fog_color": 9132587,
     "mood_sound": {
       "block_search_extent": 8,
-      "offset": 2.0,
+      "offset": 2,
       "sound": "minecraft:ambient.cave",
       "tick_delay": 6000
     },
@@ -40,13 +40,82 @@
     ]
   ],
   "has_precipitation": false,
-  "spawn_costs": {},
+  "spawn_costs": {
+    "barbarajones:kraveling": {
+      "energy_budget": 0.15,
+      "charge": 0.9
+    },
+    "barbarajones:krispbone": {
+      "energy_budget": 0.12,
+      "charge": 1
+    },
+    "barbarajones:soggy": {
+      "energy_budget": 0.12,
+      "charge": 1
+    },
+    "barbarajones:kravajo": {
+      "energy_budget": 0.12,
+      "charge": 0.8
+    },
+    "barbarajones:loomweaver": {
+      "energy_budget": 0.1,
+      "charge": 1.2
+    },
+    "barbarajones:krave_minion": {
+      "energy_budget": 0.08,
+      "charge": 1.4
+    }
+  },
   "spawners": {
     "ambient": [],
     "axolotls": [],
-    "creature": [],
+    "creature": [
+      {
+        "type": "barbarajones:the_mascot",
+        "weight": 5,
+        "minCount": 1,
+        "maxCount": 1
+      }
+    ],
     "misc": [],
-    "monster": [],
+    "monster": [
+      {
+        "type": "barbarajones:kraveling",
+        "weight": 60,
+        "minCount": 2,
+        "maxCount": 4
+      },
+      {
+        "type": "barbarajones:krispbone",
+        "weight": 35,
+        "minCount": 1,
+        "maxCount": 3
+      },
+      {
+        "type": "barbarajones:soggy",
+        "weight": 30,
+        "minCount": 1,
+        "maxCount": 3
+      },
+      {
+        "type": "barbarajones:kravajo",
+        "weight": 28,
+        "minCount": 2,
+        "maxCount": 4
+      },
+      {
+        "type": "barbarajones:loomweaver",
+        "weight": 18,
+        "minCount": 1,
+        "maxCount": 2
+      },
+      {
+        "type": "barbarajones:krave_minion",
+        "weight": 14,
+        "minCount": 1,
+        "maxCount": 2
+      }
+    ],
     "underground_water_creature": [],
     "water_ambient": [],
     "water_creature": []

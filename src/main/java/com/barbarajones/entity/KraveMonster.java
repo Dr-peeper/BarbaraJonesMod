@@ -2,6 +2,7 @@ package com.barbarajones.entity;
 
 import com.barbarajones.content.ModItems;
 import com.barbarajones.content.ModSounds;
+import com.barbarajones.boss.krave.KraveBattleState;
 import com.barbarajones.progression.AscensionLadder;
 
 import net.minecraft.network.chat.Component;
@@ -47,6 +48,9 @@ import java.util.EnumSet;
  */
 public class KraveMonster extends Monster {
 
+    /** Boss-phase logging. One line per state change, never per tick. */
+    private static final org.slf4j.Logger LOGGER = com.mojang.logging.LogUtils.getLogger();
+
     /** Length of the after-image trail rendered by the client. */
     public static final int GHOSTS = 10;
     public final Vec3[] ghostPos = new Vec3[GHOSTS];
@@ -69,6 +73,16 @@ public class KraveMonster extends Monster {
     private static final EntityDataAccessor<Integer> FORM =
             SynchedEntityData.defineId(KraveMonster.class, EntityDataSerializers.INT);
 
+    /**
+     * Where the encounter is, as a {@link KraveBattleState} ordinal.
+     *
+     * <p>Synced because the client draws the QTE prompt off it, and written to
+     * NBT because a boss fight that forgets which phase it was in when the
+     * chunk unloads is worse than one that never started.
+     */
+    private static final EntityDataAccessor<Integer> BATTLE =
+            SynchedEntityData.defineId(KraveMonster.class, EntityDataSerializers.INT);
+
     private final ServerBossEvent bossEvent =
             new ServerBossEvent(Component.literal("The Krave Monster"),
                     BossEvent.BossBarColor.PURPLE, BossEvent.BossBarOverlay.PROGRESS);
@@ -88,6 +102,7 @@ public class KraveMonster extends Monster {
         super.defineSynchedData();
         this.entityData.define(DATA_REAR, 0.0F);
         this.entityData.define(FORM, 1);
+        this.entityData.define(BATTLE, KraveBattleState.DORMANT.ordinal());
     }
 
     /** Client-side, partial-tick-safe: use in setupAnim. */
@@ -122,6 +137,59 @@ public class KraveMonster extends Monster {
         return Math.max(1, Math.min(FINAL_FORM, this.entityData.get(FORM)));
     }
 
+    public KraveBattleState getBattleState() {
+        return KraveBattleState.byId(this.entityData.get(BATTLE));
+    }
+
+    /**
+     * Moves the encounter to a new phase.
+     *
+     * <p>Setting the same state twice is a no-op rather than a duplicate log
+     * line and a second round of transition effects. The controller ticks
+     * twenty times a second, so anything that re-fires on re-entry would fire
+     * continuously for as long as the phase lasted.
+     *
+     * <p>Logged once per change, which is the level of detail that is actually
+     * useful when a fight goes wrong: enough to reconstruct the sequence,
+     * never per tick.
+     */
+    public void setBattleState(KraveBattleState next) {
+        KraveBattleState now = getBattleState();
+        if (now == next) {
+            return;
+        }
+        this.entityData.set(BATTLE, next.ordinal());
+        if (!level().isClientSide) {
+            LOGGER.info(
+                    "Krave Monster {}: {} -> {} (form {} of {})",
+                    getUUID(), now, next, getForm(), FINAL_FORM);
+        }
+        // The old boolean is kept in step rather than left to rot: other systems
+        // still read it, and two sources of truth that can disagree is the exact
+        // problem the state machine exists to remove.
+        this.bossFightActive = next.hostile() || next.scripted();
+    }
+
+    /**
+     * The share of a form health bar at which the fight stops being a fight.
+     *
+     * <p>Forms do not end by dying. At this threshold normal damage stops
+     * landing and the finisher takes over, which is what stops Cayden ending a
+     * phase with one lucky hit before the player is ever asked to help.
+     */
+    public static final float FINISHER_AT = 0.15F;
+
+    public boolean atFinisherThreshold() {
+        return getHealth() <= getMaxHealth() * FINISHER_AT;
+    }
+
+    /** Puts a form back on its feet for the next phase. */
+    public void restoreForPhase() {
+        setHealth(getMaxHealth());
+        this.hurtTime = 0;
+        this.invulnerableTime = 0;
+    }
+
     /**
      * Sets which incarnation this is and rebuilds him around it.
      *
@@ -142,23 +210,28 @@ public class KraveMonster extends Monster {
         // stays hittable only where he used to be.
         refreshDimensions();
 
+        // Roughly tripled across the board, and steepened toward the top.
+        // Cayden at rung N against form N deals enough that the old numbers were
+        // gone in seconds - the player watched six health bars evaporate and
+        // never got to participate in any of them. Each form now has to be
+        // fought down to its finisher threshold rather than deleted.
         double health = switch (f) {
-            case 7 -> 9000.0D;   // THE KRAVE GOD
-            case 6 -> 4200.0D;   // Overload
-            case 5 -> 3000.0D;   // Milk abomination
-            case 4 -> 1900.0D;   // Swarm
-            case 3 -> 1100.0D;   // Double chocolate
-            case 2 -> 500.0D;    // Chocolate-filled
-            default -> 200.0D;   // Awakening
+            case 7 -> 32000.0D;  // THE KRAVE GOD
+            case 6 -> 15000.0D;  // Overload
+            case 5 -> 10000.0D;  // Milk abomination
+            case 4 -> 6500.0D;   // Swarm
+            case 3 -> 4000.0D;   // Double chocolate
+            case 2 -> 2000.0D;   // Chocolate-filled
+            default -> 900.0D;   // Awakening
         };
         double attack = switch (f) {
-            case 7 -> 62.0D;
-            case 6 -> 46.0D;
-            case 5 -> 36.0D;
-            case 4 -> 28.0D;
-            case 3 -> 19.0D;
-            case 2 -> 13.0D;
-            default -> 8.0D;
+            case 7 -> 110.0D;
+            case 6 -> 78.0D;
+            case 5 -> 60.0D;
+            case 4 -> 46.0D;
+            case 3 -> 32.0D;
+            case 2 -> 22.0D;
+            default -> 14.0D;
         };
         double speed = switch (f) {
             // Health and attack both got a case 7 when he grew from six forms to
@@ -175,9 +248,43 @@ public class KraveMonster extends Monster {
             default -> 0.32D;
         };
 
+        // A boss with no armour and no knockback resistance is a punching bag
+        // with a large health pool: he was being staggered out of his own
+        // windups and shoved around the arena by the thing he is meant to
+        // overpower. Knockback resistance reaches 1.0 by form four - past that
+        // point nothing moves him at all, which is most of what makes the late
+        // forms feel like a different creature.
+        double armour = 4.0D + f * 3.0D;
+        double tough = f * 1.5D;
+        // Climbs from the 0.7 the supplier already gave him to immovable at the
+        // top. Starting the curve lower would have been a downgrade for form
+        // one, which is the sort of buff that quietly makes things worse.
+        double knockRes = Math.min(1.0D, 0.70D + 0.05D * f);
+        // How hard HIS hits throw. ATTACK_SPEED is a player-only attribute and
+        // mobs do not read it, so pace comes from the moveset cooldowns and from
+        // this: a hit that sends you across the courtyard is pressure in a way
+        // that a bigger damage number on its own is not.
+        double knockDealt = 0.4D + f * 0.35D;
+
         var maxHp = getAttribute(Attributes.MAX_HEALTH);
         var atk = getAttribute(Attributes.ATTACK_DAMAGE);
         var spd = getAttribute(Attributes.MOVEMENT_SPEED);
+        var arm = getAttribute(Attributes.ARMOR);
+        var armTough = getAttribute(Attributes.ARMOR_TOUGHNESS);
+        var kb = getAttribute(Attributes.KNOCKBACK_RESISTANCE);
+        var kbDealt = getAttribute(Attributes.ATTACK_KNOCKBACK);
+        if (arm != null) {
+            arm.setBaseValue(armour);
+        }
+        if (armTough != null) {
+            armTough.setBaseValue(tough);
+        }
+        if (kb != null) {
+            kb.setBaseValue(knockRes);
+        }
+        if (kbDealt != null) {
+            kbDealt.setBaseValue(knockDealt);
+        }
         if (maxHp != null) {
             maxHp.setBaseValue(health);
         }
@@ -288,7 +395,12 @@ public class KraveMonster extends Monster {
                 .add(Attributes.MAX_HEALTH, 100.0D)          // iron golem
                 .add(Attributes.MOVEMENT_SPEED, 0.32D)
                 .add(Attributes.ATTACK_DAMAGE, 4.0D)
-                .add(Attributes.ATTACK_KNOCKBACK, 0.0D)
+                // Both re-scaled per form in setForm. Declared here so the
+                // attribute map is guaranteed to carry them rather than relying
+                // on what the parent supplier happens to include.
+                .add(Attributes.ARMOR, 6.0D)
+                .add(Attributes.ARMOR_TOUGHNESS, 2.0D)
+                .add(Attributes.ATTACK_KNOCKBACK, 0.8D)
                 .add(Attributes.KNOCKBACK_RESISTANCE, 0.7D)
                 .add(Attributes.FOLLOW_RANGE, 48.0D);
     }
@@ -619,6 +731,10 @@ public class KraveMonster extends Monster {
                     double ang = this.boss.getRandom().nextDouble() * Math.PI * 2.0D;
                     this.boss.blinkNear(at.x + Math.cos(ang) * 2.5D, at.y,
                             at.z + Math.sin(ang) * 2.5D);
+                    // He arrives THROUGH whatever was standing there. Tied to
+                    // the blink rather than to the tick, so the wreckage marks
+                    // where the fight actually went.
+                    this.boss.smashLanding();
                 } else {
                     // and close hard in between, so he is never simply standing
                     Vec3 to = foe.position().subtract(this.boss.position());
@@ -630,9 +746,13 @@ public class KraveMonster extends Monster {
             }
 
             if (--this.strikeCooldown <= 0) {
-                this.strikeCooldown = 11;
+                // Swings faster the further he has escalated. Mobs ignore the
+                // ATTACK_SPEED attribute entirely, so pace has to come from the
+                // goal that owns the swing.
+                this.strikeCooldown = Math.max(4, 12 - this.boss.getForm());
                 this.boss.doHurtTarget(foe);
                 this.boss.playSound(ModSounds.COMBAT_HEAVY_HIT.get(), 1.2F, 0.9F);
+                this.boss.smashStrike(foe);
                 // recoil apart so the duel keeps moving instead of grinding
                 Vec3 away = this.boss.position().subtract(foe.position());
                 double len = Math.max(0.5D, away.length());
@@ -645,6 +765,43 @@ public class KraveMonster extends Monster {
     /** Public wrapper so the duel goal can reposition him. */
     void blinkNear(double x, double y, double z) {
         KraveBlink.blinkTo(this, x, y, z, screechSound());
+    }
+
+    /**
+     * The ground he lands on stops being ground.
+     *
+     * <p>Scaled to how big he currently is and routed through the shared
+     * demolition, so it obeys the same per-tick budget, the same arena floor and
+     * the same castle protection as every other destructive thing he does. A
+     * second independent way of removing blocks is a second way to accidentally
+     * delete the fortress.
+     */
+    void smashLanding() {
+        if (!(level() instanceof ServerLevel sl)) {
+            return;
+        }
+        double r = 2.0D + getBbWidth() * 0.35D;
+        com.barbarajones.boss.krave.KraveDemolition.crater(sl, this, position(), r, 2);
+        sl.playSound(null, blockPosition(), ModSounds.KRAVE_BOOM.get(),
+                net.minecraft.sounds.SoundSource.HOSTILE, 1.3F, 0.7F);
+    }
+
+    /**
+     * A connecting hit throws its victim through whatever is behind them.
+     *
+     * <p>The knockback comes from ATTACK_KNOCKBACK on the hit itself; this is
+     * the terrain half - the wall they are about to be driven into is cleared
+     * ahead of them, so being hit by him relocates you rather than parking you
+     * against the nearest block.
+     */
+    void smashStrike(LivingEntity foe) {
+        if (!(level() instanceof ServerLevel sl)) {
+            return;
+        }
+        Vec3 through = foe.position().subtract(position()).normalize().scale(3.0D);
+        com.barbarajones.boss.krave.KraveDemolition.carve(sl, this,
+                foe.position().add(through), 2.5D + getForm() * 0.4D, 3, 0,
+                com.barbarajones.boss.krave.KraveDemolition.BUDGET_LIGHT);
     }
 
     /** Forms 4+ (the ones with no dedicated model/texture to lean on) get the newer, harsher variants instead of reusing what forms 1-3 already sound like. */
@@ -660,6 +817,7 @@ public class KraveMonster extends Monster {
     public void addAdditionalSaveData(CompoundTag tag) {
         super.addAdditionalSaveData(tag);
         tag.putInt("KraveForm", getForm());
+        tag.putInt("KraveBattleState", getBattleState().ordinal());
     }
 
     @Override
@@ -670,10 +828,36 @@ public class KraveMonster extends Monster {
         } else {
             this.formSettled = false;
         }
+        if (tag.contains("KraveBattleState")) {
+            KraveBattleState saved = KraveBattleState.byId(tag.getInt("KraveBattleState"));
+            // A fight interrupted mid-cinematic cannot resume from the middle of
+            // one: the thrown player, the held positions and the pending
+            // scheduled effects are all gone. Rewind to the combat for that form
+            // and let it reach the finisher again, rather than restoring a
+            // scripted state with nothing left to drive it and wedging the
+            // encounter permanently.
+            this.entityData.set(BATTLE, (saved.scripted() ? KraveBattleState.COMBAT : saved).ordinal());
+            this.bossFightActive = getBattleState().hostile();
+        }
     }
 
     @Override
     public boolean hurt(DamageSource source, float amount) {
+        // Nothing lands outside actual combat. Every scripted beat - the
+        // confrontation, the prompt, the finisher, the transition - needs the
+        // fight to hold still, and a laser already in flight does not know the
+        // phase changed under it. Without this a stray hit can kill him during
+        // his own finisher, which skips a form and leaves Cayden ascended in an
+        // empty courtyard.
+        //
+        // Commands and the void still work: those bypass invulnerability, which
+        // is deliberately not blocked here - an unkillable boss is a far worse
+        // failure than a skipped phase.
+        if (!level().isClientSide
+                && !source.is(net.minecraft.tags.DamageTypeTags.BYPASSES_INVULNERABILITY)
+                && getBattleState().scripted()) {
+            return false;
+        }
         // blink away half the time you land a hit. rude.
         if (!level().isClientSide && source.getEntity() != null && this.random.nextBoolean()) {
             KraveBlink.tryRandomBlink(this, this.random, 16.0D, 6, 6, 16, screechSound());
@@ -701,6 +885,15 @@ public class KraveMonster extends Monster {
             } else {
                 applied = Math.min(applied, headroom);
             }
+        }
+        // A form is defeated by its finisher, never by running out of health.
+        // Clamping the last hit rather than refusing it keeps the feedback - he
+        // still flashes and recoils - while making it impossible to end a phase
+        // before the player has been asked to end it.
+        if (!level().isClientSide && getBattleState() == KraveBattleState.COMBAT) {
+            float floor = getMaxHealth() * FINISHER_AT;
+            float headroom = getHealth() - floor;
+            applied = headroom <= 0.0F ? 0.0F : Math.min(applied, headroom);
         }
         return super.hurt(source, applied);
     }

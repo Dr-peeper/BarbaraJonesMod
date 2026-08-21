@@ -10,6 +10,7 @@ import net.minecraft.resources.ResourceKey;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.world.level.Level;
+import net.minecraft.world.level.levelgen.structure.BoundingBox;
 import net.minecraft.world.level.saveddata.SavedData;
 
 import javax.annotation.Nullable;
@@ -45,6 +46,19 @@ public class KraveKosmosData extends SavedData {
     private int chocolateWeatherTimer;
     private boolean chocolateWeatherInitialized;
     private boolean redStarEverSpawned;
+
+    /**
+     * Where the Kraved Castle actually stands, saved with the world.
+     *
+     * <p>Persisted rather than recomputed from constants because it is what
+     * stops the boss fight destroying it, and a protection volume that drifts
+     * away from the thing it protects is worse than none: it would silently
+     * guard empty air while the castle came apart. Recorded from the placed
+     * structure's own reported bounds, so swapping the schematic moves the
+     * protection with it.
+     */
+    @Nullable
+    private BoundingBox castleBounds;
 
     private final Map<BlockPos, GlobalPos> kosmosToExternal = new HashMap<>();
     private final Map<GlobalPos, BlockPos> externalToKosmos = new HashMap<>();
@@ -157,6 +171,16 @@ public class KraveKosmosData extends SavedData {
         setDirty();
     }
 
+    @Nullable
+    public BoundingBox getCastleBounds() {
+        return this.castleBounds;
+    }
+
+    public void setCastleBounds(BoundingBox box) {
+        this.castleBounds = box;
+        setDirty();
+    }
+
     /** The Kosmos-side door paired with this overworld (or other-dimension) door, or null if it has never been used. */
     @Nullable
     public BlockPos kosmosDoorFor(GlobalPos external) {
@@ -193,6 +217,12 @@ public class KraveKosmosData extends SavedData {
         data.chocolateWeatherTimer = tag.getInt("ChocolateWeatherTimer");
         data.chocolateWeatherInitialized = tag.getBoolean("ChocolateWeatherInitialized");
         data.redStarEverSpawned = tag.getBoolean("RedStarEverSpawned");
+        if (tag.contains("CastleBounds")) {
+            int[] b = tag.getIntArray("CastleBounds");
+            if (b.length == 6) {
+                data.castleBounds = new BoundingBox(b[0], b[1], b[2], b[3], b[4], b[5]);
+            }
+        }
 
         if (tag.contains("PortalLinks")) {
             ListTag links = tag.getList("PortalLinks", Tag.TAG_COMPOUND);
@@ -223,6 +253,11 @@ public class KraveKosmosData extends SavedData {
         tag.putInt("ChocolateWeatherTimer", this.chocolateWeatherTimer);
         tag.putBoolean("ChocolateWeatherInitialized", this.chocolateWeatherInitialized);
         tag.putBoolean("RedStarEverSpawned", this.redStarEverSpawned);
+        if (this.castleBounds != null) {
+            tag.putIntArray("CastleBounds", new int[] {
+                    this.castleBounds.minX(), this.castleBounds.minY(), this.castleBounds.minZ(),
+                    this.castleBounds.maxX(), this.castleBounds.maxY(), this.castleBounds.maxZ() });
+        }
 
         ListTag links = new ListTag();
         for (Map.Entry<BlockPos, GlobalPos> e : this.kosmosToExternal.entrySet()) {

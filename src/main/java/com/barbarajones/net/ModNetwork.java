@@ -47,6 +47,17 @@ public final class ModNetwork {
                 BoardFlightPacket::toBytes, BoardFlightPacket::new, BoardFlightPacket::handle);
         CHANNEL.registerMessage(6, DeboardFlightPacket.class,
                 DeboardFlightPacket::toBytes, DeboardFlightPacket::new, DeboardFlightPacket::handle);
+
+        // The boss-fight finisher prompt. 8 and 9 - the ids above are taken and
+        // reusing one silently breaks whichever registers second, which is a
+        // mistake this file has already made once.
+        CHANNEL.registerMessage(8, PacketKraveQte.class,
+                PacketKraveQte::encode, PacketKraveQte::decode, PacketKraveQte::handle);
+        // Client -> server, and carries nothing: the whole message is that a key
+        // went down. Every decision about whether that counts is made server-side.
+        CHANNEL.registerMessage(9, PacketKraveQteInput.class,
+                PacketKraveQteInput::encode, PacketKraveQteInput::decode,
+                PacketKraveQteInput::handle);
     }
 
     /** Send Cayden's vitals to his owner alone. */
