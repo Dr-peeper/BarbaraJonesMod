@@ -467,6 +467,19 @@ public final class ManualBook {
         ));
 
         e.add(brk());
+        e.add(sub("CHOCOLATE STAIRS, SLABS & WALLS"));
+        e.add(p("Cut straight from Chocolate Block - the portal frame material - so they carry "
+                + "the same obsidian-tier hardness, the same diamond pickaxe requirement, and "
+                + "the same deep BASALT knock when you hit them. Vanilla does this with stone "
+                + "bricks; this is that, but chocolate."));
+        e.add(shaped3x3("K..\nKK.\nKKK", java.util.Map.of('K', regBlock(ModBlocks.KRAVE_BLOCK, "Chocolate Block")),
+                regBlock(ModBlocks.KRAVE_BLOCK_STAIRS, "Chocolate Stairs"), 4, "SHAPED"));
+        e.add(shaped3x3("...\n...\nKKK", java.util.Map.of('K', regBlock(ModBlocks.KRAVE_BLOCK, "Chocolate Block")),
+                regBlock(ModBlocks.KRAVE_BLOCK_SLAB, "Chocolate Slab"), 6, "SHAPED"));
+        e.add(shaped3x3("KKK\nKKK\n...", java.util.Map.of('K', regBlock(ModBlocks.KRAVE_BLOCK, "Chocolate Block")),
+                regBlock(ModBlocks.KRAVE_BLOCK_WALL, "Chocolate Wall"), 6, "SHAPED"));
+
+        e.add(brk());
         e.add(sub("KRAVE TOOLS (CURSED, ON PURPOSE)"));
         e.add(p("All five tools: Krave Cereal in the ordinary tool shape, 180 uses, iron "
                 + "mining level, +4 damage, and a speed of 14 - faster than diamond. That is "

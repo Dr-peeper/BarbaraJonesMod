@@ -7,7 +7,10 @@ import com.barbarajones.block.KraveGrassBlock;
 
 import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.LiquidBlock;
+import net.minecraft.world.level.block.SlabBlock;
 import net.minecraft.world.level.block.SoundType;
+import net.minecraft.world.level.block.StairBlock;
+import net.minecraft.world.level.block.WallBlock;
 import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.level.block.state.BlockBehaviour;
 import net.minecraft.world.level.block.state.properties.BlockSetType;
@@ -47,6 +50,17 @@ public final class ModBlocks {
                     .strength(50.0F, 1200.0F)
                     .sound(SoundType.BASALT)
                     .requiresCorrectToolForDrops()));
+
+    // Stairs/slab/wall cut from the same chocolate block above - same texture,
+    // same obsidian-tier hardness and BASALT sound, the way vanilla's stone
+    // brick stairs/slab/wall are just stone bricks in a different shape.
+    public static final RegistryObject<Block> KRAVE_BLOCK_STAIRS = BLOCKS.register("krave_block_stairs",
+            () -> new StairBlock(() -> KRAVE_BLOCK.get().defaultBlockState(),
+                    BlockBehaviour.Properties.copy(KRAVE_BLOCK.get())));
+    public static final RegistryObject<Block> KRAVE_BLOCK_SLAB = BLOCKS.register("krave_block_slab",
+            () -> new SlabBlock(BlockBehaviour.Properties.copy(KRAVE_BLOCK.get())));
+    public static final RegistryObject<Block> KRAVE_BLOCK_WALL = BLOCKS.register("krave_block_wall",
+            () -> new WallBlock(BlockBehaviour.Properties.copy(KRAVE_BLOCK.get())));
 
     public static final RegistryObject<Block> KRAVE_DOOR = BLOCKS.register("krave_door",
             () -> new KraveDoorBlock(BlockBehaviour.Properties.of()

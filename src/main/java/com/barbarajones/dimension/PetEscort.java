@@ -18,7 +18,7 @@ import java.util.function.Function;
  * Drags the player's companions through a dimension change with them.
  *
  * Vanilla leaves pets behind on any dimension change that isn't a nether
- * portal, so both the Krave Door and the Krave Tether moved the player alone.
+ * portal, so the Krave Door alone would move the player without them.
  * Cayden is the entire point of the Kosmos trip, so he has to come.
  *
  * Gather BEFORE moving the player: once they are gone, "near the player" no
@@ -57,40 +57,15 @@ public final class PetEscort {
     }
 
     /**
-     * Move gathered companions to {@code dest}, fanned out a little around
-     * {@code landing} so they don't land stacked inside each other. Fine for
-     * an open landing spot (this is what {@code KraveTetherItem} uses), but
-     * the 1.5-block fan radius doesn't fit inside the Krave Door's own
-     * 1-wide portal room - see {@link #deliverTogether} for that case.
+     * Move gathered companions to {@code dest}, all landing at the exact same
+     * spot with no fan-out - the Krave Door's portal room is a single 1-wide
+     * column, so any spread-out landing offset would put someone inside a
+     * wall. Multiple entities briefly sharing a block is harmless; they path
+     * apart on their own the moment they start moving.
      *
      * @return the companions as they exist at the destination. Cross-dimension
      *         travel discards the original entity and rebuilds a copy, so the
      *         references passed in are dead afterwards and must not be reused.
-     */
-    public static List<Entity> deliver(List<Entity> pets, ServerLevel dest, Vec3 landing) {
-        List<Entity> arrived = new ArrayList<>();
-        int index = 0;
-
-        for (Entity pet : pets) {
-            if (pet == null || !pet.isAlive()) {
-                continue;
-            }
-            double angle = (Math.PI * 2.0D / Math.max(1, pets.size())) * index++;
-            Vec3 spot = landing.add(Math.cos(angle) * 1.5D, 0.0D, Math.sin(angle) * 1.5D);
-            Entity moved = moveOne(pet, dest, spot);
-            if (moved != null) {
-                arrived.add(moved);
-            }
-        }
-        return arrived;
-    }
-
-    /**
-     * Same as {@link #deliver}, but every companion lands at the exact same
-     * spot with no fan-out - for a portal room narrow enough that a 1.5-block
-     * offset would land someone inside a wall. Multiple entities briefly
-     * sharing a block is harmless; they path apart on their own the moment
-     * they start moving.
      */
     public static List<Entity> deliverTogether(List<Entity> pets, ServerLevel dest, Vec3 landing) {
         List<Entity> arrived = new ArrayList<>();

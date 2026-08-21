@@ -101,7 +101,7 @@ public class CerealShrineFeature extends Feature<NoneFeatureConfiguration> {
                 new ItemStack(ModItems.KRAVE_MILK.get(), 1 + random.nextInt(2)),
                 new ItemStack(ModItems.CEREAL_BOWL.get()),
                 random.nextBoolean() ? new ItemStack(ModItems.KRAVE_BOX.get()) : ItemStack.EMPTY,
-                random.nextInt(4) == 0 ? new ItemStack(ModItems.KRAVE_TETHER.get()) : ItemStack.EMPTY,
+                random.nextInt(4) == 0 ? new ItemStack(ModItems.KRAVE_DUST.get(), 4 + random.nextInt(5)) : ItemStack.EMPTY,
                 random.nextInt(6) == 0 ? new ItemStack(ModItems.RED_HAT.get()) : ItemStack.EMPTY);
     }
 }

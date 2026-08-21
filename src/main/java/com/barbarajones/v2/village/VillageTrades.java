@@ -162,12 +162,8 @@ public final class VillageTrades {
             }
             case 4 -> add(out, stack(ModItems.KRAVE_BLOCK_ITEM.get(), 2), stack(Items.EMERALD, 4),
                     stack(ModItems.KRAVE_CLEANSE.get(), 1), 4, 10, 4);
-            default -> {
-                add(out, stack(ModItems.KRAVE_BLOCK_ITEM.get(), 4), stack(ModItems.GOLDEN_KRAVE.get(), 1),
-                        stack(ModItems.KRAVE_TETHER.get(), 1), 2, 16, 5);
-                add(out, stack(ModItems.KRAVE_DUST.get(), 24), ItemStack.EMPTY,
-                        stack(ModItems.GOLDEN_KRAVE.get(), 1), 3, 14, 5);
-            }
+            default -> add(out, stack(ModItems.KRAVE_DUST.get(), 24), ItemStack.EMPTY,
+                    stack(ModItems.GOLDEN_KRAVE.get(), 1), 3, 14, 5);
         }
     }
 

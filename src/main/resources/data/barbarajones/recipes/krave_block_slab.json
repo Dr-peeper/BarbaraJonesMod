@@ -1,0 +1,6 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "pattern": [ "###" ],
+  "key": { "#": { "item": "barbarajones:krave_block" } },
+  "result": { "item": "barbarajones:krave_block_slab", "count": 6 }
+}

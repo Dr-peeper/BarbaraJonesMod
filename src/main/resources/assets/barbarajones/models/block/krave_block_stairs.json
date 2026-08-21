@@ -1,0 +1,4 @@
+{
+  "parent": "minecraft:block/stairs",
+  "textures": { "bottom": "barbarajones:block/krave_block", "top": "barbarajones:block/krave_block", "side": "barbarajones:block/krave_block" }
+}

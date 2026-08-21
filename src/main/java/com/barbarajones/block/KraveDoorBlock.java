@@ -13,7 +13,6 @@ import com.barbarajones.entity.KraveMonster;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
 import net.minecraft.core.GlobalPos;
-import net.minecraft.nbt.CompoundTag;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.sounds.SoundSource;
@@ -242,15 +241,6 @@ public class KraveDoorBlock extends DoorBlock {
             }
             data.link(external, kosmosDoorPos);
         }
-
-        // Still writes the old per-player return spot too - KraveTetherItem
-        // reads it independently of this door's own portal-link system, and
-        // stays fully functional as long as this keeps being set on arrival.
-        CompoundTag persist = persisted(player);
-        persist.putString("KraveReturnDim", overworld.dimension().location().toString());
-        persist.putDouble("KraveReturnX", player.getX());
-        persist.putDouble("KraveReturnY", player.getY());
-        persist.putDouble("KraveReturnZ", player.getZ());
 
         teleportInto(player, kosmos, kosmosDoorPos, AUTO_ROOM_INTO, true);
     }
@@ -526,13 +516,5 @@ public class KraveDoorBlock extends DoorBlock {
             }
             kosmos.addFreshEntity(box);
         }
-    }
-
-    private CompoundTag persisted(ServerPlayer player) {
-        CompoundTag data = player.getPersistentData();
-        if (!data.contains(Player.PERSISTED_NBT_TAG)) {
-            data.put(Player.PERSISTED_NBT_TAG, new CompoundTag());
-        }
-        return data.getCompound(Player.PERSISTED_NBT_TAG);
     }
 }

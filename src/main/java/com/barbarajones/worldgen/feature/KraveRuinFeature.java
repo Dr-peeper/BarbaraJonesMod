@@ -253,7 +253,7 @@ public class KraveRuinFeature extends Feature<NoneFeatureConfiguration> {
         level.setBlock(spot, Blocks.BARREL.defaultBlockState(), 3);
         if (level.getBlockEntity(spot) instanceof BarrelBlockEntity barrel) {
             barrel.setItem(4, new ItemStack(ModItems.KRAVE_CEREAL.get(), 4 + random.nextInt(5)));
-            barrel.setItem(11, new ItemStack(ModItems.KRAVE_TETHER.get(), 1 + random.nextInt(2)));
+            barrel.setItem(11, new ItemStack(ModItems.KRAVE_DUST.get(), 4 + random.nextInt(5)));
             if (random.nextBoolean()) {
                 barrel.setItem(13, new ItemStack(ModItems.KRAVE_SWORD.get()));
             }

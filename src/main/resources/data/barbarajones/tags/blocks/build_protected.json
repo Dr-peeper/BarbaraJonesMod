@@ -12,6 +12,9 @@
     "minecraft:reinforced_deepslate",
     "minecraft:budding_amethyst",
     { "id": "barbarajones:krave_block", "required": false },
+    { "id": "barbarajones:krave_block_stairs", "required": false },
+    { "id": "barbarajones:krave_block_slab", "required": false },
+    { "id": "barbarajones:krave_block_wall", "required": false },
     { "id": "barbarajones:krave_door", "required": false },
     { "id": "barbarajones:krafting_bench", "required": false }
   ]

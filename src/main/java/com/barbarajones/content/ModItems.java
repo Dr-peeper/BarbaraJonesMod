@@ -15,7 +15,6 @@ import com.barbarajones.item.CaydenCompassItem;
 import com.barbarajones.item.ComputerMouseItem;
 import com.barbarajones.item.HousingQueryItem;
 import com.barbarajones.item.KraveCleanseItem;
-import com.barbarajones.item.KraveTetherItem;
 import com.barbarajones.item.KraveTools;
 import com.barbarajones.item.JointItem;
 import com.barbarajones.item.KraveBoxItem;
@@ -230,8 +229,12 @@ public final class ModItems {
             ITEMS.register("krave_block", () -> new BlockItem(ModBlocks.KRAVE_BLOCK.get(), props()));
     public static final RegistryObject<Item> KRAVE_DOOR_ITEM =
             ITEMS.register("krave_door", () -> new BlockItem(ModBlocks.KRAVE_DOOR.get(), props()));
-    public static final RegistryObject<Item> KRAVE_TETHER =
-            ITEMS.register("krave_tether", () -> new KraveTetherItem(props().stacksTo(4)));
+    public static final RegistryObject<Item> KRAVE_BLOCK_STAIRS_ITEM =
+            ITEMS.register("krave_block_stairs", () -> new BlockItem(ModBlocks.KRAVE_BLOCK_STAIRS.get(), props()));
+    public static final RegistryObject<Item> KRAVE_BLOCK_SLAB_ITEM =
+            ITEMS.register("krave_block_slab", () -> new BlockItem(ModBlocks.KRAVE_BLOCK_SLAB.get(), props()));
+    public static final RegistryObject<Item> KRAVE_BLOCK_WALL_ITEM =
+            ITEMS.register("krave_block_wall", () -> new BlockItem(ModBlocks.KRAVE_BLOCK_WALL.get(), props()));
     public static final RegistryObject<Item> KRAVE_GRASS_ITEM =
             ITEMS.register("krave_grass", () -> new BlockItem(ModBlocks.KRAVE_GRASS.get(), props()));
     public static final RegistryObject<Item> KRAVE_DIRT_ITEM =

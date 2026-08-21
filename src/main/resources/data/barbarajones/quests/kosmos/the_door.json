@@ -11,7 +11,6 @@
     { "type": "place_building", "building": "barbarajones:krave_door", "count": 1 }
   ],
   "rewards": [
-    { "type": "item", "item": "barbarajones:krave_tether", "count": 2 },
     { "type": "krave_xp", "amount": 90 }
   ]
 }

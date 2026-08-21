@@ -93,7 +93,6 @@ public final class QuestExpansion {
     // The Kosmos
     public static final String KOSMOS_KIT       = "kosmos_kit";
     public static final String KOSMOS_ARRIVAL   = "kosmos_arrival";
-    public static final String KOSMOS_TETHER    = "kosmos_tether";
     public static final String KOSMOS_CHOCOLATE = "kosmos_chocolate";
     public static final String KOSMOS_BUCKET    = "kosmos_bucket";
     public static final String KOSMOS_BAR       = "kosmos_bar";
@@ -425,15 +424,10 @@ public final class QuestExpansion {
                 ModItems.KRAVE_BLOCK_ITEM, ModItems.KRAVE_DOOR_ITEM);
         goal(KOSMOS_ARRIVAL, B_KOSMOS, "Krave Kosmos",
                 "Walk into the finished room and shut the door behind you. Purple sky, floating "
-                        + "islands, an ocean of liquid chocolate. Bring blocks. Bring a lot of blocks.",
+                        + "islands, an ocean of liquid chocolate. Bring blocks. Bring a lot of blocks. "
+                        + "There is no tether, no backup, no second door. Remember exactly where "
+                        + "yours is - it is the only way home you get.",
                 KOSMOS_KIT);
-        collect(KOSMOS_TETHER, B_KOSMOS, "Anchor Line",
-                "Craft a KRAVE TETHER (ender pearl + amethyst shard + krave cereal, makes 2). "
-                        + "The door you arrived next to is already your way back - walk in, shut it, "
-                        + "you're home. Carry a Tether anyway for whenever that door's too far to "
-                        + "walk back to.",
-                pre(KOSMOS_KIT),
-                ModItems.KRAVE_TETHER);
         goal(KOSMOS_CHOCOLATE, B_KOSMOS, "It's Hot Chocolate",
                 "Touch the liquid chocolate and live. It burns exactly like lava, because it is "
                         + "chocolate the temperature of lava. One tap. Then get out.",
@@ -476,7 +470,7 @@ public final class QuestExpansion {
         milestone(KOSMOS_MASTER, B_KOSMOS, "Kosmonaut",
                 "Door built, chocolate survived, islands crossed, ceiling reached, ascension "
                         + "witnessed. You live there now, basically.",
-                KOSMOS_TETHER, KOSMOS_BAR, KOSMOS_SOIL, KOSMOS_HIGH, KOSMOS_RESIDENT,
+                KOSMOS_BAR, KOSMOS_SOIL, KOSMOS_HIGH, KOSMOS_RESIDENT,
                 KOSMOS_ISLAND, KOSMOS_ASCENSION);
 
         // ================= INFAMY ============================================

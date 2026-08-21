@@ -1,0 +1,7 @@
+{
+  "variants": {
+    "type=bottom": { "model": "barbarajones:block/krave_block_slab" },
+    "type=top": { "model": "barbarajones:block/krave_block_slab_top" },
+    "type=double": { "model": "barbarajones:block/krave_block" }
+  }
+}

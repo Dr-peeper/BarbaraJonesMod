@@ -3,7 +3,7 @@
   "title": "quest.barbarajones.kosmos.kosmonaut.title",
   "objective": "quest.barbarajones.kosmos.kosmonaut.objective",
   "lore": "quest.barbarajones.kosmos.kosmonaut.lore",
-  "icon": "barbarajones:krave_tether",
+  "icon": "barbarajones:krave_block",
   "x": 0,
   "y": 3,
   "dependencies": [ "barbarajones:kosmos/kravelings", "barbarajones:kosmos/deep_krave" ],

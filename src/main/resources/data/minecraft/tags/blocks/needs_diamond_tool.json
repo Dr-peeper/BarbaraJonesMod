@@ -1,6 +1,9 @@
 {
   "replace": false,
   "values": [
-    "barbarajones:krave_block"
+    "barbarajones:krave_block",
+    "barbarajones:krave_block_stairs",
+    "barbarajones:krave_block_slab",
+    "barbarajones:krave_block_wall"
   ]
 }
