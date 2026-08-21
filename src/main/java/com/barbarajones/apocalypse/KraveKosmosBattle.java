@@ -130,6 +130,29 @@ public final class KraveKosmosBattle {
         battle.enterConfrontation();
     }
 
+    /**
+     * Re-attaches a controller to a fight that is already in progress.
+     *
+     * <p>Used after a reload, where the Monster still carries a saved COMBAT
+     * state but the controller that was driving him is gone. Deliberately does
+     * NOT replay the confrontation: he has already been confronted, and running
+     * the stare-down again would reset him to form one and undo the fight.
+     */
+    public static void resume(ServerLevel level, KraveMonster boss, CaydenCobb cayden) {
+        for (KraveKosmosBattle b : ACTIVE) {
+            if (b.boss == boss) {
+                return;
+            }
+        }
+        KraveKosmosBattle battle = new KraveKosmosBattle(level, boss, cayden);
+        ACTIVE.add(battle);
+        battle.boss.setTarget(cayden);
+        cayden.setTarget(boss);
+        // Matched to the form he was already on, so a fight resumed at form five
+        // does not restart with a Super Saiyan.
+        cayden.ascendTo(Math.min(boss.getForm(), AscensionLadder.ULTRA));
+    }
+
     public static boolean isActive(KraveMonster boss) {
         for (KraveKosmosBattle b : ACTIVE) {
             if (b.boss == boss) {

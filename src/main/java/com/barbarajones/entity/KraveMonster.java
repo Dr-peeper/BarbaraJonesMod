@@ -183,6 +183,19 @@ public class KraveMonster extends Monster {
         return getHealth() <= getMaxHealth() * FINISHER_AT;
     }
 
+    /**
+     * Spawns him already fighting, for the summons that are not the scripted
+     * Kosmos encounter.
+     *
+     * <p>The Krave Box and the tenth Cayden death each summon their own
+     * independent Monster. Those have no confrontation to wake them, so without
+     * this they sit dormant forever - invisible to Cayden and harmless - which
+     * is a working feature quietly deleted.
+     */
+    public void spawnHostile() {
+        setBattleState(KraveBattleState.COMBAT);
+    }
+
     /** Puts a form back on its feet for the next phase. */
     public void restoreForPhase() {
         setHealth(getMaxHealth());
@@ -890,7 +903,14 @@ public class KraveMonster extends Monster {
         // Clamping the last hit rather than refusing it keeps the feedback - he
         // still flashes and recoils - while making it impossible to end a phase
         // before the player has been asked to end it.
-        if (!level().isClientSide && getBattleState() == KraveBattleState.COMBAT) {
+        //
+        // Only for the scripted encounter. A Krave Box summon is a fully
+        // independent fight with the old death-driven gauntlet behind it, and
+        // clamping that one would leave it unkillable and the gauntlet unable to
+        // advance. Asking whether a controller is driving him is what tells the
+        // two apart - and it is derived, so it cannot go stale.
+        if (!level().isClientSide && getBattleState() == KraveBattleState.COMBAT
+                && com.barbarajones.apocalypse.KraveKosmosBattle.isActive(this)) {
             float floor = getMaxHealth() * FINISHER_AT;
             float headroom = getHealth() - floor;
             applied = headroom <= 0.0F ? 0.0F : Math.min(applied, headroom);

@@ -536,6 +536,10 @@ public class KraveApocalypse {
                 this.level.addFreshEntity(monster);
             }
             if (monster != null) {
+                // Awake on arrival, like the Krave Box summon. This is its own
+                // encounter with the death-driven gauntlet behind it, not the
+                // scripted Kosmos fight, so nothing is coming to wake it.
+                monster.spawnHostile();
                 monster.setTarget(this.owner);
                 this.owner.sendSystemMessage(Component.literal(ChatFormatting.DARK_PURPLE + ""
                         + ChatFormatting.BOLD + "HE HAS COME THROUGH THE GATES."));

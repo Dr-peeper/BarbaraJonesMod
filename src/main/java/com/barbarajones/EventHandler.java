@@ -148,6 +148,10 @@ public class EventHandler {
         }
         next.moveTo(fallen.getX(), fallen.getY(), fallen.getZ(), fallen.getYRot(), 0.0F);
         next.setForm(nextForm);
+        // Straight back into the fight. This is the death-driven gauntlet, which
+        // is still how the independent summons escalate - the Kosmos resident
+        // uses the scripted finisher instead and never reaches this path.
+        next.spawnHostile();
         next.setTarget(fallen.getTarget());
         level.addFreshEntity(next);
 

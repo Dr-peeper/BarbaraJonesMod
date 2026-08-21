@@ -70,7 +70,22 @@ public final class KraveConfrontation {
             }
             for (KraveMonster boss : kosmos.getEntitiesOfClass(KraveMonster.class,
                     player.getBoundingBox().inflate(KraveKosmosBattle.triggerRange()))) {
-            if (boss.getBattleState() != KraveBattleState.DORMANT || !boss.isAlive()) {
+            if (!boss.isAlive() || boss.getBattleState() == KraveBattleState.DEFEATED) {
+                continue;
+            }
+            // A fight already in progress whose controller did not survive a
+            // reload. The controllers live in a static list; the Monster's state
+            // is saved. Rebuild the driving half around the saved half rather
+            // than leaving him stranded in COMBAT with no prompt coming and no
+            // transitions - and without replaying the confrontation, which would
+            // reset him to form one.
+            if (boss.getBattleState() != KraveBattleState.DORMANT) {
+                if (!KraveKosmosBattle.isActive(boss)) {
+                    CaydenCobb resumeWith = findCayden(kosmos, player);
+                    if (resumeWith != null) {
+                        KraveKosmosBattle.resume(kosmos, boss, resumeWith);
+                    }
+                }
                 continue;
             }
             // He and Cayden may not engage each other before the confrontation.

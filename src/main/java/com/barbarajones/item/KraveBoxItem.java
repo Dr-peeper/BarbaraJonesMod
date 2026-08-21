@@ -62,6 +62,10 @@ public class KraveBoxItem extends Item {
             monster.moveTo(x, player.getY() + 1.0D, z, player.getYRot() + 180.0F, 0.0F);
             level.addFreshEntity(monster);
             monster.setForm(com.barbarajones.EventHandler.nextKraveForm(player));
+            // Awake and hostile on arrival. This summon is its own encounter,
+            // not the scripted Kosmos one - there is no confrontation coming to
+            // wake it, so a dormant Monster here would just stand there.
+            monster.spawnHostile();
             monster.setTarget(player);
         }
         level.playSound(null, player.blockPosition(), SoundEvents.WITHER_SPAWN, SoundSource.HOSTILE, 1.0F, 1.2F);
