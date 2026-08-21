@@ -47,6 +47,7 @@ public class CaydenUpgradeScreen extends KraveScreen {
 
     @Nullable
     private KraveButton buyButton;
+    private KraveButton fieldButton;
 
     public CaydenUpgradeScreen(CaydenCobb cayden) {
         super(Component.literal("Cayden's Ascension"));
@@ -90,6 +91,14 @@ public class CaydenUpgradeScreen extends KraveScreen {
                 Component.literal("Unlock"), this::buySelected).accent(KraveTheme.GOLD));
         addRenderableWidget(new KraveButton(right - closeW, y, closeW, 20,
                 Component.literal("Close"), this::onClose));
+
+        // Second row: what he is allowed to do to ordinary mobs. Sits under the
+        // ladder rather than inside it, because it is a different question -
+        // the list above is what he KNOWS, this is what he may USE when nothing
+        // important is happening.
+        this.fieldButton = addRenderableWidget(new KraveButton(left, y - 24, buyW, 20,
+                Component.literal("Field power"), this::cycleFieldCap)
+                .accent(KraveTheme.BOX_RED));
         refreshFooter();
     }
 
@@ -140,6 +149,7 @@ public class CaydenUpgradeScreen extends KraveScreen {
                 : "Unlock " + rung.name() + "  -  " + rung.kiCost() + " Ki";
         this.buyButton.setMessage(Component.literal(
                 KraveTheme.trimTo(this.font, label, this.buyButton.getWidth() - 10)));
+        refreshFieldButton();
         this.buyButton.active =
                 AscensionLadder.blocker(tier, mask(), ki(), fed()) == null;
         this.subtitle = ki() + " Ki  -  "
@@ -376,5 +386,45 @@ public class CaydenUpgradeScreen extends KraveScreen {
 
     private static String fmt(double value) {
         return String.format(Locale.ROOT, "%.1f", value);
+    }
+    /**
+     * Step the field cap up one rung, wrapping back to off at the top.
+     *
+     * <p>A cycle rather than its own list: there are only ever a handful of
+     * valid settings, they are strictly ordered, and a second scrolling list
+     * inside a screen that already has one is more chrome than the choice is
+     * worth. Off is part of the cycle, so turning him back down is one click
+     * from anywhere rather than a separate control.
+     */
+    private void cycleFieldCap() {
+        if (!this.cayden.isFieldCapUnlocked()) {
+            return;
+        }
+        int highest = this.cayden.highestUnlockedTier();
+        int next = this.cayden.getFieldCap() + 1;
+        if (next > highest) {
+            next = 0;
+        }
+        com.barbarajones.net.PacketCaydenFieldCap.set(this.cayden.getId(), next);
+    }
+
+    /** Keeps the field button showing what is actually set on the entity. */
+    private void refreshFieldButton() {
+        if (this.fieldButton == null) {
+            return;
+        }
+        boolean unlocked = this.cayden.isFieldCapUnlocked();
+        this.fieldButton.active = unlocked;
+        String label;
+        if (!unlocked) {
+            label = "Field power: locked - beat the Krave Monster";
+        } else {
+            int cap = this.cayden.getFieldCap();
+            label = cap <= 0
+                    ? "Field power: OFF (he fights as a kid)"
+                    : "Field power: " + AscensionLadder.nameOf(cap);
+        }
+        this.fieldButton.setMessage(Component.literal(
+                KraveTheme.trimTo(this.font, label, this.fieldButton.getWidth() - 10)));
     }
 }

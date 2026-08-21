@@ -36,6 +36,13 @@ public final class ModNetwork {
         // screen has always sent it and nothing has ever been listening.
         CHANNEL.registerMessage(4, PacketCaydenUpgrade.class,
                 PacketCaydenUpgrade::encode, PacketCaydenUpgrade::decode, PacketCaydenUpgrade::handle);
+
+        // Client -> server: the field-power cap set on the ledger screen.
+        // Id 7, not 5: the airline module already claimed 5 and 6, and two
+        // packets sharing an id silently breaks whichever registers second.
+        CHANNEL.registerMessage(7, PacketCaydenFieldCap.class,
+                PacketCaydenFieldCap::encode, PacketCaydenFieldCap::decode,
+                PacketCaydenFieldCap::handle);
         CHANNEL.registerMessage(5, BoardFlightPacket.class,
                 BoardFlightPacket::toBytes, BoardFlightPacket::new, BoardFlightPacket::handle);
         CHANNEL.registerMessage(6, DeboardFlightPacket.class,

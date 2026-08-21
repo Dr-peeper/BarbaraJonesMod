@@ -89,6 +89,13 @@ public class CaydenCobb extends TamableAnimal {
      * 1 Super Saiyan, 2 SSJ2, 3 SSJ3, 4 Super Saiyan God, 5 Super Saiyan Blue,
      * 6 Ultra Instinct. Synced so the aura can render the right form.
      */
+    /**
+     * How far he is allowed to go against ORDINARY mobs - zero means not at
+     * all, which is where every Cayden starts.
+     */
+    private static final EntityDataAccessor<Integer> FIELD_CAP =
+            SynchedEntityData.defineId(CaydenCobb.class, EntityDataSerializers.INT);
+
     private static final EntityDataAccessor<Integer> TIER =
             SynchedEntityData.defineId(CaydenCobb.class, EntityDataSerializers.INT);
     /**
@@ -303,6 +310,7 @@ public class CaydenCobb extends TamableAnimal {
         this.entityData.define(DESPERATE, false);
         this.entityData.define(DARK, false);
         this.entityData.define(TIER, 0);
+        this.entityData.define(FIELD_CAP, 0);
         this.entityData.define(UNLOCKS, 0);
         this.entityData.define(KI, 0);
     }
@@ -1175,7 +1183,14 @@ public class CaydenCobb extends TamableAnimal {
         } else if (foe instanceof net.minecraft.world.entity.boss.wither.WitherBoss) {
             base = AscensionLadder.SSJ;
         } else {
-            return 0;
+            // Anything that is not a boss. He only engages these above his own
+            // weight class if the owner has explicitly allowed it, and never
+            // above what the menu was set to.
+            int cap = getFieldCap();
+            if (cap <= 0 || !(foe instanceof net.minecraft.world.entity.Mob)) {
+                return 0;
+            }
+            base = Math.min(cap, highestUnlockedTier());
         }
         if (inKosmos()) {
             // Nothing is fought in the Kosmos below Super Saiyan God, and
@@ -1882,6 +1897,7 @@ public class CaydenCobb extends TamableAnimal {
         tag.putInt("SsjTicks", this.ssjTicks);
         tag.putBoolean("SsjBossLinked", this.ssjUntilBossDies);
         tag.putInt("AscensionUnlocks", getUnlockMask());
+        tag.putInt("FieldCap", getFieldCap());
         tag.putInt("AscensionKi", getKi());
         if (this.home != null) {
             tag.putInt("HomeX", this.home.getX());
@@ -1901,6 +1917,7 @@ public class CaydenCobb extends TamableAnimal {
         this.entityData.set(UNLOCKS,
                 tag.getInt("AscensionUnlocks") & ((1 << (AscensionLadder.MAX + 1)) - 1));
         this.entityData.set(KI, Math.max(0, tag.getInt("AscensionKi")));
+        this.entityData.set(FIELD_CAP, Math.max(0, tag.getInt("FieldCap")));
         if (tag.getBoolean("Ssj")) {
             this.entityData.set(SSJ, true);
             this.ssjTicks = Math.max(1, tag.getInt("SsjTicks"));
@@ -2258,5 +2275,42 @@ public class CaydenCobb extends TamableAnimal {
                     getX() + Math.cos(a + 0.6D) * r, getY() + h, getZ() + Math.sin(a + 0.6D) * r,
                     1, 0.0D, 0.0D, 0.0D, 0.0D);
         }
+    }
+    // ---- fighting ordinary mobs --------------------------------------------
+
+    /**
+     * The highest form he may use against ordinary mobs, or zero for none.
+     *
+     * <p>Separate from the ascension ladder on purpose. The ladder is about what
+     * he has LEARNED; this is about what he is allowed to USE when nothing
+     * important is happening. Out of the box he fights a zombie as a kid with a
+     * fist, which is why he dies to one, and that is the intended starting
+     * state rather than an oversight.
+     */
+    public int getFieldCap() {
+        return this.entityData.get(FIELD_CAP);
+    }
+
+    public void setFieldCap(int cap) {
+        // Never above what he has actually been taught: picking Blue in the menu
+        // and then unlearning Blue must not leave a cap he cannot reach.
+        int clamped = Math.max(0, Math.min(cap, highestUnlockedTier()));
+        this.entityData.set(FIELD_CAP, clamped);
+    }
+
+    /**
+     * Whether the field cap can be changed at all.
+     *
+     * <p>Earned by putting the Krave Monster down through every one of his
+     * forms. Before that he fights everything at his own size - the whole first
+     * act is supposed to be spent protecting a kid who cannot protect himself,
+     * and handing out Super Saiyan against zombies on day one deletes that.
+     */
+    public boolean isFieldCapUnlocked() {
+        if (!(getOwner() instanceof Player owner)) {
+            return false;
+        }
+        return com.barbarajones.EventHandler.kraveFormsBeaten(owner)
+                >= com.barbarajones.entity.KraveMonster.FINAL_FORM;
     }
 }
