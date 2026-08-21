@@ -1,11 +1,14 @@
 package com.barbarajones.item;
 
 import com.barbarajones.content.ModEntities;
+import com.barbarajones.dimension.KraveDimensions;
+import com.barbarajones.dimension.KraveKosmosData;
 import com.barbarajones.entity.KraveMonster;
 import com.barbarajones.quest.Quests;
 
 import net.minecraft.ChatFormatting;
 import net.minecraft.network.chat.Component;
+import net.minecraft.server.level.ServerLevel;
 import net.minecraft.sounds.SoundEvents;
 import net.minecraft.sounds.SoundSource;
 import net.minecraft.world.InteractionHand;
@@ -17,7 +20,11 @@ import net.minecraft.world.level.Level;
 
 /**
  * An empty Krave box. Crush it to summon THE KRAVE MONSTER - but only once
- * Barbara and Cayden are both on your side.
+ * Barbara and Cayden are both on your side, AND only after the Kosmos's own
+ * resident Krave Monster has been beaten at least once. Summoning one here
+ * before that would let a player fight (and win) the boss without ever
+ * setting foot in the Kosmos at all, which undercuts the entire point of
+ * getting there.
  */
 public class KraveBoxItem extends Item {
 
@@ -34,6 +41,12 @@ public class KraveBoxItem extends Item {
         if (!Quests.isUnlocked(player, Quests.SUMMON_KRAVE)) {
             player.sendSystemMessage(Component.literal(ChatFormatting.LIGHT_PURPLE + "[Krave Quest] "
                     + ChatFormatting.GRAY + "Nothing happens. Recruit Barbara and stock a full bowl first."));
+            return InteractionResultHolder.fail(stack);
+        }
+        ServerLevel kosmos = level.getServer().getLevel(KraveDimensions.KRAVE_KOSMOS);
+        if (kosmos == null || !KraveKosmosData.get(kosmos).isBossEverDefeated()) {
+            player.sendSystemMessage(Component.literal(ChatFormatting.LIGHT_PURPLE + "[Krave Quest] "
+                    + ChatFormatting.GRAY + "Nothing happens. The Krave Monster in the Kosmos hasn't fallen yet."));
             return InteractionResultHolder.fail(stack);
         }
 

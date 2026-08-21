@@ -95,11 +95,9 @@ public class KraveDoorBlock extends DoorBlock {
         if (into == null || !playerInInterior(player, lowerPos, into)) {
             return;
         }
-        // A short pause before the trip actually fires - triggering it the
-        // instant the door shuts (the same tick, same method call) never
-        // gave the close animation or its sound any time to actually land
-        // before the world swapped out from under the player.
-        KraveDoorScheduler.schedule(DOOR_CLOSE_DELAY_TICKS, () -> {
+        boolean returningHome = level.dimension().equals(KraveDimensions.KRAVE_KOSMOS);
+
+        Runnable travel = () -> {
             if (!player.isAlive() || player.level() != level) {
                 return;
             }
@@ -107,12 +105,22 @@ public class KraveDoorBlock extends DoorBlock {
             if (!(recheck.getBlock() instanceof KraveDoorBlock) || recheck.getValue(OPEN)) {
                 return;   // reopened, broken, replaced - something changed in the meantime, don't force it
             }
-            if (level.dimension().equals(KraveDimensions.KRAVE_KOSMOS)) {
+            if (returningHome) {
                 travelFromKosmos(level, lowerPos, player);
             } else {
                 travelToKosmos(level, lowerPos, into, player);
             }
-        });
+        };
+
+        // Returning home skips straight to 1 tick - imperceptible, but still
+        // deferred a tick past the block-use call that's still on the stack
+        // right now (super.use() just toggled this exact door's blockstate
+        // moments ago) rather than calling changeDimension() synchronously
+        // from inside that same interaction. The 8-tick pause below is
+        // specifically for arriving - what makes the door read as actually
+        // closing before the world swaps - and that beat doesn't buy
+        // anything on the way back, so it's skipped, not just shortened.
+        KraveDoorScheduler.schedule(returningHome ? 1 : DOOR_CLOSE_DELAY_TICKS, travel);
     }
 
     // ---- room geometry: validate + locate --------------------------------
@@ -348,7 +356,7 @@ public class KraveDoorBlock extends DoorBlock {
         });
         player.fallDistance = 0.0F;
 
-        for (Entity arrived : com.barbarajones.dimension.PetEscort.deliver(withPlayer, dest, target)) {
+        for (Entity arrived : com.barbarajones.dimension.PetEscort.deliverTogether(withPlayer, dest, target)) {
             if (enteringKosmos && arrived instanceof CaydenCobb cayden) {
                 cayden.onEnterKosmos();
             }
@@ -359,7 +367,7 @@ public class KraveDoorBlock extends DoorBlock {
                 if (straggler == null || !straggler.isAlive() || straggler.level() == dest) {
                     return;   // already gone, or already got there some other way
                 }
-                List<Entity> late = com.barbarajones.dimension.PetEscort.deliver(List.of(straggler), dest, target);
+                List<Entity> late = com.barbarajones.dimension.PetEscort.deliverTogether(List.of(straggler), dest, target);
                 if (late.isEmpty()) {
                     return;
                 }
@@ -387,18 +395,45 @@ public class KraveDoorBlock extends DoorBlock {
     /**
      * Builds a fresh partner room somewhere clear in the Kosmos and hands
      * back its door's lower position - the caller links it to whichever
-     * overworld door asked for it. Reuses the same mountain/crevice-avoiding
-     * search the old landing system used, since the requirements are
-     * identical: a flat, open pocket big enough for the room to actually fit
-     * without ending up half-buried.
+     * overworld door asked for it.
+     *
+     * <p>Picks a random point 200-500 blocks out from the boss island in a
+     * random direction, same "random angle + distance, retry a few times"
+     * shape {@link #buildRandomOverworldRoomCopy} uses - every portal room
+     * lands somewhere genuinely far from the den (a real destination to
+     * travel to, not something standing right next to the door), and since
+     * each independent portal picks its own random point, several different
+     * doors' Kosmos rooms end up scattered across a wide ring instead of
+     * all clustering in the same spot the way a single fixed landing point
+     * used to produce.
      */
     private BlockPos buildKosmosRoomCopy(ServerLevel kosmos) {
-        Vec3 spot = KraveLanding.findClearLanding(kosmos, KraveDimensions.PORTAL_LANDING, 12, 3, 2, 5)
-                .or(() -> KraveLanding.findLanding(kosmos, KraveDimensions.PORTAL_LANDING, 6))
-                .orElse(null);
-        if (spot == null) {
-            return null;
+        var random = java.util.concurrent.ThreadLocalRandom.current();
+        for (int attempt = 0; attempt < 20; attempt++) {
+            double angle = random.nextDouble() * Math.PI * 2.0D;
+            double distance = 200.0D + random.nextDouble() * 300.0D;
+            Vec3 center = KraveDimensions.BOSS_ISLAND.add(Math.cos(angle) * distance, 0.0D, Math.sin(angle) * distance);
+
+            Vec3 spot = KraveLanding.findClearLanding(kosmos, center, 16, 3, 3, 4)
+                    .or(() -> KraveLanding.findLanding(kosmos, center, 10))
+                    .orElse(null);
+            if (spot != null) {
+                return finishKosmosRoom(kosmos, spot);
+            }
         }
+        // Genuinely rough terrain out at a random 200-500 block point can
+        // fail every strict attempt above (this dimension's own mountain
+        // worldgen is uneven enough that "flat within 3 blocks" isn't
+        // guaranteed anywhere off the authored islands) - rather than the
+        // player's door close silently doing nothing, fall back to right
+        // beside the boss island itself, which KraveDenBuilder guarantees is
+        // real, flat, built ground.
+        Vec3 fallbackCenter = KraveDimensions.BOSS_ISLAND.add(60.0D, 0.0D, 60.0D);
+        Vec3 spot = KraveLanding.findLanding(kosmos, fallbackCenter, 10).orElse(fallbackCenter);
+        return finishKosmosRoom(kosmos, spot);
+    }
+
+    private BlockPos finishKosmosRoom(ServerLevel kosmos, Vec3 spot) {
         BlockPos doorLowerPos = BlockPos.containing(spot.x, spot.y, spot.z);
         placeRoomShell(kosmos, doorLowerPos, AUTO_ROOM_INTO);
         ensureLandingBoxesExist(kosmos, spot);
@@ -470,11 +505,11 @@ public class KraveDoorBlock extends DoorBlock {
         var bossId = data.getBossId();
         KraveMonster boss = bossId != null && kosmos.getEntity(bossId) instanceof KraveMonster m ? m : null;
 
-        int[][] offsets = { {18, 0}, {-18, 0}, {0, 18}, {0, -18} };
+        int[][] offsets = { {60, 0}, {-60, 0}, {0, 60}, {0, -60} };
         List<Vec3> placed = new ArrayList<>();
         for (int[] off : offsets) {
             Vec3 seed = landing.add(off[0], 0.0D, off[1]);
-            var spot = KraveLanding.findOpenLanding(kosmos, seed, 4, placed, 14.0D);
+            var spot = KraveLanding.findOpenLanding(kosmos, seed, 6, placed, 24.0D);
             if (spot.isEmpty()) {
                 continue;
             }

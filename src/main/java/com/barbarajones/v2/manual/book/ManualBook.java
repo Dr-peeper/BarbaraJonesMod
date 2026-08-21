@@ -294,13 +294,16 @@ public final class ManualBook {
         List<PageElement> e = new ArrayList<>();
 
         e.add(head("THE KRAVELINGS"));
-        e.add(p("Five mobs, one family: hostile cereal gone feral, plus one that is not "
-                + "hostile at all. This is the mod's own hostile roster - not reskinned "
-                + "zombies, each with one genuinely distinct signature move."));
+        e.add(p("Six mobs, one family: hostile cereal gone feral, one flying pest, and one "
+                + "that is not hostile at all. This is the mod's own hostile roster - not "
+                + "reskinned zombies, each with one genuinely distinct signature move."));
         e.add(note("A NOTE ON THIS CHAPTER", "The Kraveling family was still mid-build elsewhere in the "
                 + "codebase as this manual went to print - see the gap list in this module's own "
                 + "docs page. What follows is accurate to the design as written; exact stats and "
                 + "drop tables may still move before 2.0 ships.", GOLD));
+        e.add(note("WHERE TO FIND THEM", "Every mob in this chapter roams the Krave Kosmos too, not just "
+                + "the overworld - ambient wildlife there is drawn from this whole family plus Krave "
+                + "Minion, at one shared rate. See the Krave Kosmos chapter.", PURPLE));
 
         e.add(brk());
         e.add(sub("KRAVELING"));
@@ -340,6 +343,13 @@ public final class ManualBook {
                 + "if you're clearing a group - or leave it, since it never swings at you "
                 + "itself."));
 
+        e.add(sub("KRAVAJO"));
+        e.add(p("The cereal-flake bat: a flying pest, not a threat. Four dives out of five "
+                + "connect for nothing at all - a shove, a noise, no damage - and only the "
+                + "fifth actually costs you half a heart. One punch kills it outright. It "
+                + "hangs above you between passes rather than orbiting your head, so every "
+                + "dive genuinely comes from above."));
+
         e.add(brk());
         e.add(sub("WHAT THEY DROP"));
         e.add(p("Two items are confirmed and registered: Krave Shard, the ammunition Krispbone "
@@ -351,7 +361,7 @@ public final class ManualBook {
                 icon(Items.PLAYER_HEAD, "Cereal Mascot Head (placeholder render)")));
 
         return new ManualChapter("kravelings", 2, "The Kravelings",
-                "Five mobs, one hostile family, and the one that isn't.",
+                "Six mobs, one hostile family, and the one that isn't.",
                 icon(Items.ZOMBIE_SPAWN_EGG, "Kraveling"), 0xFF8A5A2A, e);
     }
 
@@ -448,7 +458,9 @@ public final class ManualBook {
                 "Cereal Bowl - Bowl + Krave Cereal + Krave Milk. The full breakfast: real "
                         + "combat buffs when you drink it before a fight.",
                 "Krave Box - 2 Paper + Krave Cereal. Right-clicking one on open flat ground "
-                        + "summons the Krave Monster - see the Bosses chapter before you do this.",
+                        + "summons the Krave Monster - see the Bosses chapter before you do this. "
+                        + "Only works once the Krave Monster living in the Kosmos has been beaten "
+                        + "at least once; the box will not do anything before that.",
                 "Cayden Compass - Compass + Krave Cereal + Lapis Lazuli. Right-click for his "
                         + "bearing, distance, exact coordinates, Krave count, and housing status, "
                         + "searching out to 512 blocks. Also opens his Ascension screen."
@@ -882,6 +894,9 @@ public final class ManualBook {
                 + "afterimages."));
         e.add(note("STRATEGY", "Do not chase the afterimages. Stand still, watch for the real one to land, "
                 + "and swing then.", GOLD));
+        e.add(note("THE BOX DOESN'T WORK YET", "A Krave Box does nothing until the Krave Monster living "
+                + "in the Krave Kosmos has been beaten at least once - see the Krave Dimension chapter. "
+                + "That fight has to happen first; there's no shortcut around it.", PURPLE));
         e.add(p("At Rule #1's death stage 10 he climbs out of the crater on his own - nobody "
                 + "summons that one.", DIM));
 
@@ -1009,53 +1024,73 @@ public final class ManualBook {
         List<PageElement> e = new ArrayList<>();
 
         e.add(head("THE KRAVE DIMENSION"));
-        e.add(p("The Krave Kosmos. Its gate is a real building requirement, not a Nether-style "
-                + "portal you can throw together on day one - see Building the Village for what "
-                + "it takes to unlock it."));
+        e.add(p("The Krave Kosmos. Getting there is not a Nether-style hole in a wall - it's a "
+                + "real room, built like a phone booth: step inside, shut the door behind you, "
+                + "and the room takes you with it."));
 
         e.add(sub("BUILDING THE PORTAL"));
-        e.add(p("A 3-wide, 3-tall frame of solid Krave Block, with the bottom-middle two cells "
-                + "replaced by the Krave Door. Open the door with the frame complete around it "
-                + "and you step straight through."));
+        e.add(p("A fully enclosed chocolate room, not just a frame standing in open air: floor, "
+                + "roof, walls, all Krave Block, 3 wide by 3 deep, with the Krave Door set into "
+                + "the middle of one wall. Only the single column directly behind the door is "
+                + "left hollow - just enough to stand in."));
         e.add(shaped3x3("KKK\nK.K\nK.K", java.util.Map.of('K', regBlock(ModBlocks.KRAVE_BLOCK, "Krave Block")),
                 regBlock(ModBlocks.KRAVE_DOOR, "Krave Door goes in the two empty cells"), 1,
-                "FRAME SHAPE - not a crafting recipe, a build layout"));
-        e.add(note("YOUR VILLAGE HAS TO EARN THIS FIRST", "The door only actually opens once your nearest "
-                + "settlement reads as VILLAGE tier or higher. Building the frame early just gets "
-                + "you a door that doesn't work yet.", PURPLE));
+                "FRONT FACE - roof directly on top of the door, no gap. The room continues back "
+                        + "two more rows behind this face: side walls, a back wall, and a roof over "
+                        + "the walkway too."));
+        e.add(note("IT'S A DOOR RIGHT UP UNTIL IT ISN'T", "With the room incomplete, it's an entirely "
+                + "ordinary door - opens, closes, shows the room behind it. Only once the room is "
+                + "fully sealed around it does the door stop swinging open at all.", PURPLE));
 
         e.add(brk());
-        e.add(sub("WHAT HAPPENS WHEN YOU STEP THROUGH"));
+        e.add(sub("HOW THE TRIP ACTUALLY WORKS"));
+        e.add(p("The trigger is CLOSING the door while you're standing inside the little room - "
+                + "not opening it. Walk in, shut the door behind you, and a short beat later "
+                + "(long enough to hear the door actually close) you and anything close enough "
+                + "beside you are moved into an identical room built on the other side."));
         e.add(bul(
-                "The game finds real solid ground for you near the landing point instead of "
-                        + "trusting a fixed coordinate - you will not fall into the void on arrival.",
-                "If you're carrying fewer than one Krave Tether, you're handed one for free. "
-                        + "Nobody should be able to walk in without a way back out.",
-                "Cayden and Barbara come with you, if they're nearby when you step through - "
-                        + "and Cayden ascends to Super Saiyan the instant he arrives, whether or "
-                        + "not that costs him anything (arrival is one of the free-ascension "
-                        + "triggers from the Cayden chapter).",
-                "The Krave Monster's den generates once, near the dimension's centre: a "
+                "Every room you build gets its own permanent partner, created the first time "
+                        + "that exact door is used and remembered forever after - closing the same "
+                        + "door always returns you to the same partner room, never a new one.",
+                "Build a second portal somewhere else entirely and it gets its own independent "
+                        + "partner too - the two don't interfere with each other.",
+                "Build one from scratch INSIDE the Kosmos, with no partner yet, and closing it "
+                        + "reverses the formula: it generates a brand new partner room somewhere "
+                        + "random and genuinely distant on the overworld surface instead, turning "
+                        + "the Kosmos into a way to discover fresh, unexplored territory.",
+                "Cayden and Barbara travel with you automatically if they're right there beside "
+                        + "you when the door shuts. If they've fallen behind, they get several "
+                        + "seconds to catch up on their own before being forced through anyway, "
+                        + "announced with a roar so you know they made it - and Cayden ascends to "
+                        + "Super Saiyan the instant he arrives, whether or not that costs him "
+                        + "anything (arrival is one of the free-ascension triggers from the Cayden "
+                        + "chapter).",
+                "The Krave Monster's den generates once, ever, near the dimension's centre: a "
                         + "guaranteed-solid platform ringed with pillars, with hidden healing boxes "
-                        + "protecting him."
+                        + "protecting him. It is never rebuilt after that first time, so anything "
+                        + "you change nearby stays changed."
         ));
-        e.add(gal(icon(ModItems.KRAVE_TETHER.get(), "Krave Tether")));
-        e.add(p("Use the Tether to head straight back to the exact doorway you stepped in "
-                + "from - the game remembers your entry position and dimension the moment you "
-                + "cross over.", DIM));
 
         e.add(brk());
         e.add(sub("WHAT LIVES OUT THERE"));
-        e.add(p("Kosmonauts (Krave Minions) spawn ambiently around every player exploring the "
-                + "islands, capped at three per player within a wide radius - there to give you "
-                + "something to run into between the portal and the boss's den, not to overwhelm "
-                + "you. Cayden ignores them entirely; they're yours to handle."));
+        e.add(p("Ambient wildlife draws from the whole Kraveling family plus Krave Minion, all "
+                + "at one shared rate, capped at ten nearby creatures per player within a wide "
+                + "radius - there to give you plenty to run into while exploring. Kravajo shows "
+                + "up noticeably more often than the rest of the family; everything else is "
+                + "spread evenly. Cayden ignores all of it; it's yours to handle."));
         e.add(p("Cave pockets scattered through the terrain sometimes hide a Krave Healing Box "
                 + "and a scattering of Krave Cereal - explore, don't just beeline for the "
                 + "island.", DIM));
 
+        e.add(brk());
+        e.add(sub("FIGHTING THE KRAVE MONSTER HERE"));
+        e.add(p("The Krave Monster living in the Kosmos is his own encounter, separate from any "
+                + "you summon with a Krave Box back home - and beating him here at least once is "
+                + "what unlocks the Krave Box in the first place. There's no shortcut around "
+                + "coming to the Kosmos and finishing the fight.", DIM));
+
         return new ManualChapter("dimension", 11, "The Krave Dimension",
-                "A real portal, a real gate condition, and a boss's den waiting on the other side.",
+                "A real portal room, a real trigger, and a boss you have to actually go beat.",
                 regBlock(ModBlocks.KRAVE_DOOR, "Krave Door"), 0xFF6B3FA0, e);
     }
 }

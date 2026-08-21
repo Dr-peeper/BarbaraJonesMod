@@ -57,7 +57,11 @@ public final class PetEscort {
     }
 
     /**
-     * Move gathered companions to {@code dest} around {@code landing}.
+     * Move gathered companions to {@code dest}, fanned out a little around
+     * {@code landing} so they don't land stacked inside each other. Fine for
+     * an open landing spot (this is what {@code KraveTetherItem} uses), but
+     * the 1.5-block fan radius doesn't fit inside the Krave Door's own
+     * 1-wide portal room - see {@link #deliverTogether} for that case.
      *
      * @return the companions as they exist at the destination. Cross-dimension
      *         travel discards the original entity and rebuilds a copy, so the
@@ -71,28 +75,54 @@ public final class PetEscort {
             if (pet == null || !pet.isAlive()) {
                 continue;
             }
-            // fan them out a little so they don't land stacked inside each other
             double angle = (Math.PI * 2.0D / Math.max(1, pets.size())) * index++;
-            final Vec3 spot = landing.add(Math.cos(angle) * 1.5D, 0.0D, Math.sin(angle) * 1.5D);
-
-            Entity moved;
-            if (pet.level() == dest) {
-                pet.teleportTo(spot.x, spot.y, spot.z);
-                moved = pet;
-            } else {
-                moved = pet.changeDimension(dest, new ITeleporter() {
-                    @Override
-                    public PortalInfo getPortalInfo(Entity entity, ServerLevel destLevel,
-                                                    Function<ServerLevel, PortalInfo> defaultInfo) {
-                        return new PortalInfo(spot, Vec3.ZERO, entity.getYRot(), entity.getXRot());
-                    }
-                });
-            }
+            Vec3 spot = landing.add(Math.cos(angle) * 1.5D, 0.0D, Math.sin(angle) * 1.5D);
+            Entity moved = moveOne(pet, dest, spot);
             if (moved != null) {
-                moved.fallDistance = 0.0F;
                 arrived.add(moved);
             }
         }
         return arrived;
+    }
+
+    /**
+     * Same as {@link #deliver}, but every companion lands at the exact same
+     * spot with no fan-out - for a portal room narrow enough that a 1.5-block
+     * offset would land someone inside a wall. Multiple entities briefly
+     * sharing a block is harmless; they path apart on their own the moment
+     * they start moving.
+     */
+    public static List<Entity> deliverTogether(List<Entity> pets, ServerLevel dest, Vec3 landing) {
+        List<Entity> arrived = new ArrayList<>();
+        for (Entity pet : pets) {
+            if (pet == null || !pet.isAlive()) {
+                continue;
+            }
+            Entity moved = moveOne(pet, dest, landing);
+            if (moved != null) {
+                arrived.add(moved);
+            }
+        }
+        return arrived;
+    }
+
+    private static Entity moveOne(Entity pet, ServerLevel dest, Vec3 spot) {
+        Entity moved;
+        if (pet.level() == dest) {
+            pet.teleportTo(spot.x, spot.y, spot.z);
+            moved = pet;
+        } else {
+            moved = pet.changeDimension(dest, new ITeleporter() {
+                @Override
+                public PortalInfo getPortalInfo(Entity entity, ServerLevel destLevel,
+                                                Function<ServerLevel, PortalInfo> defaultInfo) {
+                    return new PortalInfo(spot, Vec3.ZERO, entity.getYRot(), entity.getXRot());
+                }
+            });
+        }
+        if (moved != null) {
+            moved.fallDistance = 0.0F;
+        }
+        return moved;
     }
 }
