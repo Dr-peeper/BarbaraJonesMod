@@ -116,10 +116,24 @@ public class KraveDoorBlock extends DoorBlock {
         for (int depth = 0; depth <= 2; depth++) {
             for (int across = -1; across <= 1; across++) {
                 for (int row = -1; row <= 3; row++) {
+                    // Everywhere else in the shell sits under a wall column
+                    // that's often buried anyway - only the two cells someone
+                    // actually stands or walks on (under the door, under the
+                    // interior) need to visibly be chocolate block. The rest
+                    // of the floor is unchecked, whatever the terrain already
+                    // has there.
+                    if (row == -1 && !(across == 0 && depth <= 1)) {
+                        continue;
+                    }
                     BlockPos cell = lowerPos.relative(into, depth).relative(side, across).above(row);
-                    boolean isFloorOrRoof = row == -1 || row == 3;
-                    boolean isDoorCell = !isFloorOrRoof && depth == 0 && across == 0 && row <= 1;
-                    boolean isInterior = !isFloorOrRoof && !isDoorCell && depth == 1 && across == 0;
+                    boolean isRoof = row == 3;
+                    boolean isDoorCell = row != -1 && !isRoof && depth == 0 && across == 0 && row <= 1;
+                    // Matches the door's own height exactly (rows 0-1, 2 tall) -
+                    // row 2 at depth=1 is a solid low ceiling, not more interior,
+                    // so the whole passage through the room reads as one uniform
+                    // 2-tall tunnel instead of the interior briefly ballooning to
+                    // 3 tall right past the door.
+                    boolean isInterior = row != -1 && !isRoof && !isDoorCell && depth == 1 && across == 0 && row <= 1;
 
                     if (isDoorCell) {
                         if (!level.getBlockState(cell).is(ModBlocks.KRAVE_DOOR.get())) {
@@ -142,12 +156,12 @@ public class KraveDoorBlock extends DoorBlock {
         return level.getBlockState(pos).is(ModBlocks.KRAVE_BLOCK.get());
     }
 
-    /** The one interior cell (the column directly behind the door) is 1 wide, 1 deep, 3 tall - the player's feet must be in it. */
+    /** The one interior cell (the column directly behind the door) is 1 wide, 1 deep, 2 tall - the player's feet must be in it. */
     private boolean playerInInterior(Player player, BlockPos lowerPos, Direction into) {
         BlockPos interior = lowerPos.relative(into);
         BlockPos feet = player.blockPosition();
         return feet.getX() == interior.getX() && feet.getZ() == interior.getZ()
-                && feet.getY() >= interior.getY() && feet.getY() <= interior.getY() + 2;
+                && feet.getY() >= interior.getY() && feet.getY() <= interior.getY() + 1;
     }
 
     /** Places the exact shape {@link #isRoomComplete} validates - the door and the interior column are left for the caller. */
@@ -159,7 +173,7 @@ public class KraveDoorBlock extends DoorBlock {
                 for (int row = -1; row <= 3; row++) {
                     boolean isFloorOrRoof = row == -1 || row == 3;
                     boolean isDoorCell = !isFloorOrRoof && depth == 0 && across == 0 && row <= 1;
-                    boolean isInterior = !isFloorOrRoof && !isDoorCell && depth == 1 && across == 0;
+                    boolean isInterior = !isFloorOrRoof && !isDoorCell && depth == 1 && across == 0 && row <= 1;
                     if (isDoorCell || isInterior) {
                         continue;
                     }
@@ -168,7 +182,7 @@ public class KraveDoorBlock extends DoorBlock {
                 }
             }
         }
-        for (int row = 0; row <= 2; row++) {
+        for (int row = 0; row <= 1; row++) {
             level.setBlock(lowerPos.relative(into).above(row), Blocks.AIR.defaultBlockState(), 3);
         }
         BlockState doorLower = ModBlocks.KRAVE_DOOR.get().defaultBlockState()
