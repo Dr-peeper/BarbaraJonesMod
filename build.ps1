@@ -83,3 +83,52 @@ if ($srgCount -lt 100) {
 }
 Write-Host "Reobfuscation verified: $srgCount SRG references." -ForegroundColor Green
 Get-ChildItem (Join-Path $root 'build\libs') -ErrorAction SilentlyContinue
+
+# ---------------------------------------------------------------------------
+# Install into the game's mods folder.
+#
+# Deliberately AFTER the reobfuscation gate above, so a jar that would not load
+# never reaches the folder - the whole point of that gate is that an unmapped
+# jar looks perfectly fine sitting on disk and dies on startup.
+#
+# The old jar is REMOVED first, not overwritten. Two BarbaraJonesMod jars in
+# there at once is a duplicate-mod-id crash before the title screen, and a
+# version bump means the new file has a different name, so a plain copy leaves
+# both behind. That failure looks nothing like its cause, so it is worth the
+# extra few lines to make it impossible.
+# ---------------------------------------------------------------------------
+$modsDir = 'C:\Users\ADMIN\AppData\Roaming\.tlauncher\legacy\Minecraft\game\mods'
+
+if (-not (Test-Path $modsDir)) {
+    Write-Host "Mods folder not found, skipping install: $modsDir" -ForegroundColor Yellow
+} else {
+    # Do not fight a running game for the file handle - Windows will either fail
+    # the copy or, worse, leave a half-written jar.
+    $running = Get-Process javaw -ErrorAction SilentlyContinue |
+            Where-Object { $_.WorkingSet64 -gt 200MB }
+    if ($running) {
+        Write-Host ""
+        Write-Host "Minecraft looks like it is running - NOT installing." -ForegroundColor Yellow
+        Write-Host "  Close the game and build again to install $($jarPath.Name)." -ForegroundColor Yellow
+    } else {
+        $stale = Get-ChildItem $modsDir -Filter 'BarbaraJonesMod-*.jar' -ErrorAction SilentlyContinue |
+                Where-Object { $_.Name -ne $jarPath.Name }
+        foreach ($old in $stale) {
+            Remove-Item $old.FullName -Force
+            Write-Host "  removed old $($old.Name)" -ForegroundColor DarkGray
+        }
+        Copy-Item $jarPath.FullName (Join-Path $modsDir $jarPath.Name) -Force
+
+        # Verify the installed copy, not the one we just built: a truncated or
+        # locked write is exactly the case this is meant to catch.
+        $installed = Join-Path $modsDir $jarPath.Name
+        $sameSize = (Get-Item $installed).Length -eq $jarPath.Length
+        $installedSrg = Get-SrgCount $installed
+        if (-not $sameSize -or $installedSrg -lt 100) {
+            throw "Install verification FAILED for $installed (size match: $sameSize, SRG refs: $installedSrg)."
+        }
+        Write-Host ""
+        Write-Host "Installed to mods folder: $($jarPath.Name)" -ForegroundColor Green
+        Write-Host "  $modsDir" -ForegroundColor DarkGray
+    }
+}
