@@ -52,11 +52,19 @@ public class BarbaraJonesMod {
         com.barbarajones.v2.abilities.PlayerAbilities.init(bus);
         com.barbarajones.v2.bonds.BondsRegistry.init(bus);
         com.barbarajones.v2.manual.ManualModule.init(bus);
+        com.barbarajones.v2.airline.AirlineModule.init(bus);
 
         ModLoadingContext.get().registerConfig(ModConfig.Type.COMMON, Config.SPEC);
 
         bus.addListener(this::commonSetup);
         MinecraftForge.EVENT_BUS.register(new EventHandler());
+        // AirlineEvents is NOT registered here. It carries
+        // @Mod.EventBusSubscriber(bus = MOD) and so is already picked up on the
+        // MOD bus - which is the only bus its EntityAttributeCreationEvent
+        // handler can ever fire on. Registering it on the FORGE bus as well was
+        // both redundant and wrong: a mod-bus event never fires there, so the
+        // duplicate does nothing useful, and Forge is entitled to reject a
+        // mod-bus handler on the forge bus outright.
     }
 
     private void commonSetup(final FMLCommonSetupEvent event) {

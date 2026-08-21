@@ -1,4 +1,4 @@
-﻿{
+{
   "block.barbarajones.krave_log": "Krave Log",
   "block.barbarajones.krave_wood": "Krave Wood",
   "block.barbarajones.stripped_krave_log": "Stripped Krave Log",
@@ -559,5 +559,23 @@
   "screen.barbarajones.quests.recipe_shapeless": "How to make %s (shapeless):",
   "entity.barbarajones.kravajo": "Kravajo",
   "item.barbarajones.kravajo_spawn_egg": "Kravajo Spawn Egg",
-  "subtitles.barbarajones.kravajo": "Kravajo buzzes"
+  "subtitles.barbarajones.kravajo": "Kravajo buzzes",
+  "entity.barbarajones.plane": "Airplane",
+  "entity.barbarajones.pilot": "Pilot",
+  "entity.barbarajones.flight_attendant": "Flight Attendant",
+  "entity.barbarajones.gate_agent": "Gate Agent",
+  "entity.barbarajones.security_officer": "Security Officer",
+  "entity.barbarajones.ground_crew": "Ground Crew",
+  "entity.barbarajones.air_traffic_controller": "Air Traffic Controller",
+  "block.barbarajones.airport_core": "Airport Core",
+  "block.barbarajones.runway": "Runway",
+  "block.barbarajones.gate": "Gate",
+  "block.barbarajones.security_check": "Security Checkpoint",
+  "block.barbarajones.baggage_claim": "Baggage Claim",
+  "item.barbarajones.boarding_pass": "Boarding Pass",
+  "item.barbarajones.airport_core": "Airport Core",
+  "item.barbarajones.runway": "Runway",
+  "item.barbarajones.gate": "Gate",
+  "item.barbarajones.security_check": "Security Checkpoint",
+  "item.barbarajones.baggage_claim": "Baggage Claim"
 }

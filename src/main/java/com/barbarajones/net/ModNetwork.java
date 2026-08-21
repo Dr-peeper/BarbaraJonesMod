@@ -1,6 +1,8 @@
 package com.barbarajones.net;
 
 import com.barbarajones.BarbaraJonesMod;
+import com.barbarajones.v2.airline.network.BoardFlightPacket;
+import com.barbarajones.v2.airline.network.DeboardFlightPacket;
 
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.level.ServerLevel;
@@ -34,6 +36,10 @@ public final class ModNetwork {
         // screen has always sent it and nothing has ever been listening.
         CHANNEL.registerMessage(4, PacketCaydenUpgrade.class,
                 PacketCaydenUpgrade::encode, PacketCaydenUpgrade::decode, PacketCaydenUpgrade::handle);
+        CHANNEL.registerMessage(5, BoardFlightPacket.class,
+                BoardFlightPacket::toBytes, BoardFlightPacket::new, BoardFlightPacket::handle);
+        CHANNEL.registerMessage(6, DeboardFlightPacket.class,
+                DeboardFlightPacket::toBytes, DeboardFlightPacket::new, DeboardFlightPacket::handle);
     }
 
     /** Send Cayden's vitals to his owner alone. */

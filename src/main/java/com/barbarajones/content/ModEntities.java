@@ -25,6 +25,13 @@ import com.barbarajones.entity.MomCobb;
 import com.barbarajones.entity.Nugget;
 import com.barbarajones.entity.SkyCinematic;
 import com.barbarajones.entity.ThePlug;
+import com.barbarajones.v2.airline.entity.PlaneEntity;
+import com.barbarajones.v2.airline.entity.PilotEntity;
+import com.barbarajones.v2.airline.entity.FlightAttendantEntity;
+import com.barbarajones.v2.airline.entity.GateAgentEntity;
+import com.barbarajones.v2.airline.entity.SecurityOfficerEntity;
+import com.barbarajones.v2.airline.entity.GroundCrewEntity;
+import com.barbarajones.v2.airline.entity.AirTrafficControllerEntity;
 
 import net.minecraft.world.entity.EntityType;
 import net.minecraft.world.entity.MobCategory;
@@ -97,6 +104,50 @@ public final class ModEntities {
                     .<DuhlWolCar>of(DuhlWolCar::new, MobCategory.MISC)
                     .sized(1.8F, 1.6F).clientTrackingRange(24).updateInterval(3)
                     .build("duhl_wol_car"));
+
+    // ---- airline entities -------------------------------------------------------
+
+    public static final RegistryObject<EntityType<PlaneEntity>> PLANE =
+            ENTITIES.register("plane", () -> EntityType.Builder
+                    .<PlaneEntity>of(PlaneEntity::new, MobCategory.MISC)
+                    .sized(12.0F, 3.5F).clientTrackingRange(64).updateInterval(1)
+                    .build("plane"));
+
+    public static final RegistryObject<EntityType<PilotEntity>> PILOT =
+            ENTITIES.register("pilot", () -> EntityType.Builder
+                    .of(PilotEntity::new, MobCategory.CREATURE)
+                    .sized(0.6F, 1.8F).clientTrackingRange(10)
+                    .build("pilot"));
+
+    public static final RegistryObject<EntityType<FlightAttendantEntity>> FLIGHT_ATTENDANT =
+            ENTITIES.register("flight_attendant", () -> EntityType.Builder
+                    .of(FlightAttendantEntity::new, MobCategory.CREATURE)
+                    .sized(0.6F, 1.8F).clientTrackingRange(10)
+                    .build("flight_attendant"));
+
+    public static final RegistryObject<EntityType<GateAgentEntity>> GATE_AGENT =
+            ENTITIES.register("gate_agent", () -> EntityType.Builder
+                    .of(GateAgentEntity::new, MobCategory.CREATURE)
+                    .sized(0.6F, 1.8F).clientTrackingRange(10)
+                    .build("gate_agent"));
+
+    public static final RegistryObject<EntityType<SecurityOfficerEntity>> SECURITY_OFFICER =
+            ENTITIES.register("security_officer", () -> EntityType.Builder
+                    .of(SecurityOfficerEntity::new, MobCategory.CREATURE)
+                    .sized(0.6F, 1.8F).clientTrackingRange(10)
+                    .build("security_officer"));
+
+    public static final RegistryObject<EntityType<GroundCrewEntity>> GROUND_CREW =
+            ENTITIES.register("ground_crew", () -> EntityType.Builder
+                    .of(GroundCrewEntity::new, MobCategory.CREATURE)
+                    .sized(0.6F, 1.8F).clientTrackingRange(10)
+                    .build("ground_crew"));
+
+    public static final RegistryObject<EntityType<AirTrafficControllerEntity>> AIR_TRAFFIC_CONTROLLER =
+            ENTITIES.register("air_traffic_controller", () -> EntityType.Builder
+                    .of(AirTrafficControllerEntity::new, MobCategory.CREATURE)
+                    .sized(0.6F, 1.8F).clientTrackingRange(10)
+                    .build("air_traffic_controller"));
 
     // ---- cinematic / projectile entities (no spawn eggs) -------------------
 

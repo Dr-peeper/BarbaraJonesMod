@@ -15,6 +15,11 @@ import com.barbarajones.content.extra.BoomboxBlock;
 import com.barbarajones.content.extra.ReclinerBlock;
 import com.barbarajones.content.extra.StashBoxBlock;
 import com.barbarajones.content.extra.TelevisionBlock;
+import com.barbarajones.v2.airline.block.AirportCoreBlock;
+import com.barbarajones.v2.airline.block.RunwayBlock;
+import com.barbarajones.v2.airline.block.GateBlock;
+import com.barbarajones.v2.airline.block.SecurityCheckBlock;
+import com.barbarajones.v2.airline.block.BaggageClaimBlock;
 import net.minecraft.world.level.material.MapColor;
 import com.barbarajones.block.KraftingBenchBlock;
 import net.minecraft.world.level.block.LeavesBlock;
@@ -176,4 +181,38 @@ public final class ModBlocks {
                     .mapColor(MapColor.COLOR_RED)
                     .strength(2.5F, 6.0F)
                     .sound(SoundType.WOOD)));
+
+    // ---- airline blocks -------------------------------------------------
+
+    public static final RegistryObject<Block> AIRPORT_CORE = BLOCKS.register("airport_core",
+            () -> new AirportCoreBlock(BlockBehaviour.Properties.of()
+                    .mapColor(MapColor.METAL)
+                    .strength(3.0F, 6.0F)
+                    .sound(SoundType.METAL)
+                    .requiresCorrectToolForDrops()));
+
+    public static final RegistryObject<Block> RUNWAY = BLOCKS.register("runway",
+            () -> new RunwayBlock(BlockBehaviour.Properties.of()
+                    .mapColor(MapColor.COLOR_GRAY)
+                    .strength(2.0F, 6.0F)
+                    .sound(SoundType.STONE)));
+
+    public static final RegistryObject<Block> GATE = BLOCKS.register("gate",
+            () -> new GateBlock(BlockBehaviour.Properties.of()
+                    .mapColor(MapColor.COLOR_LIGHT_BLUE)
+                    .strength(2.0F, 6.0F)
+                    .sound(SoundType.GLASS)
+                    .noOcclusion()));
+
+    public static final RegistryObject<Block> SECURITY_CHECK = BLOCKS.register("security_check",
+            () -> new SecurityCheckBlock(BlockBehaviour.Properties.of()
+                    .mapColor(MapColor.METAL)
+                    .strength(2.0F, 6.0F)
+                    .sound(SoundType.METAL)));
+
+    public static final RegistryObject<Block> BAGGAGE_CLAIM = BLOCKS.register("baggage_claim",
+            () -> new BaggageClaimBlock(BlockBehaviour.Properties.of()
+                    .mapColor(MapColor.COLOR_GRAY)
+                    .strength(1.5F, 6.0F)
+                    .sound(SoundType.METAL)));
 }

@@ -23,6 +23,7 @@ import com.barbarajones.item.KraveManualItem;
 import com.barbarajones.item.QuestBookItem;
 import com.barbarajones.item.RecipeBookItem;
 import com.barbarajones.item.RedHatItem;
+import com.barbarajones.v2.airline.item.BoardingPassItem;
 
 import net.minecraft.world.effect.MobEffectInstance;
 import net.minecraft.world.effect.MobEffects;
@@ -454,4 +455,24 @@ public final class ModItems {
             () -> new BlockItem(ModBlocks.KRAVE_ORE.get(), props()));
     public static final RegistryObject<Item> DEEPSLATE_KRAVE_ORE_ITEM = ITEMS.register("deepslate_krave_ore",
             () -> new BlockItem(ModBlocks.DEEPSLATE_KRAVE_ORE.get(), props()));
+
+    // ---- airline items --------------------------------------------------
+
+    public static final RegistryObject<Item> BOARDING_PASS = ITEMS.register("boarding_pass",
+            () -> new BoardingPassItem(props().stacksTo(1)));
+
+    public static final RegistryObject<Item> AIRPORT_CORE_ITEM = ITEMS.register("airport_core",
+            () -> new BlockItem(ModBlocks.AIRPORT_CORE.get(), props()));
+
+    public static final RegistryObject<Item> RUNWAY_ITEM = ITEMS.register("runway",
+            () -> new BlockItem(ModBlocks.RUNWAY.get(), props()));
+
+    public static final RegistryObject<Item> GATE_ITEM = ITEMS.register("gate",
+            () -> new BlockItem(ModBlocks.GATE.get(), props()));
+
+    public static final RegistryObject<Item> SECURITY_CHECK_ITEM = ITEMS.register("security_check",
+            () -> new BlockItem(ModBlocks.SECURITY_CHECK.get(), props()));
+
+    public static final RegistryObject<Item> BAGGAGE_CLAIM_ITEM = ITEMS.register("baggage_claim",
+            () -> new BlockItem(ModBlocks.BAGGAGE_CLAIM.get(), props()));
 }
