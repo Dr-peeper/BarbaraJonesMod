@@ -29,6 +29,8 @@ import net.minecraft.sounds.SoundSource;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.entity.player.Player;
+import net.minecraft.world.effect.MobEffectInstance;
+import net.minecraft.world.effect.MobEffects;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.phys.Vec3;
 import net.minecraftforge.event.TickEvent;
@@ -240,6 +242,17 @@ public class EventHandler {
      * which calls setSecondsOnFire() - exactly the ignite behavior the
      * paragraph above deliberately avoids. Scaling velocity down by hand
      * here gets the sluggish feel without the side effect.
+     *
+     * <p>The visibility half (see ModFluids.CHOCOLATE_TYPE's overlay/fog
+     * client extensions) is supposed to darken the screen the same way, but
+     * confirmed in-game to not actually be doing that - standing directly
+     * under a chocolate fall was clearly visible. Rather than keep guessing
+     * at why a Forge client-render hook isn't firing without being able to
+     * launch the game and check, Darkness is a real, verified vanilla
+     * mechanic that unconditionally works: applied here every tick while
+     * submerged (short duration, so it never visibly runs out as long as
+     * you're still in it) as a guaranteed floor under whatever the fog/
+     * overlay code is or isn't doing on top of it.
      */
     @SubscribeEvent
     public void onLivingTick(LivingEvent.LivingTickEvent event) {
@@ -253,6 +266,7 @@ public class EventHandler {
             // already recognizes as lava-slowed.
             Vec3 slowed = entity.getDeltaMovement().scale(0.5D);
             entity.setDeltaMovement(slowed);
+            entity.addEffect(new MobEffectInstance(MobEffects.DARKNESS, 20, 0, false, false));
         }
     }
 

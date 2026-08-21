@@ -38,10 +38,10 @@ import java.util.function.Supplier;
  */
 public final class KraveKosmosAmbience {
 
-    private static final int TICK_INTERVAL = 40;
-    private static final int PER_PLAYER_CAP = 10;
+    private static final int TICK_INTERVAL = 27;
+    private static final int PER_PLAYER_CAP = 15;
     /** How many new creatures one pass is allowed to add per player, so filling up to the cap isn't one giant burst. */
-    private static final int SPAWNS_PER_PASS = 3;
+    private static final int SPAWNS_PER_PASS = 5;
     private static final double SCAN_RADIUS = 64.0D;
     /** Cube radius around each player to check for KraveCavePocketFeature's BARRIER markers. */
     private static final int MARKER_SCAN_RADIUS = 6;
