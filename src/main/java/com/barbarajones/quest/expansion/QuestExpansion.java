@@ -418,16 +418,20 @@ public final class QuestExpansion {
 
         collect(KOSMOS_KIT, B_KOSMOS, "Build the Door",
                 "Craft KRAVE BLOCKS (8 obsidian around an amethyst shard) and a KRAVE DOOR "
-                        + "(2 columns: krave blocks and amethyst). That door is the way in.",
+                        + "(6 krave planks). Then wall the door in - a whole room, floor and roof, "
+                        + "all krave block, not just a frame standing in open air. Only one column "
+                        + "stays hollow: the one behind the door.",
                 pre(Quests.COOK_KRAVE),
                 ModItems.KRAVE_BLOCK_ITEM, ModItems.KRAVE_DOOR_ITEM);
         goal(KOSMOS_ARRIVAL, B_KOSMOS, "Krave Kosmos",
-                "Place the Krave Door, right-click it, and step through. Purple sky, floating "
+                "Walk into the finished room and shut the door behind you. Purple sky, floating "
                         + "islands, an ocean of liquid chocolate. Bring blocks. Bring a lot of blocks.",
                 KOSMOS_KIT);
         collect(KOSMOS_TETHER, B_KOSMOS, "Anchor Line",
                 "Craft a KRAVE TETHER (ender pearl + amethyst shard + krave cereal, makes 2). "
-                        + "Getting in is easy. Tethers are how you get back out.",
+                        + "The door you arrived next to is already your way back - walk in, shut it, "
+                        + "you're home. Carry a Tether anyway for whenever that door's too far to "
+                        + "walk back to.",
                 pre(KOSMOS_KIT),
                 ModItems.KRAVE_TETHER);
         goal(KOSMOS_CHOCOLATE, B_KOSMOS, "It's Hot Chocolate",
