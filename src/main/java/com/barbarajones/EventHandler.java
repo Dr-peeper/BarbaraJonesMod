@@ -30,6 +30,7 @@ import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.phys.Vec3;
 import net.minecraftforge.event.TickEvent;
 import net.minecraftforge.event.entity.living.LivingDeathEvent;
 import net.minecraftforge.event.entity.living.LivingEvent;
@@ -226,6 +227,19 @@ public class EventHandler {
      * reacts differently (see CaydenCobb.tick(), which checks the same fluid
      * type) so he's excluded here rather than taking damage on top of
      * transforming.
+     *
+     * <p>Also drags movement down the same way lava does - but that part
+     * does NOT come for free just from the fluid's density/viscosity/
+     * motionScale being set to lava's own values. Vanilla's actual "wading
+     * through lava is slow" physics in LivingEntity.travel() is gated behind
+     * isInLava(), which reads the vanilla lava fluid TAG specifically - a
+     * custom FluidType never satisfies that check no matter how it's
+     * configured, so without this, chocolate swam exactly like water with a
+     * brown tint. Tagging chocolate into #minecraft:lava instead was
+     * considered and rejected: that tag also drives vanilla's own lavaHurt(),
+     * which calls setSecondsOnFire() - exactly the ignite behavior the
+     * paragraph above deliberately avoids. Scaling velocity down by hand
+     * here gets the sluggish feel without the side effect.
      */
     @SubscribeEvent
     public void onLivingTick(LivingEvent.LivingTickEvent event) {
@@ -235,6 +249,10 @@ public class EventHandler {
         }
         if (entity.getFluidTypeHeight(ModFluids.CHOCOLATE_TYPE.get()) > 0.0D) {
             entity.hurt(ModDamageTypes.of(entity.level(), ModDamageTypes.CHOCOLATE), 2.0F);
+            // Same per-tick momentum decay vanilla applies to an entity it
+            // already recognizes as lava-slowed.
+            Vec3 slowed = entity.getDeltaMovement().scale(0.5D);
+            entity.setDeltaMovement(slowed);
         }
     }
 
