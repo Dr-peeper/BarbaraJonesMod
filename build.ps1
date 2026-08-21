@@ -32,6 +32,16 @@ Set-Location $root
 $gradle = Join-Path $root '.tools\gradle\gradle-8.1.1\bin\gradle.bat'
 if (-not (Test-Path $gradle)) { throw "Gradle 8.1.1 missing under .tools\gradle" }
 
+# Wipe the jar outputs before building.
+#
+# This is the root cause of the partially-reobfuscated jar that shipped: a
+# build interrupted during reobfJar leaves a half-rewritten jar in build/libs,
+# and the next build happily treats that as its starting point and rewrites
+# only part of it again. Reobfuscation is not idempotent over its own output.
+# Deleting first means every jar is produced whole, in one run, or not at all.
+Remove-Item (Join-Path $root "buildlibs*.jar") -Force -ErrorAction SilentlyContinue
+Remove-Item (Join-Path $root "buildeobfJar") -Recurse -Force -ErrorAction SilentlyContinue
+
 & $gradle build --no-daemon --stacktrace
 if ($LASTEXITCODE -ne 0) { throw "Gradle build FAILED (exit $LASTEXITCODE) - do not ship this jar." }
 

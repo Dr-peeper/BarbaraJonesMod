@@ -63,6 +63,12 @@ foreach ($old in $stale) {
     Write-Host "  removed old $($old.Name)" -ForegroundColor DarkGray
 }
 
+# Per-class, not in aggregate. The SRG count below is a whole-jar total, so a
+# jar where reobfuscation covered most classes and missed a few passes it
+# comfortably - and then dies on load naming a mod class. That shipped once.
+& node (Join-Path $root "tools/check_mapped.js") $jarPath.FullName
+if ($LASTEXITCODE -ne 0) { throw "Mapping check failed - not installing." }
+
 Copy-Item $jarPath.FullName (Join-Path $modsDir $jarPath.Name) -Force
 
 # Verify the INSTALLED copy, not the one just built: a truncated or locked write

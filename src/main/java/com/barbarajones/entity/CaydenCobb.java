@@ -318,7 +318,32 @@ public class CaydenCobb extends TamableAnimal {
         // they're a plain Entity now (End-Crystal-style), not a Monster, so
         // this Monster-typed target selector can never select one anyway.
         this.targetSelector.addGoal(4, new NearestAttackableTargetGoal<>(this, Monster.class, true,
-                e -> !(e instanceof KraveMinion)));
+                e -> !(e instanceof KraveMinion)
+                        // A Krave Monster who has not been confronted yet. The
+                        // setTarget override would reject him anyway; excluding
+                        // him here stops the goal proposing and re-proposing the
+                        // same rejected pick every tick.
+                        && !(e instanceof KraveMonster boss && !boss.getBattleState().hostile())));
+    }
+
+    /**
+     * Refuses targets he is not supposed to have.
+     *
+     * <p>Every goal that picks a fight funnels through here - the three vanilla
+     * owner/hurt-by goals, the nearest-attackable scan, and the boss scan - so
+     * this is the only place the rule can be enforced once instead of five
+     * times with one of them forgotten.
+     */
+    @Override
+    public void setTarget(@Nullable LivingEntity target) {
+        if (target instanceof com.barbarajones.entity.KraveMonster boss
+                && !boss.getBattleState().hostile()) {
+            // Before the confrontation the encounter has not started, and
+            // afterwards it is over. Either way he must not be pathing at him.
+            super.setTarget(null);
+            return;
+        }
+        super.setTarget(target);
     }
 
     @Override

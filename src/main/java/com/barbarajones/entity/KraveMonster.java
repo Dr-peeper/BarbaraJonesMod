@@ -38,6 +38,8 @@ import net.minecraft.world.item.Items;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.phys.Vec3;
 
+import javax.annotation.Nullable;
+
 import java.util.EnumSet;
 
 /**
@@ -181,6 +183,58 @@ public class KraveMonster extends Monster {
 
     public boolean atFinisherThreshold() {
         return getHealth() <= getMaxHealth() * FINISHER_AT;
+    }
+
+    /**
+     * True for the one Kosmos resident, false for every independent summon.
+     *
+     * <p>Not derivable from the battle state, which says where a fight has got
+     * to rather than which fight it is, and not from whether a controller
+     * happens to be attached, which is exactly the mistake this replaces - a
+     * boss respawned by the old death gauntlet has no controller, so the
+     * finisher clamp did not apply to him and the prompt never came.
+     */
+    private boolean scriptedEncounter;
+
+    /** Checked once, then never again - the answer cannot change. */
+    private boolean scriptedChecked;
+
+    /**
+     * Recognises a Kosmos boss that predates the scripted-encounter flag.
+     *
+     * <p>The flag is set when the den is built, and the den is built once,
+     * behind a permanent one-time guard. So on any world that already had a
+     * boss - which is every world where this matters - he would load with the
+     * flag false: no damage floor, no finisher clamp, no prompt, and Cayden
+     * deleting each form in seconds. Exactly the symptom that was reported.
+     *
+     * <p>KraveKosmosData has always recorded which entity is the Kosmos
+     * resident, so the answer is already saved; it just was not being asked.
+     */
+    private void adoptScriptedFlag() {
+        if (this.scriptedChecked || this.scriptedEncounter) {
+            this.scriptedChecked = true;
+            return;
+        }
+        this.scriptedChecked = true;
+        if (!(level() instanceof ServerLevel sl)
+                || !level().dimension().equals(com.barbarajones.dimension.KraveDimensions.KRAVE_KOSMOS)) {
+            return;
+        }
+        java.util.UUID resident = com.barbarajones.dimension.KraveKosmosData.get(sl).getBossId();
+        if (getUUID().equals(resident)) {
+            this.scriptedEncounter = true;
+            LOGGER.info("Adopted an existing Kosmos boss into the scripted encounter (form {}).", getForm());
+        }
+    }
+
+    public boolean isScriptedEncounter() {
+        return this.scriptedEncounter;
+    }
+
+    /** Marks him as the scripted Kosmos encounter. Set once, when the den is built. */
+    public void markScriptedEncounter() {
+        this.scriptedEncounter = true;
     }
 
     /**
@@ -437,6 +491,28 @@ public class KraveMonster extends Monster {
         this.targetSelector.addGoal(1, new NearestAttackableTargetGoal<>(this, CaydenCobb.class, true));
     }
 
+    /**
+     * Refuses Cayden as a target until the encounter has actually begun.
+     *
+     * <p>The mirror of the same rule on Cayden. His own targeting goal takes
+     * CaydenCobb.class directly, so before this he would acquire him while
+     * dormant and swing - and the confrontation scanner blanked that target once
+     * a second, so he attacked, lost the target mid-swing, re-acquired, and
+     * never landed anything. Enforced here it simply never happens.
+     *
+     * <p>Players are deliberately still fair game while he is dormant. Walking
+     * up and hitting him should still be a bad idea; he is a hostile mob, not a
+     * statue.
+     */
+    @Override
+    public void setTarget(@Nullable LivingEntity target) {
+        if (target instanceof CaydenCobb && !getBattleState().hostile()) {
+            super.setTarget(null);
+            return;
+        }
+        super.setTarget(target);
+    }
+
     // ---- boss bar -----------------------------------------------------------
 
     @Override
@@ -469,6 +545,7 @@ public class KraveMonster extends Monster {
             matchRival();
             tickGauntletReset();
             tickArenaAnchor();
+            adoptScriptedFlag();
         }
         pushGhost();
 
@@ -831,6 +908,7 @@ public class KraveMonster extends Monster {
         super.addAdditionalSaveData(tag);
         tag.putInt("KraveForm", getForm());
         tag.putInt("KraveBattleState", getBattleState().ordinal());
+        tag.putBoolean("KraveScripted", this.scriptedEncounter);
     }
 
     @Override
@@ -841,6 +919,7 @@ public class KraveMonster extends Monster {
         } else {
             this.formSettled = false;
         }
+        this.scriptedEncounter = tag.getBoolean("KraveScripted");
         if (tag.contains("KraveBattleState")) {
             KraveBattleState saved = KraveBattleState.byId(tag.getInt("KraveBattleState"));
             // A fight interrupted mid-cinematic cannot resume from the middle of
@@ -906,17 +985,36 @@ public class KraveMonster extends Monster {
         //
         // Only for the scripted encounter. A Krave Box summon is a fully
         // independent fight with the old death-driven gauntlet behind it, and
-        // clamping that one would leave it unkillable and the gauntlet unable to
-        // advance. Asking whether a controller is driving him is what tells the
-        // two apart - and it is derived, so it cannot go stale.
+        // clamping that one would leave it unkillable and the gauntlet unable
+        // to advance.
         if (!level().isClientSide && getBattleState() == KraveBattleState.COMBAT
-                && com.barbarajones.apocalypse.KraveKosmosBattle.isActive(this)) {
+                && this.scriptedEncounter) {
             float floor = getMaxHealth() * FINISHER_AT;
             float headroom = getHealth() - floor;
             applied = headroom <= 0.0F ? 0.0F : Math.min(applied, headroom);
         }
+        // The scripted encounter also cuts what actually lands. Tripling the
+        // health bars was not enough on its own - Cayden ascended puts out
+        // enough that a bar he cleared in three seconds he now clears in nine,
+        // which is still not a fight. Each form has to last long enough to
+        // read as a stage rather than a hiccup, and it has to survive long
+        // enough for the player to be given something to do.
+        if (!level().isClientSide && this.scriptedEncounter
+                && getBattleState() == KraveBattleState.COMBAT) {
+            applied *= SCRIPTED_DAMAGE_SCALE;
+        }
         return super.hurt(source, applied);
     }
+
+    /**
+     * How much of a hit lands during the scripted encounter.
+     *
+     * <p>Tuned against an ascended Cayden, who is the only thing that can
+     * meaningfully hurt him and does so at a rate no health bar survives.
+     * Combined with the health increase this is roughly a fifteenfold rise in
+     * how long a form lives.
+     */
+    private static final float SCRIPTED_DAMAGE_SCALE = 0.2F;
 
     @Override
     protected void dropCustomDeathLoot(DamageSource source, int looting, boolean recentlyHit) {

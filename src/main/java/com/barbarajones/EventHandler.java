@@ -141,7 +141,46 @@ public class EventHandler {
      * and the escalation only lands if it is one continuous fight that keeps
      * getting worse under them.
      */
+    /**
+     * Puts the Kosmos boss back at his den after an unscripted death.
+     *
+     * <p>He is only supposed to die at the end of his last finisher. Anything
+     * else - a command, falling out of the world - would otherwise leave the
+     * dimension permanently bossless, because the den build is behind a
+     * one-time flag that will never run again.
+     *
+     * <p>Comes back DORMANT at the form he had reached, so the confrontation
+     * runs again and progress is not lost.
+     */
+    private void reseatKosmosBoss(ServerLevel level, KraveMonster fallen, int form) {
+        ServerLevel kosmos = level.getServer().getLevel(KraveDimensions.KRAVE_KOSMOS);
+        if (kosmos == null) {
+            return;
+        }
+        KraveMonster next = ModEntities.KRAVE_MONSTER.get().create(kosmos);
+        if (next == null) {
+            return;
+        }
+        net.minecraft.world.phys.Vec3 den = com.barbarajones.dimension.KraveDimensions.BOSS_ISLAND;
+        next.setPos(den.x, den.y + com.barbarajones.dimension.KraveDenBuilder.DEN_HEIGHT_OFFSET, den.z);
+        next.setForm(Math.max(1, form));
+        next.markScriptedEncounter();
+        kosmos.addFreshEntity(next);
+        KraveKosmosData.get(kosmos).setBossId(next.getUUID());
+        LOGGER.info("Kosmos boss died outside its finisher; reseated at the den, dormant, form {}.",
+                next.getForm());
+    }
+
     private void reviveNextForm(ServerLevel level, KraveMonster fallen, int nextForm) {
+        if (fallen.isScriptedEncounter()) {
+            // The scripted encounter advances through its finisher, never through
+            // death. Reaching here at all means he died some other way - a
+            // command, the void - so put him back at the den, dormant, and let
+            // the confrontation be attempted again. Silently doing nothing would
+            // leave the Kosmos with no boss and no way to get one back.
+            reseatKosmosBoss(level, fallen, nextForm);
+            return;
+        }
         KraveMonster next = ModEntities.KRAVE_MONSTER.get().create(level);
         if (next == null) {
             return;
