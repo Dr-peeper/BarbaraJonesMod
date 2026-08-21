@@ -93,6 +93,18 @@ public class CaydenCobb extends TamableAnimal {
      * How far he is allowed to go against ORDINARY mobs - zero means not at
      * all, which is where every Cayden starts.
      */
+    /**
+     * Whether the field cap may be changed, mirrored to the client.
+     *
+     * <p>It is derived from the owner's persistent data, and player persistent
+     * data is SERVER ONLY - on the client it is simply empty. Reading it there
+     * returned zero forms beaten no matter what had actually been killed, so the
+     * button sat locked forever. The server owns the answer and syncs it; the
+     * screen reads this and nothing else.
+     */
+    private static final EntityDataAccessor<Boolean> FIELD_UNLOCKED =
+            SynchedEntityData.defineId(CaydenCobb.class, EntityDataSerializers.BOOLEAN);
+
     private static final EntityDataAccessor<Integer> FIELD_CAP =
             SynchedEntityData.defineId(CaydenCobb.class, EntityDataSerializers.INT);
 
@@ -311,6 +323,7 @@ public class CaydenCobb extends TamableAnimal {
         this.entityData.define(DARK, false);
         this.entityData.define(TIER, 0);
         this.entityData.define(FIELD_CAP, 0);
+        this.entityData.define(FIELD_UNLOCKED, false);
         this.entityData.define(UNLOCKS, 0);
         this.entityData.define(KI, 0);
     }
@@ -790,6 +803,9 @@ public class CaydenCobb extends TamableAnimal {
         tickThrow();
         tickSpectacle();
         tickUltraVortex();
+        if (this.tickCount % 20 == 0) {
+            refreshFieldUnlock();
+        }
 
         if (this.graceTicks > 0) {
             this.graceTicks--;
@@ -2307,10 +2323,25 @@ public class CaydenCobb extends TamableAnimal {
      * and handing out Super Saiyan against zombies on day one deletes that.
      */
     public boolean isFieldCapUnlocked() {
-        if (!(getOwner() instanceof Player owner)) {
-            return false;
+        return this.entityData.get(FIELD_UNLOCKED);
+    }
+
+    /**
+     * Recomputes the unlock from the owner's progress. Server only, and cheap
+     * enough to run on a timer rather than reacting to a kill event - the owner
+     * may not even be loaded when the last form falls.
+     */
+    private void refreshFieldUnlock() {
+        boolean unlocked = getOwner() instanceof Player owner
+                && com.barbarajones.EventHandler.kraveFormsBeaten(owner)
+                        >= com.barbarajones.entity.KraveMonster.FINAL_FORM;
+        if (unlocked != this.entityData.get(FIELD_UNLOCKED)) {
+            this.entityData.set(FIELD_UNLOCKED, unlocked);
+            if (unlocked && getOwner() instanceof Player owner2) {
+                owner2.sendSystemMessage(net.minecraft.network.chat.Component.literal(
+                        net.minecraft.ChatFormatting.GOLD + "" + net.minecraft.ChatFormatting.BOLD
+                        + "Cayden can be let off the leash now. Press U."));
+            }
         }
-        return com.barbarajones.EventHandler.kraveFormsBeaten(owner)
-                >= com.barbarajones.entity.KraveMonster.FINAL_FORM;
     }
 }
