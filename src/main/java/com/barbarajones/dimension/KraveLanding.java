@@ -202,14 +202,22 @@ public final class KraveLanding {
         return open >= 3;
     }
 
+    /**
+     * Uses the level's own heightmap rather than a manual scan downward from
+     * a fixed y - this used to start at y=128 unconditionally, which was
+     * never wrong for the Kosmos's own low, engineered terrain but would
+     * land INSIDE solid rock on anything taller (an overworld mountain
+     * routinely clears that), reading the mountainside at y=128 as "the
+     * surface" instead of continuing down to find it wasn't. The heightmap
+     * is correct at any elevation and costs nothing extra to query.
+     */
     private static Optional<Vec3> scanColumn(ServerLevel level, double x, double z) {
-        BlockPos.MutableBlockPos pos = new BlockPos.MutableBlockPos(Mth.floor(x), 128, Mth.floor(z));
-        while (pos.getY() > level.getMinBuildHeight() && !level.getBlockState(pos).blocksMotion()) {
-            pos.move(0, -1, 0);
-        }
-        if (!level.getBlockState(pos).blocksMotion()) {
+        int surfaceY = level.getHeight(net.minecraft.world.level.levelgen.Heightmap.Types.MOTION_BLOCKING,
+                Mth.floor(x), Mth.floor(z));
+        BlockPos ground = new BlockPos(Mth.floor(x), surfaceY - 1, Mth.floor(z));
+        if (!level.getBlockState(ground).blocksMotion()) {
             return Optional.empty();
         }
-        return Optional.of(new Vec3(x, pos.getY() + 1.0D, z));
+        return Optional.of(new Vec3(x, surfaceY, z));
     }
 }

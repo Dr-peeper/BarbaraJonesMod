@@ -57,8 +57,8 @@ import java.util.List;
  */
 public class KraveDoorBlock extends DoorBlock {
 
-    /** The fixed orientation every auto-built Kosmos-side room copy uses - arbitrary, just has to be consistent with itself. */
-    private static final Direction KOSMOS_ROOM_INTO = Direction.NORTH;
+    /** The fixed orientation every auto-built room copy uses, Kosmos-side or overworld-side - arbitrary, just has to be consistent with itself. */
+    private static final Direction AUTO_ROOM_INTO = Direction.NORTH;
 
     /** Pause between the door actually closing and the trip firing, so the close animation/sound have a moment to land first. */
     private static final int DOOR_CLOSE_DELAY_TICKS = 15;
@@ -244,29 +244,79 @@ public class KraveDoorBlock extends DoorBlock {
         persist.putDouble("KraveReturnY", player.getY());
         persist.putDouble("KraveReturnZ", player.getZ());
 
-        teleportInto(player, kosmos, kosmosDoorPos, KOSMOS_ROOM_INTO, true);
+        teleportInto(player, kosmos, kosmosDoorPos, AUTO_ROOM_INTO, true);
     }
 
     private void travelFromKosmos(ServerLevel kosmos, BlockPos kosmosDoorPos, ServerPlayer player) {
         KraveKosmosData data = KraveKosmosData.get(kosmos);
         GlobalPos external = data.externalDoorFor(kosmosDoorPos);
+        ServerLevel dest;
+        BlockPos destDoorPos;
+
         if (external == null) {
-            return;   // an orphaned door - shouldn't happen, every Kosmos-side room is only ever created already linked
-        }
-        ServerLevel dest = player.getServer().getLevel(external.dimension());
-        if (dest == null) {
-            return;
+            // A room with no link at all: a player built this one themselves,
+            // from scratch, inside the Kosmos - reverses the usual formula.
+            // Instead of connecting to an existing overworld door, spawn a
+            // brand new one somewhere random on the overworld surface and
+            // link the two, turning the Kosmos into a shortcut for reaching
+            // genuinely distant, unexplored territory.
+            ServerLevel overworld = player.getServer().getLevel(Level.OVERWORLD);
+            if (overworld == null) {
+                return;
+            }
+            BlockPos newDoorPos = buildRandomOverworldRoomCopy(overworld);
+            if (newDoorPos == null) {
+                return;   // couldn't find anywhere suitable after several tries - leave the player where they are
+            }
+            data.link(GlobalPos.of(overworld.dimension(), newDoorPos), kosmosDoorPos);
+            dest = overworld;
+            destDoorPos = newDoorPos;
+        } else {
+            dest = player.getServer().getLevel(external.dimension());
+            if (dest == null) {
+                return;
+            }
+            destDoorPos = external.pos();
         }
 
-        BlockState doorState = dest.getBlockState(external.pos());
+        BlockState doorState = dest.getBlockState(destDoorPos);
         Direction into = doorState.getBlock() instanceof KraveDoorBlock
-                ? validRoomDirection(dest, external.pos(), doorState.getValue(FACING))
+                ? validRoomDirection(dest, destDoorPos, doorState.getValue(FACING))
                 : null;
         if (into == null) {
             return;   // the far room was torn down or altered since - nothing sane to teleport into
         }
 
-        teleportInto(player, dest, external.pos(), into, false);
+        teleportInto(player, dest, destDoorPos, into, false);
+    }
+
+    /**
+     * Picks a random point 2000-6000 blocks out from the origin, in a random
+     * direction, and looks for flat, clear overworld surface near it - the
+     * same flatness/clearance check {@link #buildKosmosRoomCopy} uses for
+     * the Kosmos, just aimed somewhere genuinely far from wherever the
+     * player has already been rather than a fixed spot. Retries a handful of
+     * times with fresh random points before giving up, since a single roll
+     * can easily land in open ocean or a cliff face.
+     */
+    private BlockPos buildRandomOverworldRoomCopy(ServerLevel overworld) {
+        var random = java.util.concurrent.ThreadLocalRandom.current();
+        for (int attempt = 0; attempt < 8; attempt++) {
+            double angle = random.nextDouble() * Math.PI * 2.0D;
+            double distance = 2000.0D + random.nextDouble() * 4000.0D;
+            Vec3 center = new Vec3(Math.cos(angle) * distance, 64.0D, Math.sin(angle) * distance);
+
+            Vec3 spot = KraveLanding.findClearLanding(overworld, center, 16, 3, 3, 5)
+                    .or(() -> KraveLanding.findLanding(overworld, center, 10))
+                    .orElse(null);
+            if (spot == null) {
+                continue;
+            }
+            BlockPos doorLowerPos = BlockPos.containing(spot.x, spot.y, spot.z);
+            placeRoomShell(overworld, doorLowerPos, AUTO_ROOM_INTO);
+            return doorLowerPos;
+        }
+        return null;
     }
 
     private void teleportInto(ServerPlayer player, ServerLevel dest, BlockPos doorLowerPos,
@@ -350,7 +400,7 @@ public class KraveDoorBlock extends DoorBlock {
             return null;
         }
         BlockPos doorLowerPos = BlockPos.containing(spot.x, spot.y, spot.z);
-        placeRoomShell(kosmos, doorLowerPos, KOSMOS_ROOM_INTO);
+        placeRoomShell(kosmos, doorLowerPos, AUTO_ROOM_INTO);
         ensureLandingBoxesExist(kosmos, spot);
         return doorLowerPos;
     }
