@@ -1092,10 +1092,9 @@ public final class ManualBook {
                         + "chapter).",
                 "The Krave Monster's den generates once, ever, near the dimension's centre: an "
                         + "entire castle in Chocolate Block, Krave Tuff and Krave Cobblestone, "
-                        + "standing on a guaranteed-solid platform, with an elite healing box "
-                        + "hidden at the heart of its open courtyard - that's where he actually "
-                        + "fights you. It is never rebuilt after that first time, so anything you "
-                        + "change nearby, inside or out, stays changed."
+                        + "with an elite healing box hidden at the heart of its open courtyard - "
+                        + "that's where he actually fights you. It is never rebuilt after that "
+                        + "first time, so anything you change nearby, inside or out, stays changed."
         ));
 
         e.add(brk());
