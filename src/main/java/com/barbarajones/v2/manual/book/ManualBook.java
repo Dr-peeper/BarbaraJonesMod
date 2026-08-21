@@ -1074,9 +1074,10 @@ public final class ManualBook {
         e.add(brk());
         e.add(sub("WHAT LIVES OUT THERE"));
         e.add(p("Ambient wildlife draws from the whole Kraveling family plus Krave Minion, all "
-                + "at one shared rate, capped at three nearby creatures per player within a wide "
-                + "radius - there to give you something to run into while exploring, not to "
-                + "overwhelm you. Cayden ignores all of it; it's yours to handle."));
+                + "at one shared rate, capped at ten nearby creatures per player within a wide "
+                + "radius - there to give you plenty to run into while exploring. Kravajo shows "
+                + "up noticeably more often than the rest of the family; everything else is "
+                + "spread evenly. Cayden ignores all of it; it's yours to handle."));
         e.add(p("Cave pockets scattered through the terrain sometimes hide a Krave Healing Box "
                 + "and a scattering of Krave Cereal - explore, don't just beeline for the "
                 + "island.", DIM));

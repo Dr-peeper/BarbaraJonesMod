@@ -38,18 +38,26 @@ import java.util.function.Supplier;
  */
 public final class KraveKosmosAmbience {
 
-    private static final int TICK_INTERVAL = 100;
-    private static final int PER_PLAYER_CAP = 3;
+    private static final int TICK_INTERVAL = 40;
+    private static final int PER_PLAYER_CAP = 10;
+    /** How many new creatures one pass is allowed to add per player, so filling up to the cap isn't one giant burst. */
+    private static final int SPAWNS_PER_PASS = 3;
     private static final double SCAN_RADIUS = 64.0D;
     /** Cube radius around each player to check for KraveCavePocketFeature's BARRIER markers. */
     private static final int MARKER_SCAN_RADIUS = 6;
 
+    // Kravajo appears three times over - it's meant to be the "there will be
+    // a lot of them" pest (see its own class javadoc and getSoundVolume()
+    // comment), so it's weighted well above the rest of the pool rather than
+    // getting an equal one-in-N shot at each spawn roll.
     private static final List<Supplier<EntityType<? extends Mob>>> CREATURE_TYPES = List.of(
             ModEntities.KRAVE_MINION::get,
             ModMobEntities.KRAVELING::get,
             ModMobEntities.KRISPBONE::get,
             ModMobEntities.LOOMWEAVER::get,
             ModMobEntities.SOGGY::get,
+            ModMobEntities.KRAVAJO::get,
+            ModMobEntities.KRAVAJO::get,
             ModMobEntities.KRAVAJO::get,
             ModMobEntities.MASCOT::get
     );
@@ -76,7 +84,8 @@ public final class KraveKosmosAmbience {
         for (ServerPlayer player : kosmos.players()) {
             int nearby = kosmos.getEntitiesOfClass(Mob.class, player.getBoundingBox().inflate(SCAN_RADIUS),
                     KraveKosmosAmbience::isKosmosCreature).size();
-            if (nearby < PER_PLAYER_CAP) {
+            int toSpawn = Math.min(SPAWNS_PER_PASS, PER_PLAYER_CAP - nearby);
+            for (int i = 0; i < toSpawn; i++) {
                 spawnNear(kosmos, player);
             }
             scanForCaveMarkers(kosmos, player);
