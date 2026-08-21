@@ -255,12 +255,43 @@ public class MomCobbBoss extends Monster {
 
     // ---- tick ---------------------------------------------------------------
 
+    /**
+     * Whether her custom logic has already blown up once. A boss that crashes
+     * the server every tick takes the whole world with it.
+     */
+    private boolean logicDisabled;
+
     @Override
     public void tick() {
         super.tick();
         if (level().isClientSide) {
             return;
         }
+        if (this.logicDisabled) {
+            return;   // she stands there. the world survives. see the log.
+        }
+        try {
+            serverTick();
+        } catch (Exception failure) {
+            this.logicDisabled = true;
+            // Everything about her state at the moment it went wrong. The stack
+            // trace itself is often empty here: after the same NPE fires enough
+            // times HotSpot stops filling traces in (OmitStackTraceInFastThrow),
+            // which is exactly why the crash report named no line of our code.
+            // Launch with -XX:-OmitStackTraceInFastThrow to get the real one.
+            com.mojang.logging.LogUtils.getLogger().error(
+                    "Mom Cobb's logic threw and has been switched off for this entity."
+                    + " phase={} windupKind={} windupLeft={} stagger={} blackout={}"
+                    + " focus={} stash={} quarry={} target={} pos={} dim={}",
+                    this.phase, this.windupKind, this.windupLeft, this.staggerTicks,
+                    this.blackoutTicks,
+                    this.windupFocus, this.windupStash, this.quarry, getTarget(),
+                    position(), level().dimension().location(), failure);
+        }
+    }
+
+    /** The real tick. Wrapped above so a fault cannot take the server down. */
+    private void serverTick() {
 
         this.bossEvent.setProgress(getHealth() / getMaxHealth());
         updatePhase();
