@@ -198,6 +198,31 @@ public final class KraveDenBuilder {
     }
 
     /**
+     * Where the castle stands, whether or not it has just been placed.
+     *
+     * <p>Shared by the placement and by the protection backfill, so a world
+     * that generated its den before the protection existed lands on exactly the
+     * same box a fresh one records. Two separate calculations of this would be
+     * two chances to guard the wrong volume - and guarding the wrong volume is
+     * indistinguishable from guarding nothing until the walls start vanishing.
+     *
+     * @return the castle's bounds, or null if the structure file is missing
+     */
+    @javax.annotation.Nullable
+    public static BoundingBox castleBounds(ServerLevel kosmos, BlockPos center) {
+        Optional<StructureTemplate> template = kosmos.getStructureManager().get(CASTLE_ID);
+        if (template.isEmpty()) {
+            return null;
+        }
+        BlockPos anchor = center.above(DEN_HEIGHT_OFFSET);
+        BlockPos origin = anchor.offset(-BOSS_LOCAL_X, 0, -BOSS_LOCAL_Z);
+        Vec3i size = template.get().getSize();
+        return new BoundingBox(
+                origin.getX(), origin.getY(), origin.getZ(),
+                origin.getX() + size.getX(), origin.getY() + size.getY(), origin.getZ() + size.getZ());
+    }
+
+    /**
      * Places the imported castle so its open courtyard shaft lands exactly
      * on {@code anchor}, flush with the island's flat top.
      */
@@ -217,12 +242,10 @@ public final class KraveDenBuilder {
         // Declare it off-limits to the fight that happens on top of it. This is
         // the whole reason the castle used to lose walls: the courtyard IS the
         // boss arena, and the arena is full of things that destroy terrain.
-        // Taken from the template's real size rather than from the constants
-        // above, so the protected volume cannot drift away from the building.
-        Vec3i size = template.get().getSize();
-        KraveArena.protectCastle(kosmos, new BoundingBox(
-                origin.getX(), origin.getY(), origin.getZ(),
-                origin.getX() + size.getX(), origin.getY() + size.getY(), origin.getZ() + size.getZ()));
+        BoundingBox placed = castleBounds(kosmos, anchor.below(DEN_HEIGHT_OFFSET));
+        if (placed != null) {
+            KraveArena.protectCastle(kosmos, placed);
+        }
     }
 
     /**

@@ -61,6 +61,8 @@ import java.util.Iterator;
 @Mod.EventBusSubscriber(modid = BarbaraJonesMod.MODID)
 public final class KraveArena {
 
+    private static final org.slf4j.Logger LOGGER = com.mojang.logging.LogUtils.getLogger();
+
     private KraveArena() { }
 
     /**
@@ -98,8 +100,42 @@ public final class KraveArena {
                 || !level.dimension().equals(KraveDimensions.KRAVE_KOSMOS)) {
             return false;
         }
-        BoundingBox box = KraveKosmosData.get(server).getCastleBounds();
+        BoundingBox box = bounds(server);
         return box != null && box.isInside(pos);
+    }
+
+    /**
+     * The protected volume, recovering it for worlds that predate this.
+     *
+     * <p>Bounds are normally recorded when the den is built. Any world whose
+     * den already existed never ran that code and never will - the build is
+     * behind a permanent one-time flag - so on every save that has actually
+     * been played, which is the only kind that has a castle to lose, the
+     * protection would be a null box guarding nothing. The headline bug would
+     * read as fixed and would not be.
+     *
+     * <p>The den is always at the same fixed position, so the box can be
+     * recomputed from the same function that placed it. Done once and then
+     * saved, so it is not recomputed per block.
+     */
+    @javax.annotation.Nullable
+    private static BoundingBox bounds(ServerLevel kosmos) {
+        KraveKosmosData data = KraveKosmosData.get(kosmos);
+        BoundingBox box = data.getCastleBounds();
+        if (box != null) {
+            return box;
+        }
+        if (!data.isBossEverSpawned()) {
+            return null;              // no den yet, so nothing to protect
+        }
+        BoundingBox recovered = KraveDenBuilder.castleBounds(kosmos,
+                net.minecraft.core.BlockPos.containing(KraveDimensions.BOSS_ISLAND));
+        if (recovered != null) {
+            data.setCastleBounds(recovered.inflatedBy(MARGIN));
+            LOGGER.info("Recovered Kraved Castle protection bounds for an existing world: {}",
+                    data.getCastleBounds());
+        }
+        return data.getCastleBounds();
     }
 
     /**
@@ -119,7 +155,7 @@ public final class KraveArena {
                 || !level.dimension().equals(KraveDimensions.KRAVE_KOSMOS)) {
             return;
         }
-        BoundingBox box = KraveKosmosData.get(server).getCastleBounds();
+        BoundingBox box = bounds(server);
         if (box == null) {
             return;
         }
