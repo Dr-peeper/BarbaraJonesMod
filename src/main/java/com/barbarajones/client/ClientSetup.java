@@ -13,6 +13,8 @@ import com.barbarajones.client.render.KraveHealingBoxRenderer;
 import com.barbarajones.client.render.KraveLaserRenderer;
 import com.barbarajones.client.render.KraveLeviathanModel;
 import com.barbarajones.client.render.KraveLeviathanRenderer;
+import com.barbarajones.client.render.KraveRedStarModel;
+import com.barbarajones.client.render.KraveRedStarRenderer;
 import com.barbarajones.client.render.KraveMouthBeamRenderer;
 import com.barbarajones.client.render.KraveMeteorRenderer;
 import com.barbarajones.client.render.KraveMonsterModel;
@@ -91,12 +93,14 @@ public final class ClientSetup {
         event.registerEntityRenderer(ModEntities.TERMINATION_NOTICE.get(), TerminationNoticeRenderer::new);
         event.registerEntityRenderer(ModEntities.FILING_CABINET.get(), FilingCabinetRenderer::new);
         event.registerEntityRenderer(ModEntities.KRAVE_LEVIATHAN.get(), KraveLeviathanRenderer::new);
+        event.registerEntityRenderer(ModEntities.KRAVE_RED_STAR.get(), KraveRedStarRenderer::new);
     }
 
     @SubscribeEvent
     public static void registerLayers(EntityRenderersEvent.RegisterLayerDefinitions event) {
         event.registerLayerDefinition(KraveMonsterModel.LAYER_LOCATION, KraveMonsterModel::createBodyLayer);
         event.registerLayerDefinition(KraveLeviathanModel.LAYER_LOCATION, KraveLeviathanModel::createBodyLayer);
+        event.registerLayerDefinition(KraveRedStarModel.LAYER_LOCATION, KraveRedStarModel::createBodyLayer);
         event.registerLayerDefinition(ManagerModel.LAYER_LOCATION, ManagerModel::createBodyLayer);
         event.registerLayerDefinition(com.barbarajones.client.render.BarbaraModel.LAYER,
                 com.barbarajones.client.render.BarbaraModel::createBodyLayer);

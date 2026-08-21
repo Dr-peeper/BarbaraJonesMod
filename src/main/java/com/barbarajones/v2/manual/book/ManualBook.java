@@ -1114,10 +1114,11 @@ public final class ManualBook {
                 + "cannot be reached, fought, or hurt - it is not going anywhere and neither "
                 + "are you. Every so often it calls, a long low sound that carries a long way. "
                 + "That is the whole encounter.", PURPLE));
-        e.add(p("The sky itself runs on its own weather cycle now: long clear stretches "
-                + "broken up by chocolate rain, real weather with real duration, not a purely "
-                + "cosmetic effect. It looks like rain, not water - stay under a fall of the "
-                + "real liquid stuff for the actual reason to get out from under it."));
+        e.add(p("The sky itself is chocolate brown, a single red star fixed permanently overhead "
+                + "- and it runs on its own weather cycle: long clear stretches broken up by "
+                + "chocolate rain, real weather with real duration, not a purely cosmetic effect. "
+                + "It looks like rain, not water - stay under a fall of the real liquid stuff for "
+                + "the actual reason to get out from under it."));
 
         e.add(brk());
         e.add(sub("FIGHTING THE KRAVE MONSTER HERE"));

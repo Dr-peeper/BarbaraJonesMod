@@ -80,6 +80,11 @@ public final class KraveKosmosAmbience {
         if (kosmos == null) {
             return;
         }
+        // Redundant safety net - see KraveLeviathan#ensureSpawned's own doc
+        // comment. Gated by its own one-time flag, so this is a no-op on
+        // every call after the first that actually spawns anything.
+        com.barbarajones.entity.KraveLeviathan.ensureSpawned(kosmos);
+        com.barbarajones.entity.KraveRedStar.ensureSpawned(kosmos);
 
         for (ServerPlayer player : kosmos.players()) {
             int nearby = kosmos.getEntitiesOfClass(Mob.class, player.getBoundingBox().inflate(SCAN_RADIUS),

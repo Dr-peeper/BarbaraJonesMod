@@ -1,7 +1,9 @@
 package com.barbarajones.entity;
 
+import com.barbarajones.content.ModEntities;
 import com.barbarajones.content.ModSounds;
 import com.barbarajones.dimension.KraveDimensions;
+import com.barbarajones.dimension.KraveKosmosData;
 
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.server.level.ServerLevel;
@@ -83,6 +85,31 @@ public class KraveLeviathan extends Entity {
 
     private int randomCallDelay() {
         return CALL_MIN_INTERVAL + this.random.nextInt(CALL_MAX_INTERVAL - CALL_MIN_INTERVAL);
+    }
+
+    /**
+     * Three of them, spawned once, ever - gated by their own one-time flag
+     * in KraveKosmosData, so calling this from more than one place is
+     * always safe. Called both from KraveDoorBlock (the first time a door
+     * leads into the Kosmos) AND every tick from KraveKosmosAmbience, as a
+     * redundant safety net - after two rounds of these still not showing
+     * up for reasons that turned out to be entirely unrelated to whether
+     * this method itself ever ran, not leaving it dependent on exactly one
+     * code path being hit.
+     */
+    public static void ensureSpawned(ServerLevel kosmos) {
+        KraveKosmosData data = KraveKosmosData.get(kosmos);
+        if (data.isLeviathansEverSpawned()) {
+            return;
+        }
+        data.setLeviathansEverSpawned(true);
+
+        for (int i = 0; i < 3; i++) {
+            KraveLeviathan leviathan = ModEntities.KRAVE_LEVIATHAN.get().create(kosmos);
+            if (leviathan != null) {
+                kosmos.addFreshEntity(leviathan);
+            }
+        }
     }
 
     @Override

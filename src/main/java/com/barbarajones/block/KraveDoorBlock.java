@@ -483,28 +483,16 @@ public class KraveDoorBlock extends DoorBlock {
     }
 
     /**
-     * Three Krave Leviathans, spawned once, ever - same one-time-flag
-     * pattern as the boss, just its own independent flag, and called from
-     * its own independent spot (see the comment where this is called from
-     * travelToKosmos) so it isn't hidden behind the boss's early return.
-     * Each one picks its own random orbit (radius/altitude/phase/direction)
-     * in its own constructor, so no position needs to be worked out here at
-     * all; they correct onto their real flight path on their very first tick.
+     * Delegates to {@link com.barbarajones.entity.KraveLeviathan#ensureSpawned},
+     * which is also called every tick from KraveKosmosAmbience as a
+     * redundant safety net - both are gated by the same one-time flag, so
+     * calling it from two places costs nothing once they exist, and it
+     * means they get spawned even on a route through the code this
+     * particular call site never runs.
      */
     private void ensureLeviathansExist(ServerLevel kosmos) {
-        KraveKosmosData data = KraveKosmosData.get(kosmos);
-        if (data.isLeviathansEverSpawned()) {
-            return;
-        }
-        data.setLeviathansEverSpawned(true);
-
-        for (int i = 0; i < 3; i++) {
-            com.barbarajones.entity.KraveLeviathan leviathan =
-                    com.barbarajones.content.ModEntities.KRAVE_LEVIATHAN.get().create(kosmos);
-            if (leviathan != null) {
-                kosmos.addFreshEntity(leviathan);
-            }
-        }
+        com.barbarajones.entity.KraveLeviathan.ensureSpawned(kosmos);
+        com.barbarajones.entity.KraveRedStar.ensureSpawned(kosmos);
     }
 
     /**
