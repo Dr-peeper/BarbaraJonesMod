@@ -469,8 +469,8 @@ public final class ManualBook {
         e.add(brk());
         e.add(sub("CHOCOLATE STAIRS, SLABS & WALLS"));
         e.add(p("Cut straight from Chocolate Block - the portal frame material - so they carry "
-                + "the same obsidian-tier hardness, the same diamond pickaxe requirement, and "
-                + "the same deep BASALT knock when you hit them. Vanilla does this with stone "
+                + "the same deep BASALT knock when you hit them, and mine exactly like vanilla "
+                + "stone bricks: any pickaxe works, no tier gate. Vanilla does this with stone "
                 + "bricks; this is that, but chocolate."));
         e.add(shaped3x3("K..\nKK.\nKKK", java.util.Map.of('K', regBlock(ModBlocks.KRAVE_BLOCK, "Chocolate Block")),
                 regBlock(ModBlocks.KRAVE_BLOCK_STAIRS, "Chocolate Stairs"), 4, "SHAPED"));

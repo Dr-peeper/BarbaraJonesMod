@@ -41,18 +41,20 @@ public final class ModBlocks {
 
     // Registry name stays "krave_block" (renaming it would break existing
     // worlds/recipes referencing the id) - only the display name changed to
-    // "Chocolate Block". Obsidian's real hardness/blast resistance (50/1200)
-    // regressed back to 6/1200 in a merge once already - if this keeps
-    // happening, check here first.
+    // "Chocolate Block". Mine-ability deliberately matches vanilla stone
+    // bricks exactly (1.5/6.0, any pickaxe, no tool-tier gate) - it used to
+    // sit at obsidian's 50/1200, which is why an older version of this
+    // comment warned about that regressing. It didn't regress; it was
+    // changed on purpose. Don't restore 50/1200 without checking first.
     public static final RegistryObject<Block> KRAVE_BLOCK = BLOCKS.register("krave_block",
             () -> new Block(BlockBehaviour.Properties.of()
                     .mapColor(MapColor.COLOR_PURPLE)
-                    .strength(50.0F, 1200.0F)
+                    .strength(1.5F, 6.0F)
                     .sound(SoundType.BASALT)
                     .requiresCorrectToolForDrops()));
 
     // Stairs/slab/wall cut from the same chocolate block above - same texture,
-    // same obsidian-tier hardness and BASALT sound, the way vanilla's stone
+    // same stone-brick-tier hardness and BASALT sound, the way vanilla's stone
     // brick stairs/slab/wall are just stone bricks in a different shape.
     public static final RegistryObject<Block> KRAVE_BLOCK_STAIRS = BLOCKS.register("krave_block_stairs",
             () -> new StairBlock(() -> KRAVE_BLOCK.get().defaultBlockState(),
