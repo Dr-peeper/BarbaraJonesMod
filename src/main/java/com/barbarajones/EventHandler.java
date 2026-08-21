@@ -388,7 +388,8 @@ public class EventHandler {
         // Only a player's OWN pet dying NEAR them triggers the apocalypse.
         if (dead instanceof CaydenCobb cayden) {
             Player owner = cayden.getOwner() instanceof Player p ? p : null;
-            if (cayden.isTame() && ownerIsNear(owner, cayden)
+            if (cayden.isTame()
+                    && (ownerIsNear(owner, cayden) || isUnrecoverableDeath(event.getSource()))
                     && !KraveApocalypse.isActiveNear(level, cayden.position())) {
                 int stage = nextDeathStage(owner);
                 KraveApocalypse.start(level, cayden.position(), killer, owner,
@@ -396,7 +397,8 @@ public class EventHandler {
             }
         } else if (dead instanceof BarbaraJones barbara) {
             Player owner = barbara.getPetOwner();
-            if (barbara.isPet() && ownerIsNear(owner, barbara)
+            if (barbara.isPet()
+                    && (ownerIsNear(owner, barbara) || isUnrecoverableDeath(event.getSource()))
                     && !KraveApocalypse.isActiveNear(level, barbara.position())) {
                 int stage = nextDeathStage(owner);
                 KraveApocalypse.start(level, barbara.position(), killer, owner,
@@ -438,6 +440,24 @@ public class EventHandler {
 
     private boolean ownerIsNear(@Nullable Player owner, Entity pet) {
         return owner != null && owner.isAlive() && owner.distanceToSqr(pet) < 48.0D * 48.0D;
+    }
+
+    /**
+     * Whether this death should start the apocalypse even though the owner is
+     * nowhere near it.
+     *
+     * <p>The proximity rule exists so a pet dying in an unloaded corner of the
+     * world does not set off a cutscene nobody sees. An out-of-world death is
+     * the exception that rule cannot survive: it happens hundreds of blocks
+     * below the player by definition, so it always fails the check. Cayden fell
+     * off a Kosmos island, died at y=-337, and never came back - no cutscene, no
+     * body, nothing. CaydenCobb.onBelowWorld now catches him before this can
+     * happen at all; this is the second line of defence for anything that still
+     * gets through, such as a death in a dimension without a floor.
+     */
+    private boolean isUnrecoverableDeath(net.minecraft.world.damagesource.DamageSource source) {
+        return source.is(net.minecraft.tags.DamageTypeTags.BYPASSES_INVULNERABILITY)
+                || source.is(net.minecraft.world.damagesource.DamageTypes.FELL_OUT_OF_WORLD);
     }
 
     private CompoundTag persisted(Player player) {

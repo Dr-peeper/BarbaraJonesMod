@@ -2099,4 +2099,39 @@ public class CaydenCobb extends TamableAnimal {
     public boolean isMortallyOutmatched() {
         return isOutmatched() && getTarget() instanceof KraveMonster;
     }
+
+    /**
+     * The void does not get to have him.
+     *
+     * <p>Rule #1 is that Cayden must not die, and the void was the one death
+     * that slipped past every guard protecting it. The Kosmos is floating
+     * islands, so falling off is not an edge case there, it is Tuesday - and an
+     * out-of-world death is uniquely unrecoverable, because it happens hundreds
+     * of blocks below the player. The respawn only fires when the owner is
+     * within 48 blocks, so he would fall, die at y=-337, and simply never come
+     * back, with no cutscene and no body.
+     *
+     * <p>So he is caught instead of killed: put back on his owner's head, at
+     * half health, with his fall reset. Half health rather than full because
+     * falling off the world should cost something - it just should not cost him.
+     */
+    @Override
+    protected void onBelowWorld() {
+        if (!level().isClientSide && isTame() && getOwner() instanceof Player owner
+                && owner.level() == level()) {
+            teleportTo(owner.getX(), owner.getY() + 1.0D, owner.getZ());
+            setDeltaMovement(Vec3.ZERO);
+            this.fallDistance = 0.0F;
+            // Clearing this matters: without it he banks the whole fall and
+            // splatters the instant he lands next to you.
+            setHealth(Math.max(1.0F, getMaxHealth() * 0.5F));
+            hurtMarked = true;
+            owner.sendSystemMessage(net.minecraft.network.chat.Component.literal(
+                    net.minecraft.ChatFormatting.YELLOW
+                    + "Cayden went off the edge. You have him back. Watch him."));
+            playSound(ModSounds.CAYDEN_HURT.get(), 1.0F, 1.2F);
+            return;
+        }
+        super.onBelowWorld();
+    }
 }
