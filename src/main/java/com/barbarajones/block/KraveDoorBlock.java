@@ -348,7 +348,7 @@ public class KraveDoorBlock extends DoorBlock {
         });
         player.fallDistance = 0.0F;
 
-        for (Entity arrived : com.barbarajones.dimension.PetEscort.deliver(withPlayer, dest, target)) {
+        for (Entity arrived : com.barbarajones.dimension.PetEscort.deliverTogether(withPlayer, dest, target)) {
             if (enteringKosmos && arrived instanceof CaydenCobb cayden) {
                 cayden.onEnterKosmos();
             }
@@ -359,7 +359,7 @@ public class KraveDoorBlock extends DoorBlock {
                 if (straggler == null || !straggler.isAlive() || straggler.level() == dest) {
                     return;   // already gone, or already got there some other way
                 }
-                List<Entity> late = com.barbarajones.dimension.PetEscort.deliver(List.of(straggler), dest, target);
+                List<Entity> late = com.barbarajones.dimension.PetEscort.deliverTogether(List.of(straggler), dest, target);
                 if (late.isEmpty()) {
                     return;
                 }

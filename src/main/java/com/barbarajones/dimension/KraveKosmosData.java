@@ -39,6 +39,7 @@ public class KraveKosmosData extends SavedData {
     private UUID bossId;
     private boolean landingBoxesSpawned;
     private boolean bossEverSpawned;
+    private boolean bossEverDefeated;
 
     private final Map<BlockPos, GlobalPos> kosmosToExternal = new HashMap<>();
     private final Map<GlobalPos, BlockPos> externalToKosmos = new HashMap<>();
@@ -85,6 +86,16 @@ public class KraveKosmosData extends SavedData {
         setDirty();
     }
 
+    /** True once the Kosmos-resident boss (the one this class's own bossId names) has died at final form at least once. */
+    public boolean isBossEverDefeated() {
+        return this.bossEverDefeated;
+    }
+
+    public void setBossEverDefeated(boolean value) {
+        this.bossEverDefeated = value;
+        setDirty();
+    }
+
     /** The Kosmos-side door paired with this overworld (or other-dimension) door, or null if it has never been used. */
     @Nullable
     public BlockPos kosmosDoorFor(GlobalPos external) {
@@ -115,6 +126,7 @@ public class KraveKosmosData extends SavedData {
         // "already spawned" too, so upgrading doesn't rebuild the den once
         // more on the next entry.
         data.bossEverSpawned = tag.getBoolean("BossEverSpawned") || tag.hasUUID("BossId");
+        data.bossEverDefeated = tag.getBoolean("BossEverDefeated");
 
         if (tag.contains("PortalLinks")) {
             ListTag links = tag.getList("PortalLinks", Tag.TAG_COMPOUND);
@@ -139,6 +151,7 @@ public class KraveKosmosData extends SavedData {
         }
         tag.putBoolean("LandingBoxesSpawned", this.landingBoxesSpawned);
         tag.putBoolean("BossEverSpawned", this.bossEverSpawned);
+        tag.putBoolean("BossEverDefeated", this.bossEverDefeated);
 
         ListTag links = new ListTag();
         for (Map.Entry<BlockPos, GlobalPos> e : this.kosmosToExternal.entrySet()) {

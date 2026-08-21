@@ -8,6 +8,8 @@ import com.barbarajones.content.ModEntities;
 import com.barbarajones.content.ModSounds;
 import com.barbarajones.content.ModFluids;
 import com.barbarajones.content.ModItems;
+import com.barbarajones.dimension.KraveDimensions;
+import com.barbarajones.dimension.KraveKosmosData;
 import com.barbarajones.entity.BarbaraJones;
 import com.barbarajones.entity.CaydenCobb;
 import com.barbarajones.entity.KraveMonster;
@@ -351,6 +353,19 @@ public class EventHandler {
                         dead.getBoundingBox().inflate(64.0D))) {
                     p.sendSystemMessage(Component.literal(ChatFormatting.GOLD + ""
                             + ChatFormatting.BOLD + "THE KRAVE IS FINALLY DEAD."));
+                }
+                // Only marks the Kosmos-resident boss as defeated, not any
+                // Krave Monster - the Krave Box and the 10th Cayden death
+                // both spawn their own separate, fully independent encounter
+                // (see KraveBoxItem), so a summoned one dying here must not
+                // satisfy this. Compared by UUID against whichever instance
+                // KraveDoorBlock.ensureBossExists actually spawned.
+                ServerLevel kosmos = level.getServer().getLevel(KraveDimensions.KRAVE_KOSMOS);
+                if (kosmos != null) {
+                    KraveKosmosData data = KraveKosmosData.get(kosmos);
+                    if (fallen.getUUID().equals(data.getBossId())) {
+                        data.setBossEverDefeated(true);
+                    }
                 }
             }
             for (Player player : level.getEntitiesOfClass(Player.class,

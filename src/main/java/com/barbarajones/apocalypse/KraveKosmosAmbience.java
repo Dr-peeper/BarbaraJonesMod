@@ -5,25 +5,36 @@ import com.barbarajones.content.ModItems;
 import com.barbarajones.dimension.KraveDimensions;
 import com.barbarajones.dimension.KraveLanding;
 import com.barbarajones.entity.KraveHealingBox;
-import com.barbarajones.entity.KraveMinion;
+import com.barbarajones.v2.mobs.ModMobEntities;
 
 import net.minecraft.core.BlockPos;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
+import net.minecraft.world.entity.EntityType;
+import net.minecraft.world.entity.Mob;
 import net.minecraft.world.entity.item.ItemEntity;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.phys.Vec3;
 import net.minecraftforge.server.ServerLifecycleHooks;
 
+import java.util.List;
 import java.util.Optional;
+import java.util.function.Supplier;
 
 /**
- * Ambient Kosmonaut (Krave Minion) presence on the Krave Kosmos islands - a
- * second, always-on instance of KraveKosmosBattle's proven tick-spawner idea,
- * scoped to ordinary exploration instead of the scripted Super Saiyan fight,
- * so there's actually something to run into out on the islands.
+ * Ambient wildlife on the Krave Kosmos islands - a second, always-on
+ * instance of KraveKosmosBattle's proven tick-spawner idea, scoped to
+ * ordinary exploration instead of the scripted Super Saiyan fight, so
+ * there's actually something to run into out there.
+ *
+ * <p>Spawns from the whole non-human Krave-creature roster (Krave Minion
+ * plus the Kraveling family and Kravajo), not just Krave Minion alone - one
+ * shared rate and cap across all of them, the same "ambient wildlife
+ * density" a player would get from any one of them individually. Krave
+ * Monster, Barbara/Cayden/Daniel/the Plug and the rest of the human cast are
+ * deliberately not in this pool - they're characters, not wildlife.
  */
 public final class KraveKosmosAmbience {
 
@@ -32,6 +43,16 @@ public final class KraveKosmosAmbience {
     private static final double SCAN_RADIUS = 64.0D;
     /** Cube radius around each player to check for KraveCavePocketFeature's BARRIER markers. */
     private static final int MARKER_SCAN_RADIUS = 6;
+
+    private static final List<Supplier<EntityType<? extends Mob>>> CREATURE_TYPES = List.of(
+            ModEntities.KRAVE_MINION::get,
+            ModMobEntities.KRAVELING::get,
+            ModMobEntities.KRISPBONE::get,
+            ModMobEntities.LOOMWEAVER::get,
+            ModMobEntities.SOGGY::get,
+            ModMobEntities.KRAVAJO::get,
+            ModMobEntities.MASCOT::get
+    );
 
     private static int timer;
 
@@ -53,13 +74,22 @@ public final class KraveKosmosAmbience {
         }
 
         for (ServerPlayer player : kosmos.players()) {
-            int nearby = kosmos.getEntitiesOfClass(KraveMinion.class,
-                    player.getBoundingBox().inflate(SCAN_RADIUS)).size();
+            int nearby = kosmos.getEntitiesOfClass(Mob.class, player.getBoundingBox().inflate(SCAN_RADIUS),
+                    KraveKosmosAmbience::isKosmosCreature).size();
             if (nearby < PER_PLAYER_CAP) {
                 spawnNear(kosmos, player);
             }
             scanForCaveMarkers(kosmos, player);
         }
+    }
+
+    private static boolean isKosmosCreature(Mob mob) {
+        for (Supplier<EntityType<? extends Mob>> type : CREATURE_TYPES) {
+            if (mob.getType() == type.get()) {
+                return true;
+            }
+        }
+        return false;
     }
 
     /**
@@ -102,12 +132,13 @@ public final class KraveKosmosAmbience {
         if (landing.isEmpty()) {
             return;   // no solid ground found nearby this pass - try again next tick cycle
         }
-        KraveMinion minion = ModEntities.KRAVE_MINION.get().create(kosmos);
-        if (minion == null) {
+        EntityType<? extends Mob> type = CREATURE_TYPES.get(kosmos.random.nextInt(CREATURE_TYPES.size())).get();
+        Mob mob = type.create(kosmos);
+        if (mob == null) {
             return;
         }
         Vec3 pos = landing.get();
-        minion.moveTo(pos.x, pos.y, pos.z, kosmos.random.nextFloat() * 360.0F, 0.0F);
-        kosmos.addFreshEntity(minion);
+        mob.moveTo(pos.x, pos.y, pos.z, kosmos.random.nextFloat() * 360.0F, 0.0F);
+        kosmos.addFreshEntity(mob);
     }
 }
