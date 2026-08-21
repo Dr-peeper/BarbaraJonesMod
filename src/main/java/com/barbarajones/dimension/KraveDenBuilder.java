@@ -44,8 +44,18 @@ public final class KraveDenBuilder {
 
     private static final ResourceLocation CASTLE_ID = new ResourceLocation("barbarajones", "krave_den");
 
-    /** Wide enough to sit comfortably under the castle's full ~30x31 footprint. */
-    private static final int RADIUS = 18;
+    /**
+     * Half-extents of the platform, in blocks each direction from center.
+     * The castle is 30x31 with its courtyard shaft (see BOSS_LOCAL_X/Z
+     * below) offset 14/15 blocks from its own edges - a CIRCLE of even a
+     * generous radius misses a rectangle's corners (corner distance here is
+     * ~21, well past any radius that still hugs the straight edges), which
+     * is exactly why the castle used to float at its corners with no floor
+     * under them. A rectangle sized to the actual footprint, plus a
+     * 2-block margin, has no such gap.
+     */
+    private static final int HALF_X = 17;
+    private static final int HALF_Z = 17;
 
     /** Local (x,z) of the courtyard's open shaft inside krave_den.nbt - see the class doc. */
     private static final int BOSS_LOCAL_X = 14;
@@ -62,11 +72,8 @@ public final class KraveDenBuilder {
         // the surrounding procedural terrain - carve air above it and fill
         // ground below, so the den (and the boss standing in its courtyard)
         // never depends on the noise function happening to line up here.
-        for (int dx = -RADIUS; dx <= RADIUS; dx++) {
-            for (int dz = -RADIUS; dz <= RADIUS; dz++) {
-                if (Math.sqrt(dx * dx + dz * dz) > RADIUS) {
-                    continue;
-                }
+        for (int dx = -HALF_X; dx <= HALF_X; dx++) {
+            for (int dz = -HALF_Z; dz <= HALF_Z; dz++) {
                 BlockPos base = center.offset(dx, 0, dz);
                 kosmos.setBlock(base, grass, 2);
                 for (int down = 1; down <= 3; down++) {

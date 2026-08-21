@@ -1,14 +1,17 @@
-# Krave Tuff, Krave Cobblestone, and the Chocolate Door: vanilla tuff/
-# cobblestone/spruce_door art, recolored - not original designs. Same
-# technique as make_krave_terrain_textures.ps1 (luminance * fixed tint).
-# Source PNGs live in tools/vanilla_src/, extracted from the vanilla client
-# jar (assets/minecraft/textures/block/...).
+# Krave Tuff, Krave Cobblestone, the Chocolate Door, and Krave/Stripped
+# Krave Log: vanilla tuff/cobblestone/spruce_door/oak_log art, recolored -
+# not original designs. Same technique as make_krave_terrain_textures.ps1
+# (luminance * fixed tint). Source PNGs live in tools/vanilla_src/,
+# extracted from the vanilla client jar (assets/minecraft/textures/block/...).
 #
-# These three exist specifically to reskin an imported castle schematic
+# The first three exist specifically to reskin an imported castle schematic
 # (fortress.litematic) into krave materials: the castle used three separate
 # stone tones (stone bricks, tuff, cobblestone) for masonry contrast, and
 # krave_block already covers stone bricks - these two cover the other two
-# so that contrast survives instead of flattening into one material.
+# so that contrast survives instead of flattening into one material. The
+# log recolor is unrelated to the castle - it replaces krave_log/
+# stripped_krave_log, which make_krave_wood.ps1 painted from scratch
+# instead of recoloring vanilla art like everything else in the mod.
 Add-Type -AssemblyName System.Drawing
 $root = Split-Path -Parent $PSScriptRoot
 $srcDir = "$PSScriptRoot\vanilla_src"
@@ -37,9 +40,11 @@ function Recolor($src, [string]$tintHex){
 $tuffTint = '6B4226'
 (Recolor (Load 'tuff.png') $tuffTint).Save("$bdir\krave_tuff.png", [System.Drawing.Imaging.ImageFormat]::Png)
 
-# Rougher caramel tone, lighter still - cobblestone was the roughest/lightest
-# of the castle's three stones, so it gets the lightest krave tint too.
-$cobbleTint = '8B5A2B'
+# Rougher caramel tone - cobblestone was the roughest of the castle's three
+# stones, so it still gets its own tint, just pulled much closer to
+# krave_block/krave_tuff now (the original 8B5A2B read as too bright/washed
+# out next to them, clashing instead of reading as the same palette).
+$cobbleTint = '6E4428'
 (Recolor (Load 'cobblestone.png') $cobbleTint).Save("$bdir\krave_cobblestone.png", [System.Drawing.Imaging.ImageFormat]::Png)
 
 # Chocolate Door: a genuinely different door from the Krave Door (that one's
@@ -49,4 +54,16 @@ $doorTint = '5C3A21'
 (Recolor (Load 'spruce_door_top.png') $doorTint).Save("$bdir\chocolate_door_top.png", [System.Drawing.Imaging.ImageFormat]::Png)
 (Recolor (Load 'spruce_door_bottom.png') $doorTint).Save("$bdir\chocolate_door_bottom.png", [System.Drawing.Imaging.ImageFormat]::Png)
 
-Write-Output "wrote krave_tuff, krave_cobblestone, chocolate_door_top(+bottom) (recolored from vanilla art)"
+# Krave Log/Stripped Krave Log: make_krave_wood.ps1 originally painted these
+# from scratch instead of recoloring vanilla art like every other krave/
+# chocolate texture - inconsistent with the rest of the mod and it showed.
+# Same technique as chocolate_log (vanilla oak_log, recolored), but a
+# darker, more chocolate tint than chocolate_log's 6B4226 so the two log
+# families stay visually distinct.
+$logTint = '4A2C18'
+(Recolor (Load 'oak_log.png') $logTint).Save("$bdir\krave_log.png", [System.Drawing.Imaging.ImageFormat]::Png)
+(Recolor (Load 'oak_log_top.png') $logTint).Save("$bdir\krave_log_top.png", [System.Drawing.Imaging.ImageFormat]::Png)
+(Recolor (Load 'stripped_oak_log.png') $logTint).Save("$bdir\stripped_krave_log.png", [System.Drawing.Imaging.ImageFormat]::Png)
+(Recolor (Load 'stripped_oak_log_top.png') $logTint).Save("$bdir\stripped_krave_log_top.png", [System.Drawing.Imaging.ImageFormat]::Png)
+
+Write-Output "wrote krave_tuff, krave_cobblestone, chocolate_door_top(+bottom), krave_log(+top), stripped_krave_log(+top) (recolored from vanilla art)"
