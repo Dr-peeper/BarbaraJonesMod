@@ -137,6 +137,10 @@ public class KraveMonster extends Monster {
         this.formSettled = true;
         int f = Math.max(1, Math.min(FINAL_FORM, form));
         this.entityData.set(FORM, f);
+        // Without this the collision box keeps the PREVIOUS form's size until
+        // something else happens to invalidate it, so he grows visually and
+        // stays hittable only where he used to be.
+        refreshDimensions();
 
         double health = switch (f) {
             case 6 -> 4200.0D;   // Ultra Instinct's answer: nightmare-scale
@@ -326,6 +330,7 @@ public class KraveMonster extends Monster {
         }
         if (!level().isClientSide) {
             matchRival();
+            tickGauntletReset();
         }
         pushGhost();
 
@@ -727,5 +732,69 @@ public class KraveMonster extends Monster {
             this.monster.level().playSound(null, this.monster.blockPosition(),
                     ModSounds.KRAVE_BEAM_FIRE.get(), SoundSource.HOSTILE, 1.2F, 1.0F);
         }
+    }
+
+    /** Ticks with nobody engaging him before the gauntlet resets to form one. */
+    private static final int RESET_AFTER = 20 * 30;
+
+    private int unengagedTicks;
+
+    /**
+     * Puts him back to his first form once a fight is abandoned.
+     *
+     * <p>His escalation is persistent - each death revives him one form higher,
+     * and that form is written to NBT. That is correct DURING a fight and wrong
+     * the moment one ends without him dying: the Kosmos boss is spawned exactly
+     * once, ever, so a player who took him to Ultra and then walked out came
+     * back to a permanently Ultra-form monster and never saw forms one through
+     * five again. The gauntlet is the point of him.
+     *
+     * <p>So an abandoned fight rewinds. Thirty seconds with no target and nobody
+     * within sixty-four blocks and he is back to form one at full health, which
+     * is also the ordinary boss-arena convention: leave, and you start over.
+     */
+    private void tickGauntletReset() {
+        if (getForm() <= 1) {
+            this.unengagedTicks = 0;
+            return;
+        }
+        boolean engaged = getTarget() != null && getTarget().isAlive();
+        if (!engaged) {
+            engaged = level().getNearestPlayer(this, 64.0D) != null;
+        }
+        if (engaged) {
+            this.unengagedTicks = 0;
+            return;
+        }
+        if (++this.unengagedTicks < RESET_AFTER) {
+            return;
+        }
+        this.unengagedTicks = 0;
+        setForm(1);
+        setHealth(getMaxHealth());
+    }
+    /**
+     * His collision box, per form.
+     *
+     * <p>The registered size is one fixed 1.5 x 3.3 for every form, which was
+     * already wrong when the renderer scaled him 1.3x to 5.8x and is unusable
+     * now that form one opens at 5.8x: you would swing at a monster filling the
+     * screen and hit air three blocks off the ground, and his own melee reach
+     * is measured from this box too.
+     *
+     * <p>These grow with him but deliberately fall short of the visual scale.
+     * Matching 14x exactly would be a box roughly twenty-six blocks tall, which
+     * suffocates in his den and bulldozes terrain on every step. Reading bigger
+     * than you collide is standard for bosses - the Ender Dragon is the obvious
+     * precedent - and it keeps him hittable without making him a wrecking ball.
+     */
+    private static final float[] FORM_WIDTH  = { 4.2F, 5.0F, 5.8F, 6.8F, 7.8F,  9.0F };
+    private static final float[] FORM_HEIGHT = { 9.0F, 10.5F, 12.0F, 14.0F, 16.0F, 18.0F };
+
+    @Override
+    public net.minecraft.world.entity.EntityDimensions getDimensions(
+            net.minecraft.world.entity.Pose pose) {
+        int i = net.minecraft.util.Mth.clamp(getForm() - 1, 0, FORM_WIDTH.length - 1);
+        return net.minecraft.world.entity.EntityDimensions.scalable(FORM_WIDTH[i], FORM_HEIGHT[i]);
     }
 }

@@ -42,7 +42,18 @@ public class KraveMonsterRenderer extends MobRenderer<KraveMonster, KraveMonster
     // the escalation between all six forms (one per Cayden rung, SSJ through
     // Ultra Instinct) reads through size and body-color tint: form 1 is
     // barely bigger than a player, form 6 is a nightmare.
-    private static final float[] FORM_SCALE = { 1.3F, 1.9F, 2.7F, 3.6F, 4.6F, 5.8F };
+    /**
+     * How big he is per form. Form ONE now opens at what used to be Ultra's
+     * size, and climbs from there - so the fight starts with something already
+     * enormous walking at you and finishes with something absurd.
+     *
+     * <p>Deliberately outpaces the hitbox in KraveMonster.getDimensions. A
+     * collision box that literally matched the final form would be about
+     * twenty-six blocks tall, which suffocates inside his own den and shoves
+     * terrain around. A boss that READS bigger than it collides is the normal
+     * answer to that, and the Ender Dragon does exactly the same thing.
+     */
+    private static final float[] FORM_SCALE = { 5.8F, 7.0F, 8.4F, 10.0F, 11.8F, 14.0F };
 
     @Override
     protected void scale(KraveMonster entity, PoseStack pose, float partialTicks) {

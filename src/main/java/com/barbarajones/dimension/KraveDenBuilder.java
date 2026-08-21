@@ -44,7 +44,11 @@ public final class KraveDenBuilder {
                 for (int down = 1; down <= 3; down++) {
                     kosmos.setBlock(base.below(down), dirt, 2);
                 }
-                for (int up = 1; up <= 6; up++) {
+                // Cleared well past his tallest form. He is up to eighteen
+                // blocks of collision box at form six, and six blocks of
+                // headroom would bury his head in whatever the Kosmos generated
+                // overhead - a boss suffocating in his own arena.
+                for (int up = 1; up <= 22; up++) {
                     kosmos.setBlock(base.above(up), air, 2);
                 }
             }

@@ -150,6 +150,20 @@ public class EventHandler {
         next.setTarget(fallen.getTarget());
         level.addFreshEntity(next);
 
+        // Hand the Kosmos boss identity to the new body. Reviving spawns a NEW
+        // entity with a NEW uuid, but KraveKosmosData still held the ORIGINAL
+        // one - so when the final form finally fell, the uuid check in onDeath
+        // did not match and setBossEverDefeated never ran. Killing the Kosmos
+        // boss simply never registered, and anything gated behind having beaten
+        // him stayed locked forever.
+        ServerLevel kosmosLevel = level.getServer().getLevel(KraveDimensions.KRAVE_KOSMOS);
+        if (kosmosLevel != null) {
+            KraveKosmosData bossData = KraveKosmosData.get(kosmosLevel);
+            if (fallen.getUUID().equals(bossData.getBossId())) {
+                bossData.setBossId(next.getUUID());
+            }
+        }
+
         // Vanilla's ~1s death animation (plus his own ghost-trail afterimage
         // effect) used to leave the collapsing old body on screen at the same
         // moment the new form spawned in the same spot - two Krave Monsters
