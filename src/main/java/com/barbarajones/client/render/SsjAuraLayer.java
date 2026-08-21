@@ -69,15 +69,24 @@ public class SsjAuraLayer extends RenderLayer<CaydenCobb, CaydenModel> {
             case 3 -> { tr = 1.0F; tg = 0.7F; tb = 0.35F; }               // SSJ3: deep orange
             case 4 -> { tr = 1.0F; tg = 0.15F; tb = 0.18F; }              // GOD: red
             case 5 -> { tr = 0.25F; tg = 0.45F; tb = 1.0F; }              // BLUE: blue
-            case 6 -> {                                                  // ULTRA: shifting prismatic
-                tr = 0.55F + 0.45F * Mth.sin(t * 0.045F);
-                tg = 0.15F + 0.15F * Mth.sin(t * 0.03F + 2.0F);
-                tb = 0.55F + 0.45F * Mth.cos(t * 0.05F);
+            case 6 -> {                                                  // ULTRA: white
+                // Handled by the whitewash below, not by tinting. The aura's
+                // vertex colours are baked gold, and multiplying gold by
+                // anything is still gold - white has to REPLACE the colour.
+                // It used to be a shifting prismatic wash, which read as one
+                // more colour in the ladder; the point of Ultra Instinct is
+                // that it is not another colour, it is the absence of one.
             }
             default -> { }                                               // SSJ1 / half / dark: unchanged gold-red
         }
-        VertexConsumer buf = (tr == 1.0F && tg == 1.0F && tb == 1.0F)
-                ? rawBuf : new TintedVertexConsumer(rawBuf, tr, tg, tb);
+        VertexConsumer buf;
+        if (full && tier == AscensionLadder.ULTRA) {
+            buf = new WhitewashVertexConsumer(rawBuf);
+        } else if (tr == 1.0F && tg == 1.0F && tb == 1.0F) {
+            buf = rawBuf;
+        } else {
+            buf = new TintedVertexConsumer(rawBuf, tr, tg, tb);
+        }
 
         // Each rung reads as its own escalation, not a recolor of the same
         // effect stack:
@@ -128,6 +137,75 @@ public class SsjAuraLayer extends RenderLayer<CaydenCobb, CaydenModel> {
      * texture and no shader-color uniform, so this is the only way to
      * actually recolor it per rung - see the note in render() above.
      */
+    /**
+     * Forces every vertex white, keeping only its alpha.
+     *
+     * <p>Ultra Instinct is the one rung that is not a colour. Every other tier
+     * multiplies the aura's baked gold by something, which is why they all read
+     * as the same fire in a different shade - but you cannot multiply gold into
+     * white, so this discards the incoming rgb entirely and keeps the alpha, so
+     * the shape, falloff and flicker all survive untouched.
+     */
+    private static final class WhitewashVertexConsumer implements VertexConsumer {
+
+        private final VertexConsumer delegate;
+
+        WhitewashVertexConsumer(VertexConsumer delegate) {
+            this.delegate = delegate;
+        }
+
+        @Override
+        public VertexConsumer vertex(double x, double y, double z) {
+            this.delegate.vertex(x, y, z);
+            return this;
+        }
+
+        @Override
+        public VertexConsumer color(int r, int g, int b, int a) {
+            this.delegate.color(255, 255, 255, a);   // alpha survives; hue does not
+            return this;
+        }
+
+        @Override
+        public VertexConsumer uv(float u, float v) {
+            this.delegate.uv(u, v);
+            return this;
+        }
+
+        @Override
+        public VertexConsumer overlayCoords(int u, int v) {
+            this.delegate.overlayCoords(u, v);
+            return this;
+        }
+
+        @Override
+        public VertexConsumer uv2(int u, int v) {
+            this.delegate.uv2(u, v);
+            return this;
+        }
+
+        @Override
+        public VertexConsumer normal(float x, float y, float z) {
+            this.delegate.normal(x, y, z);
+            return this;
+        }
+
+        @Override
+        public void endVertex() {
+            this.delegate.endVertex();
+        }
+
+        @Override
+        public void defaultColor(int r, int g, int b, int a) {
+            this.delegate.defaultColor(255, 255, 255, a);
+        }
+
+        @Override
+        public void unsetDefaultColor() {
+            this.delegate.unsetDefaultColor();
+        }
+    }
+
     private static final class TintedVertexConsumer implements VertexConsumer {
         private final VertexConsumer delegate;
         private final float tr, tg, tb;

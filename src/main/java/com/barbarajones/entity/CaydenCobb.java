@@ -27,6 +27,7 @@ import net.minecraft.util.Mth;
 import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.damagesource.DamageSource;
 import net.minecraft.world.entity.AgeableMob;
+import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.EntityType;
 import net.minecraft.world.entity.LightningBolt;
 import net.minecraft.world.entity.LivingEntity;
@@ -780,6 +781,7 @@ public class CaydenCobb extends TamableAnimal {
 
         tickThrow();
         tickSpectacle();
+        tickUltraVortex();
 
         if (this.graceTicks > 0) {
             this.graceTicks--;
@@ -2133,5 +2135,128 @@ public class CaydenCobb extends TamableAnimal {
             return;
         }
         super.onBelowWorld();
+    }
+    // ---- Ultra Instinct: the vortex ----------------------------------------
+
+    /** How far out the vortex reaches while he is at Ultra Instinct. */
+    private static final double VORTEX_RADIUS = 14.0D;
+
+    /**
+     * While he is at Ultra Instinct, everything around him is airborne.
+     *
+     * <p>Not a transformation burst - this runs for as long as he holds the
+     * form. Mobs, items and anything else nearby get lifted off the ground and
+     * swept around him, with lightning arcing HORIZONTALLY through them at his
+     * own chest height rather than dropping from the sky, so the storm reads as
+     * something coming out of him rather than weather happening above him.
+     *
+     * <p>Players are exempt, deliberately and without exception - including the
+     * owner. A permanent effect that throws you around whenever your own
+     * companion powers up would make him unplayable to stand near, and the
+     * whole point is that you get to walk up and look at it.
+     */
+    private void tickUltraVortex() {
+        if (getTier() < AscensionLadder.ULTRA || !(level() instanceof ServerLevel sl)) {
+            return;
+        }
+        double cx = getX();
+        double cy = getY();
+        double cz = getZ();
+
+        for (Entity caught : sl.getEntities(this,
+                getBoundingBox().inflate(VORTEX_RADIUS, VORTEX_RADIUS * 0.6D, VORTEX_RADIUS))) {
+            // Players are never caught. Neither is the pair of them - Barbara
+            // being flung around by Cayden is a different joke and not this one.
+            if (caught instanceof Player || caught instanceof CaydenCobb
+                    || caught instanceof BarbaraJones) {
+                continue;
+            }
+            double dx = caught.getX() - cx;
+            double dz = caught.getZ() - cz;
+            double dist = Math.sqrt(dx * dx + dz * dz);
+            if (dist > VORTEX_RADIUS) {
+                continue;
+            }
+
+            // Tangent, not a push: crossing the radius with up gives the
+            // sideways component that makes this orbit instead of scatter.
+            double nx = dist < 0.01D ? 1.0D : dx / dist;
+            double nz = dist < 0.01D ? 0.0D : dz / dist;
+            double spinX = -nz;
+            double spinZ = nx;
+
+            // Pulled inward as well as around, or the orbit decays outward and
+            // everything slowly leaves the tornado it is supposed to be in.
+            double pull = 0.10D;
+            double spin = 0.42D;
+            double lift = caught.getY() < cy + 7.0D ? 0.34D : 0.02D;
+
+            caught.setDeltaMovement(
+                    spinX * spin - nx * pull,
+                    Math.min(0.85D, caught.getDeltaMovement().y + lift),
+                    spinZ * spin - nz * pull);
+            // Without this the client never sees the launch - the server moves
+            // it and the client quietly interpolates it back down.
+            caught.hurtMarked = true;
+            caught.fallDistance = 0.0F;
+
+            // Horizontal lightning: an arc from his chest straight out through
+            // whatever is being flung, drawn as a line of sparks rather than a
+            // LightningBolt entity, because a bolt is always vertical and
+            // always strikes the ground.
+            if (this.tickCount % 5 == 0 && this.random.nextInt(3) == 0) {
+                arcThrough(sl, caught);
+            }
+        }
+
+        if (this.tickCount % 3 == 0) {
+            vortexWall(sl);
+        }
+        if (this.tickCount % 40 == 0) {
+            sl.playSound(null, blockPosition(), ModSounds.KRAVE_TORNADO.get(),
+                    getSoundSource(), 0.7F, 1.4F);
+        }
+    }
+
+    /** A horizontal bolt from his chest out through one caught entity. */
+    private void arcThrough(ServerLevel sl, Entity target) {
+        double y = getY() + getBbHeight() * 0.62D;
+        Vec3 from = new Vec3(getX(), y, getZ());
+        // Aimed level with his chest rather than at the target's own height, so
+        // every arc in the storm sits on one plane and reads as a sheet.
+        Vec3 to = new Vec3(target.getX(), y, target.getZ());
+        Vec3 step = to.subtract(from);
+        int points = 14;
+        for (int i = 0; i <= points; i++) {
+            double f = i / (double) points;
+            // Jitter perpendicular to the run so it forks like lightning instead
+            // of drawing a clean laser.
+            double wobble = (this.random.nextDouble() - 0.5D) * 0.55D;
+            sl.sendParticles(ParticleTypes.ELECTRIC_SPARK,
+                    from.x + step.x * f + wobble,
+                    y + (this.random.nextDouble() - 0.5D) * 0.35D,
+                    from.z + step.z * f + wobble,
+                    1, 0.0D, 0.0D, 0.0D, 0.0D);
+        }
+        sl.sendParticles(ParticleTypes.END_ROD,
+                target.getX(), target.getY() + target.getBbHeight() * 0.5D, target.getZ(),
+                3, 0.2D, 0.2D, 0.2D, 0.01D);
+    }
+
+    /** The turning wall of debris that makes the vortex visible from outside. */
+    private void vortexWall(ServerLevel sl) {
+        double spin = this.tickCount * 0.35D;
+        for (int i = 0; i < 10; i++) {
+            double a = spin + (i / 10.0D) * Math.PI * 2.0D;
+            // Narrower at the bottom, wider at the top: a funnel, not a cylinder.
+            double h = (i / 10.0D) * 9.0D;
+            double r = 2.5D + h * 0.55D;
+            sl.sendParticles(ParticleTypes.CLOUD,
+                    getX() + Math.cos(a) * r, getY() + h, getZ() + Math.sin(a) * r,
+                    1, 0.0D, 0.0D, 0.0D, 0.02D);
+            sl.sendParticles(ParticleTypes.ELECTRIC_SPARK,
+                    getX() + Math.cos(a + 0.6D) * r, getY() + h, getZ() + Math.sin(a + 0.6D) * r,
+                    1, 0.0D, 0.0D, 0.0D, 0.0D);
+        }
     }
 }

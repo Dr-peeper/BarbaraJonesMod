@@ -18,7 +18,7 @@
     "water_fog_color": 3810066,
     "mood_sound": {
       "block_search_extent": 8,
-      "offset": 2.0,
+      "offset": 2,
       "sound": "minecraft:ambient.cave",
       "tick_delay": 6000
     },
@@ -103,15 +103,15 @@
   "spawn_costs": {
     "barbarajones:barbara_jones": {
       "energy_budget": 0.12,
-      "charge": 1.0
+      "charge": 1
     },
     "barbarajones:cayden_cobb": {
       "energy_budget": 0.12,
-      "charge": 1.0
+      "charge": 1
     },
     "barbarajones:daniel": {
       "energy_budget": 0.12,
-      "charge": 1.0
+      "charge": 1
     }
   },
   "spawners": {
@@ -119,8 +119,8 @@
       {
         "type": "minecraft:bat",
         "weight": 10,
-        "minCount": 8,
-        "maxCount": 8
+        "minCount": 24,
+        "maxCount": 24
       }
     ],
     "axolotls": [],
@@ -128,56 +128,56 @@
       {
         "type": "barbarajones:barbara_jones",
         "weight": 8,
-        "minCount": 1,
-        "maxCount": 1
+        "minCount": 10,
+        "maxCount": 10
       },
       {
         "type": "barbarajones:nugget",
         "weight": 6,
-        "minCount": 1,
-        "maxCount": 2
+        "minCount": 10,
+        "maxCount": 20
       },
       {
         "type": "barbarajones:daniel",
         "weight": 4,
-        "minCount": 1,
-        "maxCount": 1
+        "minCount": 10,
+        "maxCount": 10
       },
       {
         "type": "barbarajones:cayden_cobb",
         "weight": 2,
-        "minCount": 1,
-        "maxCount": 1
+        "minCount": 10,
+        "maxCount": 10
       },
       {
         "type": "minecraft:cow",
         "weight": 6,
-        "minCount": 2,
-        "maxCount": 4
+        "minCount": 20,
+        "maxCount": 24
       },
       {
         "type": "minecraft:sheep",
         "weight": 6,
-        "minCount": 2,
-        "maxCount": 4
+        "minCount": 20,
+        "maxCount": 24
       },
       {
         "type": "minecraft:chicken",
         "weight": 5,
-        "minCount": 2,
-        "maxCount": 4
+        "minCount": 20,
+        "maxCount": 24
       },
       {
         "type": "minecraft:pig",
         "weight": 5,
-        "minCount": 2,
-        "maxCount": 4
+        "minCount": 20,
+        "maxCount": 24
       },
       {
         "type": "minecraft:horse",
         "weight": 2,
-        "minCount": 2,
-        "maxCount": 4
+        "minCount": 20,
+        "maxCount": 24
       }
     ],
     "misc": [],
@@ -185,58 +185,58 @@
       {
         "type": "minecraft:zombie",
         "weight": 45,
-        "minCount": 2,
-        "maxCount": 4
+        "minCount": 20,
+        "maxCount": 24
       },
       {
         "type": "minecraft:skeleton",
         "weight": 45,
-        "minCount": 2,
-        "maxCount": 4
+        "minCount": 20,
+        "maxCount": 24
       },
       {
         "type": "minecraft:creeper",
         "weight": 40,
-        "minCount": 2,
-        "maxCount": 4
+        "minCount": 20,
+        "maxCount": 24
       },
       {
         "type": "minecraft:spider",
         "weight": 40,
-        "minCount": 2,
-        "maxCount": 4
+        "minCount": 20,
+        "maxCount": 24
       },
       {
         "type": "minecraft:slime",
         "weight": 25,
-        "minCount": 2,
-        "maxCount": 4
+        "minCount": 20,
+        "maxCount": 24
       },
       {
         "type": "minecraft:enderman",
         "weight": 6,
-        "minCount": 1,
-        "maxCount": 2
+        "minCount": 10,
+        "maxCount": 20
       },
       {
         "type": "minecraft:witch",
         "weight": 3,
-        "minCount": 1,
-        "maxCount": 1
+        "minCount": 10,
+        "maxCount": 10
       },
       {
         "type": "minecraft:zombie_villager",
         "weight": 3,
-        "minCount": 1,
-        "maxCount": 1
+        "minCount": 10,
+        "maxCount": 10
       }
     ],
     "underground_water_creature": [
       {
         "type": "minecraft:glow_squid",
         "weight": 10,
-        "minCount": 4,
-        "maxCount": 6
+        "minCount": 24,
+        "maxCount": 24
       }
     ],
     "water_ambient": [],
