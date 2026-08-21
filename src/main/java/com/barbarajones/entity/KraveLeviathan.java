@@ -36,10 +36,15 @@ import net.minecraft.world.level.Level;
  */
 public class KraveLeviathan extends Entity {
 
-    private static final double ORBIT_MIN = 700.0D;
-    private static final double ORBIT_MAX = 1100.0D;
-    private static final double ALTITUDE_MIN = 150.0D;
-    private static final double ALTITUDE_MAX = 220.0D;
+    // Kept inside the entity's own clientTrackingRange (see ModEntities) -
+    // the first version orbited at 700-1100, comfortably past a normal
+    // player's actual position AND past the entity's own tracking range, so
+    // the server essentially never sent it to anyone. Nothing showing up
+    // was that bug, not bad luck.
+    private static final double ORBIT_MIN = 300.0D;
+    private static final double ORBIT_MAX = 480.0D;
+    private static final double ALTITUDE_MIN = 130.0D;
+    private static final double ALTITUDE_MAX = 190.0D;
     private static final double BOB_AMPLITUDE = 6.0D;
     private static final double ANGULAR_SPEED = 0.00035D;   // radians/tick - a slow, wide circuit
     private static final double BOB_SPEED = 0.006D;

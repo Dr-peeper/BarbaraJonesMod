@@ -78,7 +78,11 @@ public final class ModEntities {
                     // chunk tracking/entity culling more expensive for no
                     // benefit. KraveLeviathanRenderer scales the model itself
                     // up to den-size, the same trick KRAVE_MONSTER uses.
-                    .sized(2.0F, 2.0F).clientTrackingRange(160).updateInterval(1)
+                    // Must comfortably exceed KraveLeviathan's own orbit
+                    // radius (300-480) - a value smaller than the orbit
+                    // itself meant the server essentially never sent this
+                    // entity to anyone, which read as "it never spawns."
+                    .sized(2.0F, 2.0F).clientTrackingRange(320).updateInterval(1)
                     .build("krave_leviathan"));
 
     public static final RegistryObject<EntityType<Nugget>> NUGGET =

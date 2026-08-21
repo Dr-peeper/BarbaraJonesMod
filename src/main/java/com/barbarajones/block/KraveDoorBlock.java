@@ -230,6 +230,14 @@ public class KraveDoorBlock extends DoorBlock {
             return;
         }
         ensureBossExists(kosmos);
+        // Deliberately NOT called from inside ensureBossExists: that method
+        // returns immediately on any world where the boss already exists,
+        // which is every world past the very first Kosmos entry - a call
+        // placed at its tail never ran again after that, so the leviathans
+        // silently never spawned on any world that already had a boss.
+        // This has its own independent one-time flag and runs every entry
+        // regardless of the boss's own state.
+        ensureLeviathansExist(kosmos);
 
         GlobalPos external = GlobalPos.of(overworld.dimension(), doorLowerPos);
         KraveKosmosData data = KraveKosmosData.get(kosmos);
@@ -472,18 +480,19 @@ public class KraveDoorBlock extends DoorBlock {
         // had no target to latch onto yet - KraveHealingBox.resolveTarget()'s
         // KraveKosmosData fallback picks him up automatically on their next
         // heal tick now that setBossId() above has run, no extra wiring needed.
-
-        ensureLeviathansExist(kosmos, data);
     }
 
     /**
      * Three Krave Leviathans, spawned once, ever - same one-time-flag
-     * pattern as the boss, just its own independent flag. Each one picks
-     * its own random orbit (radius/altitude/phase/direction) in its own
-     * constructor, so no position needs to be worked out here at all;
-     * they correct onto their real flight path on their very first tick.
+     * pattern as the boss, just its own independent flag, and called from
+     * its own independent spot (see the comment where this is called from
+     * travelToKosmos) so it isn't hidden behind the boss's early return.
+     * Each one picks its own random orbit (radius/altitude/phase/direction)
+     * in its own constructor, so no position needs to be worked out here at
+     * all; they correct onto their real flight path on their very first tick.
      */
-    private void ensureLeviathansExist(ServerLevel kosmos, KraveKosmosData data) {
+    private void ensureLeviathansExist(ServerLevel kosmos) {
+        KraveKosmosData data = KraveKosmosData.get(kosmos);
         if (data.isLeviathansEverSpawned()) {
             return;
         }

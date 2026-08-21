@@ -41,6 +41,8 @@ public class KraveKosmosData extends SavedData {
     private boolean bossEverSpawned;
     private boolean bossEverDefeated;
     private boolean leviathansEverSpawned;
+    private boolean chocolateRaining;
+    private int chocolateWeatherTimer;
 
     private final Map<BlockPos, GlobalPos> kosmosToExternal = new HashMap<>();
     private final Map<GlobalPos, BlockPos> externalToKosmos = new HashMap<>();
@@ -97,6 +99,25 @@ public class KraveKosmosData extends SavedData {
         setDirty();
     }
 
+    /** Chocolate rain state, ticked by KraveChocolateWeather - same shape as vanilla's own rain/clear timer. */
+    public boolean isChocolateRaining() {
+        return this.chocolateRaining;
+    }
+
+    public void setChocolateRaining(boolean value) {
+        this.chocolateRaining = value;
+        setDirty();
+    }
+
+    public int getChocolateWeatherTimer() {
+        return this.chocolateWeatherTimer;
+    }
+
+    public void setChocolateWeatherTimer(int value) {
+        this.chocolateWeatherTimer = value;
+        setDirty();
+    }
+
     /** True once the Kosmos-resident boss (the one this class's own bossId names) has died at final form at least once. */
     public boolean isBossEverDefeated() {
         return this.bossEverDefeated;
@@ -139,6 +160,8 @@ public class KraveKosmosData extends SavedData {
         data.bossEverSpawned = tag.getBoolean("BossEverSpawned") || tag.hasUUID("BossId");
         data.bossEverDefeated = tag.getBoolean("BossEverDefeated");
         data.leviathansEverSpawned = tag.getBoolean("LeviathansEverSpawned");
+        data.chocolateRaining = tag.getBoolean("ChocolateRaining");
+        data.chocolateWeatherTimer = tag.getInt("ChocolateWeatherTimer");
 
         if (tag.contains("PortalLinks")) {
             ListTag links = tag.getList("PortalLinks", Tag.TAG_COMPOUND);
@@ -165,6 +188,8 @@ public class KraveKosmosData extends SavedData {
         tag.putBoolean("BossEverSpawned", this.bossEverSpawned);
         tag.putBoolean("BossEverDefeated", this.bossEverDefeated);
         tag.putBoolean("LeviathansEverSpawned", this.leviathansEverSpawned);
+        tag.putBoolean("ChocolateRaining", this.chocolateRaining);
+        tag.putInt("ChocolateWeatherTimer", this.chocolateWeatherTimer);
 
         ListTag links = new ListTag();
         for (Map.Entry<BlockPos, GlobalPos> e : this.kosmosToExternal.entrySet()) {

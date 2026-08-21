@@ -423,7 +423,7 @@ public final class QuestExpansion {
                 pre(Quests.COOK_KRAVE),
                 ModItems.KRAVE_BLOCK_ITEM, ModItems.KRAVE_DOOR_ITEM);
         goal(KOSMOS_ARRIVAL, B_KOSMOS, "Krave Kosmos",
-                "Walk into the finished room and shut the door behind you. Purple sky, floating "
+                "Walk into the finished room and shut the door behind you. Blood-red sky, floating "
                         + "islands, an ocean of liquid chocolate. Bring blocks. Bring a lot of blocks. "
                         + "There is no tether, no backup, no second door. Remember exactly where "
                         + "yours is - it is the only way home you get.",
