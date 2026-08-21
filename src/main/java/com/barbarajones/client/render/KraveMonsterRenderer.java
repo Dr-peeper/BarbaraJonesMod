@@ -20,8 +20,26 @@ import net.minecraft.world.phys.Vec3;
  */
 public class KraveMonsterRenderer extends MobRenderer<KraveMonster, KraveMonsterModel> {
 
-    private static final ResourceLocation TEXTURE =
-            new ResourceLocation(BarbaraJonesMod.MODID, "textures/entity/krave_monster.png");
+    /**
+     * One skin per form, because a recolour of a single texture reads as a tint
+     * rather than a transformation. Each is its own palette and its own surface:
+     * toasted cereal, cracked chocolate, a burning core, a crawling swarm, wet
+     * marbled milk, splitting crimson, and finally void black veined with gold.
+     *
+     * <p>Indexed by form minus one and clamped, so a form outside the table
+     * falls back to the nearest real skin instead of rendering as missing-texture
+     * black and purple.
+     */
+    private static final ResourceLocation[] FORM_TEXTURES = {
+        tex(1), tex(2), tex(3), tex(4), tex(5), tex(6), tex(7)
+    };
+
+    private static ResourceLocation tex(int form) {
+        return new ResourceLocation("barbarajones", "textures/entity/krave_monster_" + form + ".png");
+    }
+
+    /** The old single skin, still used by the glow overlay pass below. */
+    private static final ResourceLocation TEXTURE = tex(1);
 
     /**
      * The model's paw geometry (KraveMonsterModel: hips.y + thigh/shin/foot
@@ -125,7 +143,7 @@ public class KraveMonsterRenderer extends MobRenderer<KraveMonster, KraveMonster
                 Mth.lerp(partial, e.yo, e.getY()),
                 Mth.lerp(partial, e.zo, e.getZ()));
 
-        var buffer = buffers.getBuffer(RenderType.entityTranslucent(TEXTURE));
+        var buffer = buffers.getBuffer(RenderType.entityTranslucent(getTextureLocation(e)));
         for (int i = 0; i < count; i++) {
             int idx = (e.ghostHead - 1 - i + KraveMonster.GHOSTS * 2) % KraveMonster.GHOSTS;
             Vec3 g = e.ghostPos[idx];
@@ -150,6 +168,7 @@ public class KraveMonsterRenderer extends MobRenderer<KraveMonster, KraveMonster
 
     @Override
     public ResourceLocation getTextureLocation(KraveMonster entity) {
-        return TEXTURE;
+        int i = Mth.clamp(entity.getForm() - 1, 0, FORM_TEXTURES.length - 1);
+        return FORM_TEXTURES[i];
     }
 }

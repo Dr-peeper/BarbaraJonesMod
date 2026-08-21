@@ -39,6 +39,29 @@ public final class KraveAttacks {
 
     private KraveAttacks() { }
 
+    // ---- reading the attack ------------------------------------------------
+
+    /** Form one's collision width, the baseline every radius was tuned against. */
+    private static final double BASE_WIDTH = 4.2D;
+
+    /**
+     * How much bigger he is than the form the numbers were written for.
+     *
+     * <p>Every radius in the movesets was picked against a monster about four
+     * blocks wide. By the Krave God he is eleven wide and twenty-two tall, so a
+     * ring at radius four was being drawn INSIDE him and a shockwave finished
+     * before it cleared his own feet. That is the whole reason the attacks were
+     * invisible - not that they were subtle, but that they were happening under
+     * the model.
+     */
+    public static double sizeFactor(KraveMonster boss) {
+        return Math.max(1.0D, boss.getBbWidth() / BASE_WIDTH);
+    }
+
+    /** A tuned radius, grown to match whatever size he currently is. */
+    public static double reach(KraveMonster boss, double base) {
+        return base * sizeFactor(boss);
+    }
     // ---- targeting ---------------------------------------------------------
 
     /**
@@ -79,17 +102,27 @@ public final class KraveAttacks {
     /** A ring of particles on the ground - the readable footprint of an attack. */
     public static void ring(ServerLevel level, Vec3 centre, double radius,
                             ParticleOptions type, int points) {
-        for (int i = 0; i < points; i++) {
-            double a = (i / (double) points) * Math.PI * 2.0D;
+        // Density scales with circumference. A fixed point count draws a solid
+        // ring at radius two and a dotted line of six specks at radius twenty,
+        // which is exactly backwards - the big attacks are the ones that need
+        // to read.
+        int drawn = Math.max(points, (int) Math.ceil(radius * 6.0D));
+        for (int i = 0; i < drawn; i++) {
+            double a = (i / (double) drawn) * Math.PI * 2.0D;
+            // Lifted a little: at ground level most of it is swallowed by the
+            // floor mesh and by his own feet.
             level.sendParticles(type,
-                    centre.x + Math.cos(a) * radius, centre.y + 0.2D, centre.z + Math.sin(a) * radius,
-                    1, 0.0D, 0.0D, 0.0D, 0.0D);
+                    centre.x + Math.cos(a) * radius, centre.y + 0.9D, centre.z + Math.sin(a) * radius,
+                    2, 0.08D, 0.25D, 0.08D, 0.01D);
         }
     }
 
     /** Damage plus knockback away from a point. The shape of every slam and burst. */
     public static void blast(ServerLevel level, KraveMonster boss, LivingEntity target,
-                             Vec3 centre, double radius, float damage, double knock) {
+                             Vec3 centre, double baseRadius, float damage, double knock) {
+        // Grown to his current size, so a sweep that clears a four-block monster
+        // still clears an eleven-block one instead of landing inside him.
+        double radius = reach(boss, baseRadius);
         for (LivingEntity victim : victims(level, boss, centre, radius, target)) {
             victim.hurt(victim.damageSources().mobAttack(boss), damage);
             Vec3 away = victim.position().subtract(centre).normalize();
@@ -100,12 +133,17 @@ public final class KraveAttacks {
 
     /** An expanding shockwave, drawn and applied over several ticks. */
     public static void shockwave(ServerLevel level, KraveMonster boss, LivingEntity target,
-                                 Vec3 centre, double maxRadius, float damage, int rings) {
+                                 Vec3 centre, double baseRadius, float damage, int rings) {
+        double maxRadius = reach(boss, baseRadius);
+        // Drawn over time rather than all at once. Every ring appearing on the
+        // same tick is one flash you can miss by blinking; expanding outward is
+        // what makes it read as a wave travelling toward you.
         for (int r = 1; r <= rings; r++) {
-            double radius = maxRadius * (r / (double) rings);
-            ring(level, centre, radius, ParticleTypes.CRIT, 16 + r * 6);
+            final double radius = maxRadius * (r / (double) rings);
+            com.barbarajones.behavior.DelayedEffects.scheduleWorld(level, r * 3, () ->
+                    ring(level, centre, radius, ParticleTypes.CRIT, 20));
         }
-        blast(level, boss, target, centre, maxRadius, damage, 0.55D);
+        blast(level, boss, target, centre, baseRadius, damage, 0.55D);
     }
 
     /**

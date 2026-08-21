@@ -451,7 +451,16 @@ public class KraveMonster extends Monster {
         // this method only ever touched raw attributes, so the fight could
         // escalate all the way to Ultra Instinct-tier numbers while he stayed
         // rendered as whatever form he spawned in.
-        if (newTier) {
+        // Only ever UPWARD, and never past where the gauntlet already has him.
+        //
+        // This was a flat setForm(tier), which was fine back when his form was
+        // simply a mirror of Cayden's tier. It is not any more - the gauntlet
+        // drives forms through deaths now, and the two systems fought each
+        // other. Cayden at Ultra Instinct is tier 6, so a Monster revived at
+        // form 7 was knocked straight back down to 6 on the very next tick,
+        // which killed him again, revived him at 7 again, and looped forever.
+        // That is the "he keeps respawning at Overload" bug.
+        if (newTier && tier > getForm()) {
             setForm(tier);
         }
 
