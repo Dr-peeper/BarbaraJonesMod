@@ -24,6 +24,13 @@ minecraft {
             workingDirectory project.file('run')
             property 'forge.logging.markers', ''
             property 'forge.logging.console.level', 'debug'
+            // Its own heap. build.ps1 exports JAVA_TOOL_OPTIONS=-Xmx768m to cap
+            // the reobfuscation child process, and every JVM started afterwards
+            // reads that too - including this one, where 768m is not enough to
+            // generate a world and the server dies partway through startup with
+            // an error that says nothing about heap size. An explicit -Xmx here
+            // is applied after it and wins.
+            jvmArgs '-Xmx1536M'
             mods { barbarajones { source sourceSets.main } }
         }
     }
