@@ -93,14 +93,15 @@ public final class KraveWood {
     public static final FenceGateBlock FENCE_GATE =
             new FenceGateBlock(BlockBehaviour.Properties.copy(PLANKS), WoodType.OAK);
 
-    // No plain wood DOOR here on purpose - the mod already has exactly one
-    // door (ModBlocks.KRAVE_DOOR, the Kosmos portal door), now craftable
-    // from krave_planks. A second, purely decorative wood door was
-    // confusing (two visually-similar "Krave Door"s, only one of which
-    // actually did anything) and this class had no way to make the plain
-    // one look any different anyway - see KraveDoorBlock's own new
-    // chocolate-bar texture. Same intrusive-holder rule as the leaves
-    // field note above: this field simply doesn't exist now, rather than
+    // Still no plain wood DOOR in THIS tree family on purpose - a door built
+    // from krave_planks would sit right next to the actual Krave Door
+    // (ModBlocks.KRAVE_DOOR, the Kosmos portal, also craftable from
+    // krave_planks) and read as the same block. The mod does now have a
+    // second, genuinely plain door - ModBlocks.CHOCOLATE_DOOR, built off
+    // chocolate_planks with its own distinct recolor - specifically so it
+    // never sits next to krave_planks-family blocks and gets confused for
+    // this tree's own missing one. Same intrusive-holder rule as the leaves
+    // field note above: this field simply doesn't exist here, rather than
     // being constructed and left unregistered.
 
     public static final TrapDoorBlock TRAPDOOR = new TrapDoorBlock(BlockBehaviour.Properties.copy(PLANKS)

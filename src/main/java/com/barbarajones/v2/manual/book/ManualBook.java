@@ -480,6 +480,18 @@ public final class ManualBook {
                 regBlock(ModBlocks.KRAVE_BLOCK_WALL, "Chocolate Wall"), 6, "SHAPED"));
 
         e.add(brk());
+        e.add(sub("KRAVE TUFF, KRAVE COBBLESTONE & THE CHOCOLATE DOOR"));
+        e.add(p("Two more chocolate stone tones, lighter than Chocolate Block, for anything that "
+                + "wants two-tone masonry instead of one flat material - and a genuinely plain "
+                + "door, unlike the Krave Door, this one does not lead anywhere. None of the "
+                + "three have a crafting recipe - find them built into the Krave Monster's den."));
+        e.add(gal(regBlock(ModBlocks.KRAVE_TUFF, "Krave Tuff"),
+                regBlock(ModBlocks.KRAVE_TUFF_WALL, "Krave Tuff Wall"),
+                regBlock(ModBlocks.KRAVE_COBBLESTONE, "Krave Cobblestone"),
+                regBlock(ModBlocks.KRAVE_COBBLESTONE_WALL, "Krave Cobblestone Wall"),
+                regBlock(ModBlocks.CHOCOLATE_DOOR, "Chocolate Door")));
+
+        e.add(brk());
         e.add(sub("KRAVE TOOLS (CURSED, ON PURPOSE)"));
         e.add(p("All five tools: Krave Cereal in the ordinary tool shape, 180 uses, iron "
                 + "mining level, +4 damage, and a speed of 14 - faster than diamond. That is "
@@ -1078,10 +1090,12 @@ public final class ManualBook {
                         + "Super Saiyan the instant he arrives, whether or not that costs him "
                         + "anything (arrival is one of the free-ascension triggers from the Cayden "
                         + "chapter).",
-                "The Krave Monster's den generates once, ever, near the dimension's centre: a "
-                        + "guaranteed-solid platform ringed with pillars, with hidden healing boxes "
-                        + "protecting him. It is never rebuilt after that first time, so anything "
-                        + "you change nearby stays changed."
+                "The Krave Monster's den generates once, ever, near the dimension's centre: an "
+                        + "entire castle in Chocolate Block, Krave Tuff and Krave Cobblestone, "
+                        + "standing on a guaranteed-solid platform, with an elite healing box "
+                        + "hidden at the heart of its open courtyard - that's where he actually "
+                        + "fights you. It is never rebuilt after that first time, so anything you "
+                        + "change nearby, inside or out, stays changed."
         ));
 
         e.add(brk());

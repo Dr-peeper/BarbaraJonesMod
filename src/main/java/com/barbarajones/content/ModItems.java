@@ -235,6 +235,16 @@ public final class ModItems {
             ITEMS.register("krave_block_slab", () -> new BlockItem(ModBlocks.KRAVE_BLOCK_SLAB.get(), props()));
     public static final RegistryObject<Item> KRAVE_BLOCK_WALL_ITEM =
             ITEMS.register("krave_block_wall", () -> new BlockItem(ModBlocks.KRAVE_BLOCK_WALL.get(), props()));
+    public static final RegistryObject<Item> KRAVE_TUFF_ITEM =
+            ITEMS.register("krave_tuff", () -> new BlockItem(ModBlocks.KRAVE_TUFF.get(), props()));
+    public static final RegistryObject<Item> KRAVE_TUFF_WALL_ITEM =
+            ITEMS.register("krave_tuff_wall", () -> new BlockItem(ModBlocks.KRAVE_TUFF_WALL.get(), props()));
+    public static final RegistryObject<Item> KRAVE_COBBLESTONE_ITEM =
+            ITEMS.register("krave_cobblestone", () -> new BlockItem(ModBlocks.KRAVE_COBBLESTONE.get(), props()));
+    public static final RegistryObject<Item> KRAVE_COBBLESTONE_WALL_ITEM =
+            ITEMS.register("krave_cobblestone_wall", () -> new BlockItem(ModBlocks.KRAVE_COBBLESTONE_WALL.get(), props()));
+    public static final RegistryObject<Item> CHOCOLATE_DOOR_ITEM =
+            ITEMS.register("chocolate_door", () -> new BlockItem(ModBlocks.CHOCOLATE_DOOR.get(), props()));
     public static final RegistryObject<Item> KRAVE_GRASS_ITEM =
             ITEMS.register("krave_grass", () -> new BlockItem(ModBlocks.KRAVE_GRASS.get(), props()));
     public static final RegistryObject<Item> KRAVE_DIRT_ITEM =

@@ -6,34 +6,62 @@ import com.barbarajones.entity.KraveHealingBox;
 import com.barbarajones.entity.KraveMonster;
 
 import net.minecraft.core.BlockPos;
+import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.level.block.state.BlockState;
+import net.minecraft.world.level.levelgen.structure.templatesystem.StructurePlaceSettings;
+import net.minecraft.world.level.levelgen.structure.templatesystem.StructureTemplate;
+import net.minecraft.world.level.levelgen.structure.templatesystem.StructureTemplateManager;
+
+import java.util.Optional;
 
 /**
  * Builds Krave Monster's den: a guaranteed-solid platform - carved
  * independently of the surrounding procedural terrain, since this is a fixed
- * one-time structure tied to a fixed coordinate (the dimension origin) - plus
- * a ring of pillars, and spawns the hidden healing boxes that protect him.
+ * one-time structure tied to a fixed coordinate (the dimension origin) -
+ * with an imported castle (see {@code data/barbarajones/structures/krave_den.nbt})
+ * placed on top of it, and the hidden healing boxes that protect him.
  * Called exactly once, alongside the boss's own one-time spawn.
+ *
+ * <p>The castle came from a fan-built fortress schematic, converted to a
+ * vanilla structure NBT and remapped block-for-block onto krave materials
+ * (stone bricks/tuff/cobblestone -> the three Chocolate/Krave stone tones,
+ * spruce -> Krave Planks/Stairs/Slab/Trapdoor/Log, spruce doors -> the new
+ * plain Chocolate Door). Oak elements and small accessories (torches,
+ * barrels, ladders, banners, candles, cobwebs) were left vanilla - no krave
+ * equivalent exists or was wanted for those. See tools/make_krave_castle_textures.ps1
+ * for the two new stone recolors and the door texture.
+ *
+ * <p>The castle's own courtyard has no floor of its own (the source build
+ * stood it on natural ground, which the import deliberately excluded along
+ * with every grass/dirt block) - {@link #BOSS_LOCAL_X}/{@link #BOSS_LOCAL_Z}
+ * is a vertical shaft straight through the whole structure with nothing in
+ * it, found by the conversion script specifically so the platform below and
+ * the boss standing on it are never blocked by castle geometry.
  */
 public final class KraveDenBuilder {
 
-    private static final int RADIUS = 10;
-    private static final int PILLAR_HEIGHT = 6;
+    private static final ResourceLocation CASTLE_ID = new ResourceLocation("barbarajones", "krave_den");
+
+    /** Wide enough to sit comfortably under the castle's full ~30x31 footprint. */
+    private static final int RADIUS = 18;
+
+    /** Local (x,z) of the courtyard's open shaft inside krave_den.nbt - see the class doc. */
+    private static final int BOSS_LOCAL_X = 14;
+    private static final int BOSS_LOCAL_Z = 15;
 
     private KraveDenBuilder() { }
 
     public static void buildDen(ServerLevel kosmos, BlockPos center) {
         BlockState grass = ModBlocks.KRAVE_GRASS.get().defaultBlockState();
         BlockState dirt = ModBlocks.KRAVE_DIRT.get().defaultBlockState();
-        BlockState frame = ModBlocks.KRAVE_BLOCK.get().defaultBlockState();
         BlockState air = Blocks.AIR.defaultBlockState();
 
-        // Solid circular platform, independent of the surrounding procedural
-        // terrain - carve air above it and fill ground below, so the den (and
-        // the boss standing on it) never depends on the noise function
-        // happening to line up here.
+        // Solid platform under the whole castle footprint, independent of
+        // the surrounding procedural terrain - carve air above it and fill
+        // ground below, so the den (and the boss standing in its courtyard)
+        // never depends on the noise function happening to line up here.
         for (int dx = -RADIUS; dx <= RADIUS; dx++) {
             for (int dz = -RADIUS; dz <= RADIUS; dz++) {
                 if (Math.sqrt(dx * dx + dz * dz) > RADIUS) {
@@ -44,40 +72,47 @@ public final class KraveDenBuilder {
                 for (int down = 1; down <= 3; down++) {
                     kosmos.setBlock(base.below(down), dirt, 2);
                 }
-                // Cleared well past his tallest form. He is up to eighteen
-                // blocks of collision box at form six, and six blocks of
-                // headroom would bury his head in whatever the Kosmos generated
-                // overhead - a boss suffocating in his own arena.
-                for (int up = 1; up <= 22; up++) {
+                for (int up = 1; up <= 16; up++) {
                     kosmos.setBlock(base.above(up), air, 2);
                 }
             }
         }
 
-        // Four pillars ringing the boss at the platform's edge.
-        int[][] pillarOffsets = { {RADIUS - 1, 0}, {-(RADIUS - 1), 0}, {0, RADIUS - 1}, {0, -(RADIUS - 1)} };
-        for (int[] off : pillarOffsets) {
-            BlockPos base = center.offset(off[0], 1, off[1]);
-            for (int y = 0; y < PILLAR_HEIGHT; y++) {
-                kosmos.setBlock(base.above(y), frame, 2);
-            }
-        }
+        placeCastle(kosmos, center);
 
-        // A modest, deterministic rubble scatter - not randomized, so it's
-        // guaranteed not to float or clip through the platform.
-        for (int dx = -RADIUS + 2; dx <= RADIUS - 2; dx += 3) {
-            for (int dz = -RADIUS + 2; dz <= RADIUS - 2; dz += 4) {
-                if ((dx + dz) % 2 != 0) {
-                    continue;
-                }
-                BlockPos base = center.offset(dx, 1, dz);
-                if (kosmos.getBlockState(base).isAir()) {
-                    kosmos.setBlock(base, frame, 2);
+        // The castle's own roofline caps out around 14 blocks up - clear
+        // real sky above just the courtyard shaft the rest of the way, so
+        // the boss's tallest forms (up to eighteen blocks of collision box
+        // at form seven) have somewhere to actually stand without
+        // suffocating in his own den.
+        for (int r = -2; r <= 2; r++) {
+            for (int r2 = -2; r2 <= 2; r2++) {
+                BlockPos col = center.offset(r, 0, r2);
+                for (int up = 15; up <= 30; up++) {
+                    kosmos.setBlock(col.above(up), air, 2);
                 }
             }
         }
 
         spawnGuardianBox(kosmos, center);
+    }
+
+    /**
+     * Places the imported castle so its open courtyard shaft lands exactly
+     * on {@code center}, resting on the platform built just above.
+     */
+    private static void placeCastle(ServerLevel kosmos, BlockPos center) {
+        StructureTemplateManager manager = kosmos.getStructureManager();
+        Optional<StructureTemplate> template = manager.get(CASTLE_ID);
+        if (template.isEmpty()) {
+            return;   // missing/corrupt structure file - leave the bare platform rather than crash
+        }
+
+        BlockPos origin = center.offset(-BOSS_LOCAL_X, 1, -BOSS_LOCAL_Z);
+        StructurePlaceSettings settings = new StructurePlaceSettings()
+                .setIgnoreEntities(true)
+                .setKeepLiquids(false);
+        template.get().placeInWorld(kosmos, origin, origin, settings, kosmos.getRandom(), 2);
     }
 
     /**

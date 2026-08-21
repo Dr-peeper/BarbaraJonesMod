@@ -6,6 +6,7 @@ import com.barbarajones.block.KraveDoorBlock;
 import com.barbarajones.block.KraveGrassBlock;
 
 import net.minecraft.world.level.block.Block;
+import net.minecraft.world.level.block.DoorBlock;
 import net.minecraft.world.level.block.LiquidBlock;
 import net.minecraft.world.level.block.SlabBlock;
 import net.minecraft.world.level.block.SoundType;
@@ -63,6 +64,38 @@ public final class ModBlocks {
             () -> new SlabBlock(BlockBehaviour.Properties.copy(KRAVE_BLOCK.get())));
     public static final RegistryObject<Block> KRAVE_BLOCK_WALL = BLOCKS.register("krave_block_wall",
             () -> new WallBlock(BlockBehaviour.Properties.copy(KRAVE_BLOCK.get())));
+
+    // The castle's other two stone tones (tuff, cobblestone), recolored the
+    // same way krave_block was - same stone-brick-tier hardness, no tool
+    // tier gate, so the imported fortress keeps its two-tone masonry look
+    // instead of flattening into one material.
+    public static final RegistryObject<Block> KRAVE_TUFF = BLOCKS.register("krave_tuff",
+            () -> new Block(BlockBehaviour.Properties.of()
+                    .mapColor(MapColor.COLOR_BROWN)
+                    .strength(1.5F, 6.0F)
+                    .sound(SoundType.BASALT)
+                    .requiresCorrectToolForDrops()));
+    public static final RegistryObject<Block> KRAVE_TUFF_WALL = BLOCKS.register("krave_tuff_wall",
+            () -> new WallBlock(BlockBehaviour.Properties.copy(KRAVE_TUFF.get())));
+    public static final RegistryObject<Block> KRAVE_COBBLESTONE = BLOCKS.register("krave_cobblestone",
+            () -> new Block(BlockBehaviour.Properties.of()
+                    .mapColor(MapColor.COLOR_BROWN)
+                    .strength(2.0F, 6.0F)
+                    .sound(SoundType.BASALT)
+                    .requiresCorrectToolForDrops()));
+    public static final RegistryObject<Block> KRAVE_COBBLESTONE_WALL = BLOCKS.register("krave_cobblestone_wall",
+            () -> new WallBlock(BlockBehaviour.Properties.copy(KRAVE_COBBLESTONE.get())));
+
+    // A genuinely plain, decorative door - unlike krave_door, this one does
+    // not trigger the Kosmos portal. Deliberately a different recolor
+    // (spruce, not the door's own chocolate-bar art) so the two never look
+    // like the same block at a glance.
+    public static final RegistryObject<Block> CHOCOLATE_DOOR = BLOCKS.register("chocolate_door",
+            () -> new DoorBlock(BlockBehaviour.Properties.of()
+                    .mapColor(MapColor.COLOR_BROWN)
+                    .strength(3.0F)
+                    .sound(SoundType.WOOD)
+                    .noOcclusion(), BlockSetType.OAK));
 
     public static final RegistryObject<Block> KRAVE_DOOR = BLOCKS.register("krave_door",
             () -> new KraveDoorBlock(BlockBehaviour.Properties.of()

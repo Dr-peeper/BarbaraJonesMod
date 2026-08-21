@@ -1,0 +1,1 @@
+{ "parent": "minecraft:block/door_bottom_right", "textures": { "bottom": "barbarajones:block/chocolate_door_bottom", "top": "barbarajones:block/chocolate_door_top" } }
