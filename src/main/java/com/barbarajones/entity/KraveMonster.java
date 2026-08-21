@@ -112,7 +112,7 @@ public class KraveMonster extends Monster {
     // Six incarnations now, one per rung of Cayden's ladder (SSJ through
     // Ultra Instinct - see KRAVE_FORM_DEMAND in CaydenCobb) instead of four,
     // so nothing between SSJ2 and GOD gets skipped over.
-    public static final int FINAL_FORM = 6;
+    public static final int FINAL_FORM = 7;
 
     private int matchedTier;
     private int duelBlink;
@@ -143,20 +143,22 @@ public class KraveMonster extends Monster {
         refreshDimensions();
 
         double health = switch (f) {
-            case 6 -> 4200.0D;   // Ultra Instinct's answer: nightmare-scale
-            case 5 -> 3000.0D;   // Blue
-            case 4 -> 1900.0D;   // God
-            case 3 -> 1100.0D;   // SSJ3
-            case 2 -> 500.0D;    // SSJ2
-            default -> 200.0D;   // SSJ1
+            case 7 -> 9000.0D;   // THE KRAVE GOD
+            case 6 -> 4200.0D;   // Overload
+            case 5 -> 3000.0D;   // Milk abomination
+            case 4 -> 1900.0D;   // Swarm
+            case 3 -> 1100.0D;   // Double chocolate
+            case 2 -> 500.0D;    // Chocolate-filled
+            default -> 200.0D;   // Awakening
         };
         double attack = switch (f) {
+            case 7 -> 62.0D;
             case 6 -> 46.0D;
             case 5 -> 36.0D;
             case 4 -> 28.0D;
             case 3 -> 19.0D;
-            case 2 -> 12.0D;
-            default -> 6.0D;
+            case 2 -> 13.0D;
+            default -> 8.0D;
         };
         double speed = switch (f) {
             case 6 -> 0.82D;
@@ -264,7 +266,8 @@ public class KraveMonster extends Monster {
     /** The name shown on the boss bar, so the escalation is legible. */
     public net.minecraft.network.chat.Component formTitle() {
         String suffix = switch (getForm()) {
-            case 6 -> " - ULTRA FORM";
+            case 7 -> " - THE KRAVE GOD";
+            case 6 -> " - OVERLOAD";
             case 5 -> " - BLUE FORM";
             case 4 -> " - GOD FORM";
             case 3 -> " - THIRD FORM";
@@ -289,6 +292,9 @@ public class KraveMonster extends Monster {
         this.goalSelector.addGoal(0, new FloatGoal(this));
         this.goalSelector.addGoal(0, new RivalDuelGoal(this));
         this.goalSelector.addGoal(1, new MeleeAttackGoal(this, 0.5D, true));
+        // The full moveset. Above the plain melee and beam goals, which stay as
+        // the between-attacks filler rather than being what he does.
+        this.goalSelector.addGoal(0, new com.barbarajones.boss.krave.KraveMovesetGoal(this));
         this.goalSelector.addGoal(1, new MouthBeamGoal(this));
         this.goalSelector.addGoal(2, new WaterAvoidingRandomStrollGoal(this, 0.9D));
         this.goalSelector.addGoal(7, new LookAtPlayerGoal(this, Player.class, 12.0F));
@@ -788,8 +794,8 @@ public class KraveMonster extends Monster {
      * than you collide is standard for bosses - the Ender Dragon is the obvious
      * precedent - and it keeps him hittable without making him a wrecking ball.
      */
-    private static final float[] FORM_WIDTH  = { 4.2F, 5.0F, 5.8F, 6.8F, 7.8F,  9.0F };
-    private static final float[] FORM_HEIGHT = { 9.0F, 10.5F, 12.0F, 14.0F, 16.0F, 18.0F };
+    private static final float[] FORM_WIDTH  = { 4.2F, 5.0F, 5.8F, 6.8F, 7.8F,  9.0F, 11.0F };
+    private static final float[] FORM_HEIGHT = { 9.0F, 10.5F, 12.0F, 14.0F, 16.0F, 18.0F, 22.0F };
 
     @Override
     public net.minecraft.world.entity.EntityDimensions getDimensions(

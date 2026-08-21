@@ -28,6 +28,11 @@ public final class DelayedEffects {
 
     private record Pending(ServerPlayer player, Consumer<ServerPlayer> action, long dueAt) { }
 
+    /** A delayed action with no player attached - boss attacks, mostly. */
+    private record PendingWorld(Runnable action, long dueAt) { }
+
+    private static final List<PendingWorld> WORLD_QUEUE = new ArrayList<>();
+
     private static final List<Pending> QUEUE = new ArrayList<>();
     private static long tick;
 
@@ -38,12 +43,40 @@ public final class DelayedEffects {
         QUEUE.add(new Pending(player, action, tick + delayTicks));
     }
 
+    /**
+     * Run something after a delay with no player involved.
+     *
+     * <p>Telegraphed boss attacks need this: the warning ring is drawn now and
+     * the hit lands later, and the gap between them is the entire fairness of
+     * the attack. The level is taken to prove a caller is on the server, not
+     * because the queue needs it.
+     */
+    public static void scheduleWorld(net.minecraft.server.level.ServerLevel level,
+                                     int delayTicks, Runnable action) {
+        WORLD_QUEUE.add(new PendingWorld(action, tick + delayTicks));
+    }
+
     @SubscribeEvent
     public static void onTick(TickEvent.ServerTickEvent event) {
         if (event.phase != TickEvent.Phase.END) {
             return;
         }
         tick++;
+
+        if (!WORLD_QUEUE.isEmpty()) {
+            for (PendingWorld p : new ArrayList<>(WORLD_QUEUE)) {
+                if (tick < p.dueAt()) {
+                    continue;
+                }
+                WORLD_QUEUE.remove(p);
+                try {
+                    p.action().run();
+                } catch (Exception ignored) {
+                    // A boss attack must never be the reason a tick dies.
+                }
+            }
+        }
+
         if (QUEUE.isEmpty()) {
             return;
         }

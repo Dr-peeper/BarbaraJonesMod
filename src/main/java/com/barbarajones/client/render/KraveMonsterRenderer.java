@@ -53,7 +53,8 @@ public class KraveMonsterRenderer extends MobRenderer<KraveMonster, KraveMonster
      * terrain around. A boss that READS bigger than it collides is the normal
      * answer to that, and the Ender Dragon does exactly the same thing.
      */
-    private static final float[] FORM_SCALE = { 5.8F, 7.0F, 8.4F, 10.0F, 11.8F, 14.0F };
+    private static final float[] FORM_SCALE =
+            { 5.8F, 7.0F, 8.4F, 10.0F, 11.8F, 14.0F, 18.0F };
 
     @Override
     protected void scale(KraveMonster entity, PoseStack pose, float partialTicks) {

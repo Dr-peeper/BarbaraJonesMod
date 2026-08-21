@@ -1165,7 +1165,11 @@ public class CaydenCobb extends TamableAnimal {
      */
     private static final int[] KRAVE_FORM_DEMAND = {
         AscensionLadder.SSJ, AscensionLadder.SSJ2, AscensionLadder.SSJ3,
-        AscensionLadder.GOD, AscensionLadder.BLUE, AscensionLadder.ULTRA
+        AscensionLadder.GOD, AscensionLadder.BLUE, AscensionLadder.ULTRA,
+        // Form seven has no rung above Ultra to ask for. He meets the Krave God
+        // with everything he has and it is still not obviously enough, which is
+        // the intended shape of a final form.
+        AscensionLadder.ULTRA
     };
 
     /**
