@@ -3,7 +3,7 @@ plugins {
     id 'net.minecraftforge.gradle' version '[6.0,6.2)'
 }
 
-version = '2.11.1'
+version = '2.11.2'
 group = 'com.barbarajones'
 base { archivesName = 'BarbaraJonesMod' }
 

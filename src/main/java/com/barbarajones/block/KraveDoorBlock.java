@@ -112,16 +112,15 @@ public class KraveDoorBlock extends DoorBlock {
             }
         };
 
-        if (returningHome) {
-            // No pause coming home - the door is already shut behind you by
-            // the time you can even trigger this, so there's nothing left to
-            // wait on. The pause below is specifically for arriving: it's
-            // what makes the door read as actually closing before the world
-            // swaps, and that beat doesn't buy anything on the way back.
-            travel.run();
-        } else {
-            KraveDoorScheduler.schedule(DOOR_CLOSE_DELAY_TICKS, travel);
-        }
+        // Returning home skips straight to 1 tick - imperceptible, but still
+        // deferred a tick past the block-use call that's still on the stack
+        // right now (super.use() just toggled this exact door's blockstate
+        // moments ago) rather than calling changeDimension() synchronously
+        // from inside that same interaction. The 8-tick pause below is
+        // specifically for arriving - what makes the door read as actually
+        // closing before the world swaps - and that beat doesn't buy
+        // anything on the way back, so it's skipped, not just shortened.
+        KraveDoorScheduler.schedule(returningHome ? 1 : DOOR_CLOSE_DELAY_TICKS, travel);
     }
 
     // ---- room geometry: validate + locate --------------------------------
@@ -410,23 +409,35 @@ public class KraveDoorBlock extends DoorBlock {
      */
     private BlockPos buildKosmosRoomCopy(ServerLevel kosmos) {
         var random = java.util.concurrent.ThreadLocalRandom.current();
-        for (int attempt = 0; attempt < 8; attempt++) {
+        for (int attempt = 0; attempt < 20; attempt++) {
             double angle = random.nextDouble() * Math.PI * 2.0D;
             double distance = 200.0D + random.nextDouble() * 300.0D;
             Vec3 center = KraveDimensions.BOSS_ISLAND.add(Math.cos(angle) * distance, 0.0D, Math.sin(angle) * distance);
 
-            Vec3 spot = KraveLanding.findClearLanding(kosmos, center, 12, 3, 2, 5)
-                    .or(() -> KraveLanding.findLanding(kosmos, center, 6))
+            Vec3 spot = KraveLanding.findClearLanding(kosmos, center, 16, 3, 3, 4)
+                    .or(() -> KraveLanding.findLanding(kosmos, center, 10))
                     .orElse(null);
-            if (spot == null) {
-                continue;
+            if (spot != null) {
+                return finishKosmosRoom(kosmos, spot);
             }
-            BlockPos doorLowerPos = BlockPos.containing(spot.x, spot.y, spot.z);
-            placeRoomShell(kosmos, doorLowerPos, AUTO_ROOM_INTO);
-            ensureLandingBoxesExist(kosmos, spot);
-            return doorLowerPos;
         }
-        return null;
+        // Genuinely rough terrain out at a random 200-500 block point can
+        // fail every strict attempt above (this dimension's own mountain
+        // worldgen is uneven enough that "flat within 3 blocks" isn't
+        // guaranteed anywhere off the authored islands) - rather than the
+        // player's door close silently doing nothing, fall back to right
+        // beside the boss island itself, which KraveDenBuilder guarantees is
+        // real, flat, built ground.
+        Vec3 fallbackCenter = KraveDimensions.BOSS_ISLAND.add(60.0D, 0.0D, 60.0D);
+        Vec3 spot = KraveLanding.findLanding(kosmos, fallbackCenter, 10).orElse(fallbackCenter);
+        return finishKosmosRoom(kosmos, spot);
+    }
+
+    private BlockPos finishKosmosRoom(ServerLevel kosmos, Vec3 spot) {
+        BlockPos doorLowerPos = BlockPos.containing(spot.x, spot.y, spot.z);
+        placeRoomShell(kosmos, doorLowerPos, AUTO_ROOM_INTO);
+        ensureLandingBoxesExist(kosmos, spot);
+        return doorLowerPos;
     }
 
     /**
