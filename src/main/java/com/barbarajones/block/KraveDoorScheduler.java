@@ -33,12 +33,29 @@ final class KraveDoorScheduler {
         if (event.phase != TickEvent.Phase.END || TASKS.isEmpty()) {
             return;
         }
+        // Two passes on purpose: a task's own action can itself call
+        // schedule() (a travel task's teleportInto() does exactly this, to
+        // queue a straggler's catch-up) - running actions while still
+        // iterating TASKS meant that re-entrant add() threw
+        // ConcurrentModificationException. Collecting the ready ones first
+        // and only running them once the TASKS iterator is done avoids that:
+        // whatever a task schedules lands safely after this tick's iteration
+        // has already finished.
+        List<Runnable> ready = null;
         var it = TASKS.iterator();
         while (it.hasNext()) {
             Task task = it.next();
             if (--task.ticksRemaining <= 0) {
                 it.remove();
-                task.action.run();
+                if (ready == null) {
+                    ready = new ArrayList<>();
+                }
+                ready.add(task.action);
+            }
+        }
+        if (ready != null) {
+            for (Runnable action : ready) {
+                action.run();
             }
         }
     }
