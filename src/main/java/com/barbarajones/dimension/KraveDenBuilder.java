@@ -1,5 +1,6 @@
 package com.barbarajones.dimension;
 
+import com.barbarajones.content.ModBlocks;
 import com.barbarajones.content.ModEntities;
 import com.barbarajones.entity.KraveHealingBox;
 import com.barbarajones.entity.KraveMonster;
@@ -14,13 +15,14 @@ import net.minecraft.world.level.levelgen.structure.templatesystem.StructureTemp
 import net.minecraft.world.level.levelgen.structure.templatesystem.StructureTemplateManager;
 
 import java.util.Optional;
+import java.util.concurrent.ThreadLocalRandom;
 
 /**
- * Builds Krave Monster's den: an imported castle (see
- * {@code data/barbarajones/structures/krave_den.nbt}) placed directly onto
- * the Kosmos's own terrain at the dimension's centre, plus the hidden
- * healing box that protects him. Called exactly once, alongside the boss's
- * own one-time spawn.
+ * Builds Krave Monster's den: a real floating island of Krave Dirt/Grass,
+ * chocolate dripping off its underside, with an imported castle (see
+ * {@code data/barbarajones/structures/krave_den.nbt}) sunk one block into
+ * its top and a hidden healing box guarding him. Called exactly once,
+ * alongside the boss's own one-time spawn.
  *
  * <p>The castle came from a fan-built fortress schematic, converted to a
  * vanilla structure NBT and remapped block-for-block onto krave materials
@@ -31,10 +33,14 @@ import java.util.Optional;
  * equivalent exists or was wanted for those. See tools/make_krave_castle_textures.ps1
  * for the two new stone recolors and the door texture.
  *
- * <p>No platform gets built under it any more - an earlier version carved
- * a guaranteed-solid pad first, but that meant tracking the castle's exact
- * footprint just to avoid leaving unfloored gaps at its corners. Placed one
- * block lower instead, straight onto whatever the Kosmos generated there.
+ * <p>The island exists specifically so the castle has real, natural-looking
+ * ground under it instead of floating with nothing below - two earlier
+ * versions tried a flat platform (missed the castle's corners) and no
+ * ground at all (visibly floating). This one is sized well past the
+ * castle's own footprint and tapers to a rounded underside with chocolate
+ * pouring off it, the same "place the whole visible cascade directly, don't
+ * rely on fluid propagation timing" approach {@link com.barbarajones.worldgen.feature.KraveWaterfallFeature}
+ * already uses elsewhere in this dimension.
  *
  * <p>The castle's own courtyard has no floor of its own (the source build
  * stood it on natural ground, which the import deliberately excluded along
@@ -51,22 +57,28 @@ public final class KraveDenBuilder {
     private static final int BOSS_LOCAL_X = 14;
     private static final int BOSS_LOCAL_Z = 15;
 
+    /** Comfortably past the castle's own ~15-16 block half-footprint, so the whole thing sits on real ground. */
+    private static final int ISLAND_RADIUS = 24;
+    private static final int ISLAND_MAX_DEPTH = 22;
+    private static final int DRIP_COUNT = 6;
+    private static final int DRIP_LENGTH = 26;
+
     private KraveDenBuilder() { }
 
     public static void buildDen(ServerLevel kosmos, BlockPos center) {
-        BlockState air = Blocks.AIR.defaultBlockState();
-
+        buildIsland(kosmos, center);
         placeCastle(kosmos, center);
 
-        // The castle's own roofline caps out around 13 blocks up from where
-        // it's placed - clear real sky above just the courtyard shaft the
+        // The castle's own roofline caps out around 13 blocks above where it
+        // was sunk in - clear real sky above just the courtyard shaft the
         // rest of the way, so the boss's tallest forms (up to eighteen
         // blocks of collision box at form seven) have somewhere to actually
         // stand without suffocating in his own den.
+        BlockState air = Blocks.AIR.defaultBlockState();
         for (int r = -2; r <= 2; r++) {
             for (int r2 = -2; r2 <= 2; r2++) {
                 BlockPos col = center.offset(r, 0, r2);
-                for (int up = 14; up <= 29; up++) {
+                for (int up = 13; up <= 28; up++) {
                     kosmos.setBlock(col.above(up), air, 2);
                 }
             }
@@ -76,10 +88,77 @@ public final class KraveDenBuilder {
     }
 
     /**
+     * A rounded island of Krave Grass/Dirt, deepest under the center and
+     * tapering toward a rounded point at the rim - not a cylinder, so it
+     * actually reads as a natural floating island rather than a plug of
+     * dirt. {@code center}'s own Y is the island's top surface.
+     */
+    private static void buildIsland(ServerLevel kosmos, BlockPos center) {
+        BlockState grass = ModBlocks.KRAVE_GRASS.get().defaultBlockState();
+        BlockState dirt = ModBlocks.KRAVE_DIRT.get().defaultBlockState();
+        BlockState air = Blocks.AIR.defaultBlockState();
+        var random = ThreadLocalRandom.current();
+
+        for (int dx = -ISLAND_RADIUS; dx <= ISLAND_RADIUS; dx++) {
+            for (int dz = -ISLAND_RADIUS; dz <= ISLAND_RADIUS; dz++) {
+                double dist = Math.sqrt(dx * dx + dz * dz);
+                if (dist > ISLAND_RADIUS) {
+                    continue;
+                }
+                double t = 1.0D - dist / ISLAND_RADIUS;   // 1 at the center, 0 at the rim
+                int depth = 4 + (int) Math.round(t * t * ISLAND_MAX_DEPTH) + random.nextInt(3);
+
+                BlockPos top = center.offset(dx, 0, dz);
+                kosmos.setBlock(top, grass, 2);
+                for (int y = 1; y < depth; y++) {
+                    kosmos.setBlock(top.below(y), dirt, 2);
+                }
+                for (int up = 1; up <= 3; up++) {
+                    kosmos.setBlock(top.above(up), air, 2);
+                }
+            }
+        }
+
+        buildChocolateDrips(kosmos, center);
+    }
+
+    /**
+     * A handful of chocolate streams poured straight down from points around
+     * the island's underside - placed as a whole visible column of source
+     * blocks rather than a single spring left to vanilla fluid physics,
+     * same lesson {@link com.barbarajones.worldgen.feature.KraveWaterfallFeature}
+     * documents: a single source block and hope does not reliably read as a
+     * waterfall on a freshly generated chunk.
+     */
+    private static void buildChocolateDrips(ServerLevel kosmos, BlockPos center) {
+        BlockState chocolate = ModBlocks.CHOCOLATE_BLOCK.get().defaultBlockState();
+        var random = ThreadLocalRandom.current();
+
+        for (int i = 0; i < DRIP_COUNT; i++) {
+            double angle = (Math.PI * 2.0D / DRIP_COUNT) * i + random.nextDouble(-0.4D, 0.4D);
+            double r = ISLAND_RADIUS * (0.6D + random.nextDouble(0.0D, 0.3D));
+            int dx = (int) Math.round(Math.cos(angle) * r);
+            int dz = (int) Math.round(Math.sin(angle) * r);
+
+            int bottomY = center.getY();
+            while (!kosmos.getBlockState(new BlockPos(center.getX() + dx, bottomY - 1, center.getZ() + dz)).isAir()
+                    && center.getY() - bottomY < ISLAND_MAX_DEPTH + 5) {
+                bottomY--;
+            }
+
+            BlockPos drip = new BlockPos(center.getX() + dx, bottomY, center.getZ() + dz);
+            kosmos.setBlock(drip, chocolate, 3);
+            for (int down = 1; down <= DRIP_LENGTH; down++) {
+                kosmos.setBlock(drip.below(down), chocolate, 3);
+            }
+        }
+    }
+
+    /**
      * Places the imported castle so its open courtyard shaft lands exactly
-     * on {@code center}, one block lower than the shaft itself so the
-     * castle's own bottom layer sits flush with the Kosmos's own ground
-     * instead of floating above it.
+     * on {@code center}, one block INTO the island's top surface (rather
+     * than resting flush on it) so the ground visibly meets the walls
+     * instead of the castle looking dropped onto the terrain.
      */
     private static void placeCastle(ServerLevel kosmos, BlockPos center) {
         StructureTemplateManager manager = kosmos.getStructureManager();
@@ -88,7 +167,7 @@ public final class KraveDenBuilder {
             return;   // missing/corrupt structure file - nothing to place
         }
 
-        BlockPos origin = center.offset(-BOSS_LOCAL_X, 0, -BOSS_LOCAL_Z);
+        BlockPos origin = center.offset(-BOSS_LOCAL_X, -1, -BOSS_LOCAL_Z);
         StructurePlaceSettings settings = new StructurePlaceSettings()
                 .setIgnoreEntities(true)
                 .setKeepLiquids(false);

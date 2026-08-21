@@ -1090,11 +1090,13 @@ public final class ManualBook {
                         + "Super Saiyan the instant he arrives, whether or not that costs him "
                         + "anything (arrival is one of the free-ascension triggers from the Cayden "
                         + "chapter).",
-                "The Krave Monster's den generates once, ever, near the dimension's centre: an "
-                        + "entire castle in Chocolate Block, Krave Tuff and Krave Cobblestone, "
-                        + "with an elite healing box hidden at the heart of its open courtyard - "
-                        + "that's where he actually fights you. It is never rebuilt after that "
-                        + "first time, so anything you change nearby, inside or out, stays changed."
+                "The Krave Monster's den generates once, ever, near the dimension's centre: a "
+                        + "whole floating island of Krave Dirt with chocolate pouring off its "
+                        + "underside, an entire castle in Chocolate Block, Krave Tuff and Krave "
+                        + "Cobblestone sunk into the top of it, and an elite healing box hidden at "
+                        + "the heart of its open courtyard - that's where he actually fights you. "
+                        + "It is never rebuilt after that first time, so anything you change "
+                        + "nearby, inside or out, stays changed."
         ));
 
         e.add(brk());
