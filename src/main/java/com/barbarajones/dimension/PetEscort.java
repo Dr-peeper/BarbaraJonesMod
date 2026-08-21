@@ -33,17 +33,22 @@ public final class PetEscort {
 
     /** Snapshot the companions that should travel with this player. */
     public static List<Entity> gather(ServerPlayer player) {
+        return gatherWithin(player, RADIUS);
+    }
+
+    /** Same as {@link #gather}, but with a caller-chosen radius instead of the default 24 blocks. */
+    public static List<Entity> gatherWithin(ServerPlayer player, double radius) {
         List<Entity> out = new ArrayList<>();
         ServerLevel from = player.serverLevel();
 
         for (CaydenCobb cayden : from.getEntitiesOfClass(CaydenCobb.class,
-                player.getBoundingBox().inflate(RADIUS))) {
+                player.getBoundingBox().inflate(radius))) {
             if (cayden.isAlive() && cayden.isTame() && cayden.getOwner() == player) {
                 out.add(cayden);
             }
         }
         for (BarbaraJones barbara : from.getEntitiesOfClass(BarbaraJones.class,
-                player.getBoundingBox().inflate(RADIUS))) {
+                player.getBoundingBox().inflate(radius))) {
             if (barbara.isAlive() && barbara.isPet() && barbara.getPetOwner() == player) {
                 out.add(barbara);
             }

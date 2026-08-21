@@ -2,25 +2,23 @@ package com.barbarajones.block;
 
 import com.barbarajones.content.ModBlocks;
 import com.barbarajones.content.ModEntities;
+import com.barbarajones.content.ModSounds;
 import com.barbarajones.dimension.KraveDimensions;
 import com.barbarajones.dimension.KraveKosmosData;
 import com.barbarajones.dimension.KraveLanding;
+import com.barbarajones.entity.CaydenCobb;
 import com.barbarajones.entity.KraveHealingBox;
 import com.barbarajones.entity.KraveMonster;
 
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
-import net.minecraft.core.registries.Registries;
+import net.minecraft.core.GlobalPos;
 import net.minecraft.nbt.CompoundTag;
-import net.minecraft.resources.ResourceKey;
-import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.sounds.SoundSource;
 import net.minecraft.world.InteractionHand;
 import net.minecraft.world.InteractionResult;
-import net.minecraft.world.effect.MobEffectInstance;
-import net.minecraft.world.effect.MobEffects;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.level.Level;
@@ -40,22 +38,34 @@ import java.util.ArrayList;
 import java.util.List;
 
 /**
- * The Krave Kosmos portal: a 3-wide x 3-tall frame of {@link ModBlocks#KRAVE_BLOCK},
- * bottom-middle two cells replaced by this door. Until a complete frame
- * surrounds it, it is just a door - opens, closes, shows the room behind it,
- * same as any other. Once the chocolate threshold is complete, it stops
- * being a physical door at all: "opening" it plays the door-open sound and
- * immediately travels the player instead of ever swinging open. It never
- * shows what's on the other side, on either end of the trip - that's
- * deliberate, not a missing animation. Bidirectional like a Nether portal:
- * from anywhere else, a complete frame sends you into the Kosmos and builds
- * a matching frame+door right behind where you land; from inside the
- * Kosmos, a complete frame sends you back to wherever you stepped in from.
- * No consumable item required either direction - the door you arrive next
- * to IS the way back, not a Krave Tether (that item still exists for quest/
- * loot reasons elsewhere in the mod, it's just no longer load-bearing here).
+ * The Krave Kosmos portal: an enclosed 3-wide x 3-deep x 3-tall chocolate
+ * room with this door set into one wall. It is an entirely ordinary door in
+ * every way that matters visually - opens, closes, plays the normal sound,
+ * shows the room behind it - right up until the specific moment it gets
+ * CLOSED with a player standing inside a complete room. That close is the
+ * trigger, not the open: walk in, shut the door behind you, and you (and
+ * anything riding with you) are moved into an identical room built on the
+ * other side, the Kosmos if you started outside it or back home if you
+ * started inside it. Opening the door on the far side afterward is just...
+ * opening a door - by the time you can do that, you're already through.
+ *
+ * <p>Each physical door/room the player builds gets its own permanent,
+ * independent partner room in the Kosmos, created the first time it's used
+ * and remembered from then on ({@link KraveKosmosData}'s portal-link map) -
+ * closing the same door later always returns to the same partner, never a
+ * fresh one.
  */
 public class KraveDoorBlock extends DoorBlock {
+
+    /** The fixed orientation every auto-built room copy uses, Kosmos-side or overworld-side - arbitrary, just has to be consistent with itself. */
+    private static final Direction AUTO_ROOM_INTO = Direction.NORTH;
+
+    /** Pause between the door actually closing and the trip firing, so the close animation/sound have a moment to land first. */
+    private static final int DOOR_CLOSE_DELAY_TICKS = 15;
+    /** How long a companion who didn't make it through with the player gets to catch up before being forced along. */
+    private static final int STRAGGLER_DELAY_TICKS = 140;
+    /** How close a companion has to actually be, at the moment the door shuts, to count as "ran in with you." */
+    private static final double COMPANION_MUST_BE_CLOSE_RADIUS = 3.0D;
 
     public KraveDoorBlock(BlockBehaviour.Properties props, BlockSetType setType) {
         super(props, setType);
@@ -65,74 +75,85 @@ public class KraveDoorBlock extends DoorBlock {
     public InteractionResult use(BlockState state, Level level, BlockPos pos, Player player,
                                  InteractionHand hand, BlockHitResult hit) {
         BlockPos lowerPos = state.getValue(HALF) == DoubleBlockHalf.LOWER ? pos : pos.below();
-        BlockState lowerState = level.getBlockState(lowerPos);
+        boolean wasOpen = level.getBlockState(lowerPos).getValue(OPEN);
 
-        if (!isFrameComplete(level, lowerPos, lowerState)) {
-            // No threshold yet - an ordinary door, vanilla behavior untouched.
-            return super.use(state, level, pos, player, hand, hit);
-        }
+        InteractionResult result = super.use(state, level, pos, player, hand, hit);
 
-        // Threshold complete: never call super.use() here, so OPEN never
-        // flips and the door never visually swings - only the sound plays,
-        // then the player travels directly.
-        if (!level.isClientSide && player instanceof ServerPlayer serverPlayer) {
-            level.playSound(null, lowerPos, type().doorOpen(), SoundSource.BLOCKS,
-                    1.0F, level.random.nextFloat() * 0.1F + 0.9F);
-            if (level.dimension().equals(KraveDimensions.KRAVE_KOSMOS)) {
-                returnHome(serverPlayer);
-            } else {
-                enterKosmos(serverPlayer);
+        if (wasOpen && !level.isClientSide && level instanceof ServerLevel serverLevel
+                && player instanceof ServerPlayer serverPlayer) {
+            BlockState lowerState = level.getBlockState(lowerPos);
+            if (!lowerState.getValue(OPEN)) {
+                // super.use() just closed it - this is the trigger moment.
+                tryTravel(serverLevel, lowerPos, lowerState.getValue(FACING), serverPlayer);
             }
         }
-        return InteractionResult.sidedSuccess(level.isClientSide);
+        return result;
     }
 
-    /**
-     * The Kosmos side keeps the old flat 3x3 frame - it has to, since that's
-     * all {@link #buildReturnPortal} ever puts down. The overworld side now
-     * needs a real enclosed chocolate room around the door, not just a
-     * frame someone could build in open air with nothing behind it.
-     */
-    private boolean isFrameComplete(Level level, BlockPos lowerPos, BlockState lowerState) {
-        Direction facing = lowerState.getValue(FACING);
-        if (level.dimension().equals(KraveDimensions.KRAVE_KOSMOS)) {
-            return isFlatFrameComplete(level, lowerPos, facing);
+    private void tryTravel(ServerLevel level, BlockPos lowerPos, Direction facing, ServerPlayer player) {
+        Direction into = validRoomDirection(level, lowerPos, facing);
+        if (into == null || !playerInInterior(player, lowerPos, into)) {
+            return;
         }
-        return isChocolateRoomComplete(level, lowerPos, facing);
+        // A short pause before the trip actually fires - triggering it the
+        // instant the door shuts (the same tick, same method call) never
+        // gave the close animation or its sound any time to actually land
+        // before the world swapped out from under the player.
+        KraveDoorScheduler.schedule(DOOR_CLOSE_DELAY_TICKS, () -> {
+            if (!player.isAlive() || player.level() != level) {
+                return;
+            }
+            BlockState recheck = level.getBlockState(lowerPos);
+            if (!(recheck.getBlock() instanceof KraveDoorBlock) || recheck.getValue(OPEN)) {
+                return;   // reopened, broken, replaced - something changed in the meantime, don't force it
+            }
+            if (level.dimension().equals(KraveDimensions.KRAVE_KOSMOS)) {
+                travelFromKosmos(level, lowerPos, player);
+            } else {
+                travelToKosmos(level, lowerPos, into, player);
+            }
+        });
     }
 
-    private boolean isFlatFrameComplete(Level level, BlockPos lowerPos, Direction facing) {
-        Direction side = facing.getClockWise();
-
-        BlockPos left = lowerPos.relative(side.getOpposite());
-        BlockPos right = lowerPos.relative(side);
-
-        return isKraveBlock(level, lowerPos.above(2))
-                && isKraveBlock(level, left) && isKraveBlock(level, left.above()) && isKraveBlock(level, left.above(2))
-                && isKraveBlock(level, right) && isKraveBlock(level, right.above()) && isKraveBlock(level, right.above(2));
-    }
+    // ---- room geometry: validate + locate --------------------------------
 
     /**
      * A fully enclosed 3-wide x 3-deep x 3-tall chocolate room, door set into
      * the middle of one wall - floor and roof included, only the one column
      * directly behind the door left hollow to actually stand in. Tried on
      * both sides of the door plane, since a player building this has no way
-     * to know which way {@code FACING} happens to point.
+     * to know which way {@code FACING} happens to point; returns whichever
+     * direction the room actually extends in, or null if neither works.
      */
-    private boolean isChocolateRoomComplete(Level level, BlockPos lowerPos, Direction doorFacing) {
-        return isRoomExtending(level, lowerPos, doorFacing)
-                || isRoomExtending(level, lowerPos, doorFacing.getOpposite());
+    private Direction validRoomDirection(Level level, BlockPos lowerPos, Direction doorFacing) {
+        if (isRoomComplete(level, lowerPos, doorFacing)) {
+            return doorFacing;
+        }
+        Direction opposite = doorFacing.getOpposite();
+        return isRoomComplete(level, lowerPos, opposite) ? opposite : null;
     }
 
-    private boolean isRoomExtending(Level level, BlockPos lowerPos, Direction into) {
+    private boolean isRoomComplete(Level level, BlockPos lowerPos, Direction into) {
         Direction side = into.getClockWise();
         for (int depth = 0; depth <= 2; depth++) {
             for (int across = -1; across <= 1; across++) {
-                for (int row = -1; row <= 3; row++) {
+                // 4 rows total, floor to roof: -1 (floor), 0-1 (door height,
+                // 2 tall), 2 (roof, sitting directly on the door/interior -
+                // no separate lintel row buffering it).
+                for (int row = -1; row <= 2; row++) {
+                    // Everywhere else in the shell sits under a wall column
+                    // that's often buried anyway - only the two cells someone
+                    // actually stands or walks on (under the door, under the
+                    // interior) need to visibly be chocolate block. The rest
+                    // of the floor is unchecked, whatever the terrain already
+                    // has there.
+                    if (row == -1 && !(across == 0 && depth <= 1)) {
+                        continue;
+                    }
                     BlockPos cell = lowerPos.relative(into, depth).relative(side, across).above(row);
-                    boolean isFloorOrRoof = row == -1 || row == 3;
-                    boolean isDoorCell = !isFloorOrRoof && depth == 0 && across == 0 && row <= 1;
-                    boolean isInterior = !isFloorOrRoof && !isDoorCell && depth == 1 && across == 0;
+                    boolean isRoof = row == 2;
+                    boolean isDoorCell = row != -1 && !isRoof && depth == 0 && across == 0;
+                    boolean isInterior = row != -1 && !isRoof && !isDoorCell && depth == 1 && across == 0;
 
                     if (isDoorCell) {
                         if (!level.getBlockState(cell).is(ModBlocks.KRAVE_DOOR.get())) {
@@ -140,7 +161,7 @@ public class KraveDoorBlock extends DoorBlock {
                         }
                     } else if (isInterior) {
                         if (level.getBlockState(cell).blocksMotion()) {
-                            return false;   // has to actually be a room, not a solid block that happens to pass the shell check
+                            return false;
                         }
                     } else if (!isKraveBlock(level, cell)) {
                         return false;
@@ -155,143 +176,233 @@ public class KraveDoorBlock extends DoorBlock {
         return level.getBlockState(pos).is(ModBlocks.KRAVE_BLOCK.get());
     }
 
-    private void enterKosmos(ServerPlayer player) {
-        ServerLevel dest = player.getServer().getLevel(KraveDimensions.KRAVE_KOSMOS);
-        if (dest == null) {
+    /** The one interior cell (the column directly behind the door) is 1 wide, 1 deep, 2 tall - the player's feet must be in it. */
+    private boolean playerInInterior(Player player, BlockPos lowerPos, Direction into) {
+        BlockPos interior = lowerPos.relative(into);
+        BlockPos feet = player.blockPosition();
+        return feet.getX() == interior.getX() && feet.getZ() == interior.getZ()
+                && feet.getY() >= interior.getY() && feet.getY() <= interior.getY() + 1;
+    }
+
+    /** Places the exact shape {@link #isRoomComplete} validates - the door and the interior column are left for the caller. */
+    private void placeRoomShell(ServerLevel level, BlockPos lowerPos, Direction into) {
+        Direction side = into.getClockWise();
+        BlockState kraveBlock = ModBlocks.KRAVE_BLOCK.get().defaultBlockState();
+        for (int depth = 0; depth <= 2; depth++) {
+            for (int across = -1; across <= 1; across++) {
+                for (int row = -1; row <= 2; row++) {
+                    boolean isFloorOrRoof = row == -1 || row == 2;
+                    boolean isDoorCell = !isFloorOrRoof && depth == 0 && across == 0;
+                    boolean isInterior = !isFloorOrRoof && !isDoorCell && depth == 1 && across == 0;
+                    if (isDoorCell || isInterior) {
+                        continue;
+                    }
+                    BlockPos cell = lowerPos.relative(into, depth).relative(side, across).above(row);
+                    level.setBlock(cell, kraveBlock, 3);
+                }
+            }
+        }
+        for (int row = 0; row <= 1; row++) {
+            level.setBlock(lowerPos.relative(into).above(row), Blocks.AIR.defaultBlockState(), 3);
+        }
+        BlockState doorLower = ModBlocks.KRAVE_DOOR.get().defaultBlockState()
+                .setValue(FACING, into)
+                .setValue(HINGE, DoorHingeSide.LEFT)
+                .setValue(OPEN, Boolean.FALSE)
+                .setValue(POWERED, Boolean.FALSE)
+                .setValue(HALF, DoubleBlockHalf.LOWER);
+        level.setBlock(lowerPos, doorLower, 3);
+        level.setBlock(lowerPos.above(), doorLower.setValue(HALF, DoubleBlockHalf.UPPER), 3);
+    }
+
+    // ---- travel -------------------------------------------------------------
+
+    private void travelToKosmos(ServerLevel overworld, BlockPos doorLowerPos, Direction into, ServerPlayer player) {
+        ServerLevel kosmos = player.getServer().getLevel(KraveDimensions.KRAVE_KOSMOS);
+        if (kosmos == null) {
             return;
         }
-        ensureBossExists(dest);
+        ensureBossExists(kosmos);
 
-        // Remember where (and in which dimension) the player stepped in, so
-        // opening the door we're about to build sends them straight back.
+        GlobalPos external = GlobalPos.of(overworld.dimension(), doorLowerPos);
+        KraveKosmosData data = KraveKosmosData.get(kosmos);
+        BlockPos kosmosDoorPos = data.kosmosDoorFor(external);
+        if (kosmosDoorPos == null) {
+            kosmosDoorPos = buildKosmosRoomCopy(kosmos);
+            if (kosmosDoorPos == null) {
+                return;   // couldn't find anywhere to put it - leave the player where they are rather than half-teleport them
+            }
+            data.link(external, kosmosDoorPos);
+        }
+
+        // Still writes the old per-player return spot too - KraveTetherItem
+        // reads it independently of this door's own portal-link system, and
+        // stays fully functional as long as this keeps being set on arrival.
         CompoundTag persist = persisted(player);
-        persist.putString("KraveReturnDim", player.level().dimension().location().toString());
+        persist.putString("KraveReturnDim", overworld.dimension().location().toString());
         persist.putDouble("KraveReturnX", player.getX());
         persist.putDouble("KraveReturnY", player.getY());
         persist.putDouble("KraveReturnZ", player.getZ());
 
-        // radius 3 (covers the return portal's full reach: 2 blocks behind the
-        // landing spot, plus 1 either side for the frame), height variance 2
-        // (tolerates gentle unevenness, rejects a mountain peak/slope or a
-        // crevice floor), clearance 4 (room for the player plus the 3-tall
-        // frame above). Falls back to the plain search, then the fixed point,
-        // rather than ever leaving a player stuck mid-interaction.
-        Vec3 landing = KraveLanding.findClearLanding(dest, KraveDimensions.PORTAL_LANDING, 10, 3, 2, 4)
-                .or(() -> KraveLanding.findLanding(dest, KraveDimensions.PORTAL_LANDING, 6))
-                .orElse(KraveDimensions.PORTAL_LANDING);
-        ensureLandingBoxesExist(dest, landing);
-        buildReturnPortal(dest, landing, player.getYRot());
+        teleportInto(player, kosmos, kosmosDoorPos, AUTO_ROOM_INTO, true);
+    }
 
-        // Gather the companions BEFORE the player leaves - afterwards they are
-        // no longer "near the player" in any level we can search.
-        List<Entity> escort = com.barbarajones.dimension.PetEscort.gather(player);
+    private void travelFromKosmos(ServerLevel kosmos, BlockPos kosmosDoorPos, ServerPlayer player) {
+        KraveKosmosData data = KraveKosmosData.get(kosmos);
+        GlobalPos external = data.externalDoorFor(kosmosDoorPos);
+        ServerLevel dest;
+        BlockPos destDoorPos;
+
+        if (external == null) {
+            // A room with no link at all: a player built this one themselves,
+            // from scratch, inside the Kosmos - reverses the usual formula.
+            // Instead of connecting to an existing overworld door, spawn a
+            // brand new one somewhere random on the overworld surface and
+            // link the two, turning the Kosmos into a shortcut for reaching
+            // genuinely distant, unexplored territory.
+            ServerLevel overworld = player.getServer().getLevel(Level.OVERWORLD);
+            if (overworld == null) {
+                return;
+            }
+            BlockPos newDoorPos = buildRandomOverworldRoomCopy(overworld);
+            if (newDoorPos == null) {
+                return;   // couldn't find anywhere suitable after several tries - leave the player where they are
+            }
+            data.link(GlobalPos.of(overworld.dimension(), newDoorPos), kosmosDoorPos);
+            dest = overworld;
+            destDoorPos = newDoorPos;
+        } else {
+            dest = player.getServer().getLevel(external.dimension());
+            if (dest == null) {
+                return;
+            }
+            destDoorPos = external.pos();
+        }
+
+        BlockState doorState = dest.getBlockState(destDoorPos);
+        Direction into = doorState.getBlock() instanceof KraveDoorBlock
+                ? validRoomDirection(dest, destDoorPos, doorState.getValue(FACING))
+                : null;
+        if (into == null) {
+            return;   // the far room was torn down or altered since - nothing sane to teleport into
+        }
+
+        teleportInto(player, dest, destDoorPos, into, false);
+    }
+
+    /**
+     * Picks a random point 2000-6000 blocks out from the origin, in a random
+     * direction, and looks for flat, clear overworld surface near it - the
+     * same flatness/clearance check {@link #buildKosmosRoomCopy} uses for
+     * the Kosmos, just aimed somewhere genuinely far from wherever the
+     * player has already been rather than a fixed spot. Retries a handful of
+     * times with fresh random points before giving up, since a single roll
+     * can easily land in open ocean or a cliff face.
+     */
+    private BlockPos buildRandomOverworldRoomCopy(ServerLevel overworld) {
+        var random = java.util.concurrent.ThreadLocalRandom.current();
+        for (int attempt = 0; attempt < 8; attempt++) {
+            double angle = random.nextDouble() * Math.PI * 2.0D;
+            double distance = 2000.0D + random.nextDouble() * 4000.0D;
+            Vec3 center = new Vec3(Math.cos(angle) * distance, 64.0D, Math.sin(angle) * distance);
+
+            Vec3 spot = KraveLanding.findClearLanding(overworld, center, 16, 3, 3, 5)
+                    .or(() -> KraveLanding.findLanding(overworld, center, 10))
+                    .orElse(null);
+            if (spot == null) {
+                continue;
+            }
+            BlockPos doorLowerPos = BlockPos.containing(spot.x, spot.y, spot.z);
+            placeRoomShell(overworld, doorLowerPos, AUTO_ROOM_INTO);
+            return doorLowerPos;
+        }
+        return null;
+    }
+
+    private void teleportInto(ServerPlayer player, ServerLevel dest, BlockPos doorLowerPos,
+                              Direction into, boolean enteringKosmos) {
+        BlockPos interior = doorLowerPos.relative(into);
+        Vec3 target = new Vec3(interior.getX() + 0.5D, interior.getY(), interior.getZ() + 0.5D);
+        float yRot = into.getOpposite().toYRot();   // face back toward the door you just walked through
+
+        // Force-loads the arrival chunks server-side, before the client ever
+        // asks for them - the part of "loading terrain" that's actually
+        // within a mod's reach without deep client-side changes.
+        preloadChunks(dest, doorLowerPos);
+
+        // Only companions actually within a few blocks at the moment the
+        // door shut count as having "run in with you" and travel instantly.
+        // Anyone farther off gets a real grace period below instead of being
+        // yanked along regardless of distance, which never read as them
+        // running anywhere at all.
+        List<Entity> withPlayer = com.barbarajones.dimension.PetEscort.gatherWithin(player, COMPANION_MUST_BE_CLOSE_RADIUS);
+        List<Entity> stragglers = com.barbarajones.dimension.PetEscort.gather(player);
+        stragglers.removeIf(withPlayer::contains);
 
         player.changeDimension(dest, new ITeleporter() {
             @Override
             public PortalInfo getPortalInfo(Entity entity, ServerLevel destLevel,
                                             java.util.function.Function<ServerLevel, PortalInfo> defaultPortalInfo) {
-                return new PortalInfo(landing, Vec3.ZERO, entity.getYRot(), entity.getXRot());
+                return new PortalInfo(target, Vec3.ZERO, yRot, entity.getXRot());
             }
         });
-        // Defense-in-depth: if the bounded search above somehow failed (should
-        // be effectively unreachable given the guaranteed-landmass assumption
-        // near the dimension origin), Slow Falling still keeps a fallback
-        // fixed-point landing non-fatal instead of a hard crash-into-void.
         player.fallDistance = 0.0F;
-        player.addEffect(new MobEffectInstance(MobEffects.SLOW_FALLING, 400, 0));
 
-        // Cayden comes too. He is the reason to be here at all.
-        for (Entity arrived : com.barbarajones.dimension.PetEscort.deliver(escort, dest, landing)) {
-            if (arrived instanceof com.barbarajones.entity.CaydenCobb cayden) {
+        for (Entity arrived : com.barbarajones.dimension.PetEscort.deliver(withPlayer, dest, target)) {
+            if (enteringKosmos && arrived instanceof CaydenCobb cayden) {
                 cayden.onEnterKosmos();
             }
         }
+
+        for (Entity straggler : stragglers) {
+            KraveDoorScheduler.schedule(STRAGGLER_DELAY_TICKS, () -> {
+                if (straggler == null || !straggler.isAlive() || straggler.level() == dest) {
+                    return;   // already gone, or already got there some other way
+                }
+                List<Entity> late = com.barbarajones.dimension.PetEscort.deliver(List.of(straggler), dest, target);
+                if (late.isEmpty()) {
+                    return;
+                }
+                for (Entity arrived : late) {
+                    if (enteringKosmos && arrived instanceof CaydenCobb cayden) {
+                        cayden.onEnterKosmos();
+                    }
+                }
+                dest.playSound(null, doorLowerPos, ModSounds.KRAVE_ROAR.get(), SoundSource.NEUTRAL, 1.0F, 1.0F);
+            });
+        }
     }
 
-    /**
-     * Mirrors what KraveTetherItem does, minus consuming an item: read the
-     * player's persisted arrival point and step them back to it. Only
-     * reachable by opening a COMPLETE frame (see use() above), so it can't
-     * be triggered by a lone door someone dropped somewhere.
-     *
-     * <p>Goes through {@code changeDimension}/{@code ITeleporter}, the same
-     * mechanism {@link #enterKosmos} uses, rather than the simpler {@code
-     * Player#teleportTo(ServerLevel, ...)} this used to call - that more
-     * primitive path was cutting off the door-open sound queued a moment
-     * earlier in {@code use()}: it does a harder, more immediate level swap
-     * than the portal-teleporter path does, and apparently doesn't give the
-     * sound packet time to actually reach the client before the dimension
-     * changes out from under it. Entering never had this problem because it
-     * already went through {@code changeDimension}.
-     */
-    private void returnHome(ServerPlayer player) {
-        CompoundTag data = player.getPersistentData();
-        if (!data.contains(Player.PERSISTED_NBT_TAG)) {
-            return;
-        }
-        CompoundTag persist = data.getCompound(Player.PERSISTED_NBT_TAG);
-        if (!persist.contains("KraveReturnDim")) {
-            return;
-        }
-
-        ResourceKey<Level> returnDim = ResourceKey.create(Registries.DIMENSION,
-                new ResourceLocation(persist.getString("KraveReturnDim")));
-        ServerLevel dest = player.getServer().getLevel(returnDim);
-        if (dest == null) {
-            return;
-        }
-
-        double x = persist.getDouble("KraveReturnX");
-        double y = persist.getDouble("KraveReturnY");
-        double z = persist.getDouble("KraveReturnZ");
-        Vec3 target = new Vec3(x, y, z);
-        float yRot = player.getYRot();
-        float xRot = player.getXRot();
-
-        List<Entity> escort = com.barbarajones.dimension.PetEscort.gather(player);
-        player.changeDimension(dest, new ITeleporter() {
-            @Override
-            public PortalInfo getPortalInfo(Entity entity, ServerLevel destLevel,
-                                            java.util.function.Function<ServerLevel, PortalInfo> defaultPortalInfo) {
-                return new PortalInfo(target, Vec3.ZERO, yRot, xRot);
+    /** Loads (and generates, if needed) the 3x3 chunk block around the arrival point ahead of the player actually landing there. */
+    private void preloadChunks(ServerLevel level, BlockPos center) {
+        int cx = center.getX() >> 4;
+        int cz = center.getZ() >> 4;
+        for (int dx = -1; dx <= 1; dx++) {
+            for (int dz = -1; dz <= 1; dz++) {
+                level.getChunk(cx + dx, cz + dz);
             }
-        });
-        com.barbarajones.dimension.PetEscort.deliver(escort, dest, target);
+        }
     }
 
     /**
-     * A complete Krave Block frame + open-able Krave Door, built once right
-     * behind wherever the player is about to land - facing back toward the
-     * landing spot so turning around after arriving puts it in view. Reuses
-     * the exact same frame shape isFrameComplete() checks, so it's a real,
-     * independently valid portal the moment it's placed, not a decoration.
+     * Builds a fresh partner room somewhere clear in the Kosmos and hands
+     * back its door's lower position - the caller links it to whichever
+     * overworld door asked for it. Reuses the same mountain/crevice-avoiding
+     * search the old landing system used, since the requirements are
+     * identical: a flat, open pocket big enough for the room to actually fit
+     * without ending up half-buried.
      */
-    private void buildReturnPortal(ServerLevel dest, Vec3 landing, float playerYRot) {
-        Direction facing = Direction.fromYRot(playerYRot).getOpposite();
-        BlockPos landingPos = BlockPos.containing(landing.x, landing.y, landing.z);
-        BlockPos doorLower = landingPos.relative(facing.getOpposite(), 2);
-
-        BlockState frame = ModBlocks.KRAVE_BLOCK.get().defaultBlockState();
-        Direction side = facing.getClockWise();
-        BlockPos left = doorLower.relative(side.getOpposite());
-        BlockPos right = doorLower.relative(side);
-
-        dest.setBlock(doorLower, Blocks.AIR.defaultBlockState(), 3);
-        dest.setBlock(doorLower.above(), Blocks.AIR.defaultBlockState(), 3);
-        dest.setBlock(doorLower.above(2), frame, 3);
-        dest.setBlock(left, frame, 3);
-        dest.setBlock(left.above(), frame, 3);
-        dest.setBlock(left.above(2), frame, 3);
-        dest.setBlock(right, frame, 3);
-        dest.setBlock(right.above(), frame, 3);
-        dest.setBlock(right.above(2), frame, 3);
-
-        BlockState doorState = ModBlocks.KRAVE_DOOR.get().defaultBlockState()
-                .setValue(FACING, facing)
-                .setValue(HINGE, DoorHingeSide.LEFT)
-                .setValue(OPEN, Boolean.FALSE);
-        dest.setBlock(doorLower, doorState.setValue(HALF, DoubleBlockHalf.LOWER), 3);
-        dest.setBlock(doorLower.above(), doorState.setValue(HALF, DoubleBlockHalf.UPPER), 3);
+    private BlockPos buildKosmosRoomCopy(ServerLevel kosmos) {
+        Vec3 spot = KraveLanding.findClearLanding(kosmos, KraveDimensions.PORTAL_LANDING, 12, 3, 2, 5)
+                .or(() -> KraveLanding.findLanding(kosmos, KraveDimensions.PORTAL_LANDING, 6))
+                .orElse(null);
+        if (spot == null) {
+            return null;
+        }
+        BlockPos doorLowerPos = BlockPos.containing(spot.x, spot.y, spot.z);
+        placeRoomShell(kosmos, doorLowerPos, AUTO_ROOM_INTO);
+        ensureLandingBoxesExist(kosmos, spot);
+        return doorLowerPos;
     }
 
     /**
@@ -340,11 +451,9 @@ public class KraveDoorBlock extends DoorBlock {
     }
 
     /**
-     * The four ordinary healing boxes ring the landing island - the larger
-     * island players actually arrive on and explore - rather than the den,
-     * which now has just its one elite guardian (see KraveDenBuilder). Same
-     * one-time-authoring pattern as ensureBossExists: guarded by a flag in
-     * KraveKosmosData so re-entering the Kosmos never duplicates them.
+     * The four ordinary healing boxes ring the landing area - guarded by a
+     * flag in KraveKosmosData so they're only ever placed once ever, no
+     * matter how many separate portal rooms later get built.
      *
      * <p>Each spot uses {@link KraveLanding#findOpenLanding}, not the plain
      * search: it rejects candidates too close to a box already placed this

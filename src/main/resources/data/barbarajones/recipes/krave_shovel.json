@@ -1,6 +1,6 @@
 ﻿{
   "type": "minecraft:crafting_shaped",
   "pattern": [ " N ", " S ", " S " ],
-  "key": { "C": { "item": "barbarajones:krave_cereal" }, "S": { "item": "minecraft:stick" }, "N": { "item": "minecraft:netherite_ingot" } },
+  "key": { "S": { "item": "minecraft:stick" }, "N": { "item": "minecraft:netherite_ingot" } },
   "result": { "item": "barbarajones:krave_shovel", "count": 1 }
 }
