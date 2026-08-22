@@ -39,8 +39,15 @@ if (-not (Test-Path $gradle)) { throw "Gradle 8.1.1 missing under .tools\gradle"
 # and the next build happily treats that as its starting point and rewrites
 # only part of it again. Reobfuscation is not idempotent over its own output.
 # Deleting first means every jar is produced whole, in one run, or not at all.
-Remove-Item (Join-Path $root "buildlibs*.jar") -Force -ErrorAction SilentlyContinue
-Remove-Item (Join-Path $root "buildeobfJar") -Recurse -Force -ErrorAction SilentlyContinue
+#
+# The paths below lost their backslashes when this block was first written -
+# "buildlibs*.jar", and a literal carriage return inside "buildeobfJar" - so
+# for several builds it deleted nothing whatsoever. The protection read as
+# present while doing none of the work, which is exactly how the
+# half-reobfuscated jar reached the mods folder and crashed the game.
+# Single-quoted now, so nothing can eat them again.
+Remove-Item (Join-Path $root 'build\libs\*.jar') -Force -ErrorAction SilentlyContinue
+Remove-Item (Join-Path $root 'build\reobfJar') -Recurse -Force -ErrorAction SilentlyContinue
 
 & $gradle build --no-daemon --stacktrace
 if ($LASTEXITCODE -ne 0) { throw "Gradle build FAILED (exit $LASTEXITCODE) - do not ship this jar." }
