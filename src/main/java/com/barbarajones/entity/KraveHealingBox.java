@@ -43,6 +43,9 @@ public class KraveHealingBox extends Entity {
 
     private static final int HEAL_INTERVAL = 60;
     private static final float HEAL_AMOUNT = 6.0F;
+
+    /** Share of the target maximum health restored per pulse, when that is more. */
+    private static final float HEAL_FRACTION = 0.005F;
     private static final int MAX_SHIELD = 3;
     private static final int ELITE_MAX_SHIELD = 6;
     private static final int SHIELD_REGEN_TICKS = 100;
@@ -170,7 +173,14 @@ public class KraveHealingBox extends Entity {
             discard();
             return;
         }
-        target.heal(HEAL_AMOUNT);
+        // Proportional to the bar it is refilling, not a flat number.
+        //
+        // Six a pulse is a wall at form one, whose bar is nine hundred, and
+        // rounding error at form seven, whose bar is thirty-two thousand. The
+        // same box was the whole difficulty of the early fight and beneath
+        // notice in the late one. As a share of maximum health it asks the same
+        // question at every stage: deal with the boxes, or do not.
+        target.heal(Math.max(HEAL_AMOUNT, target.getMaxHealth() * HEAL_FRACTION));
         level().playSound(null, blockPosition(), ModSounds.KRAVE_LAUGH.get(), getSoundSource(), 0.6F, 1.4F);
     }
 

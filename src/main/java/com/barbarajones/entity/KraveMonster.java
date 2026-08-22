@@ -959,12 +959,19 @@ public class KraveMonster extends Monster {
     /**
      * How much of a hit lands during the scripted encounter.
      *
-     * <p>Tuned against an ascended Cayden, who is the only thing that can
-     * meaningfully hurt him and does so at a rate no health bar survives.
-     * Combined with the health increase this is roughly a fifteenfold rise in
-     * how long a form lives.
+     * <p>Was 0.2, which was tuned against Ultra Instinct - where Cayden puts
+     * out around a thousand damage a second - without checking what it did at
+     * the bottom of the ladder. At form one he is Super Saiyan 1 with an
+     * attack multiplier of four and barely any feeding behind it: about
+     * thirty-five damage a second, cut to seven. Four healing boxes restore
+     * eight. The first form was not hard, it was arithmetically impossible -
+     * he gained health faster than he could lose it, forever.
+     *
+     * <p>0.6 keeps every form a real fight at both ends of that range: roughly
+     * a minute at form one, and the top forms still last because their health
+     * bars grew rather than because his hits stopped counting.
      */
-    private static final float SCRIPTED_DAMAGE_SCALE = 0.2F;
+    private static final float SCRIPTED_DAMAGE_SCALE = 0.6F;
 
     @Override
     protected void dropCustomDeathLoot(DamageSource source, int looting, boolean recentlyHit) {

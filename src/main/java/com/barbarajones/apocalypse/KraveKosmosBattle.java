@@ -317,6 +317,13 @@ public final class KraveKosmosBattle {
         this.cayden.setTarget(null);
 
         announce(ChatFormatting.DARK_RED, "" + ChatFormatting.BOLD, "THE KRAVE MONSTER STIRS.");
+        // The player job, said out loud. This line existed in the old
+        // controller and was lost when it was rewritten - so the healing boxes
+        // went on refilling him with nothing anywhere telling anyone they were
+        // the reason, which reads as the boss being bugged rather than as a
+        // mechanic being ignored.
+        announce(ChatFormatting.GOLD, "",
+                "Destroy the Krave Boxes - they heal him. Clear the minions. Cayden has the rest.");
         this.level.playSound(null, this.boss.blockPosition(), ModSounds.KRAVE_ROAR.get(),
                 SoundSource.HOSTILE, 2.0F, 0.6F);
     }
