@@ -1071,8 +1071,9 @@ public final class ManualBook {
         e.add(sub("HOW THE TRIP ACTUALLY WORKS"));
         e.add(p("The trigger is CLOSING the door while you're standing inside the little room - "
                 + "not opening it. Walk in, shut the door behind you, and a short beat later "
-                + "(long enough to hear the door actually close) you and anything close enough "
-                + "beside you are moved into an identical room built on the other side."));
+                + "(long enough to hear the door actually close) everyone and everything actually "
+                + "inside the room with you - any other player, any mob, not just your own - is "
+                + "moved together into an identical room built on the other side."));
         e.add(bul(
                 "Every room you build gets its own permanent partner, created the first time "
                         + "that exact door is used and remembered forever after - closing the same "
@@ -1083,13 +1084,13 @@ public final class ManualBook {
                         + "reverses the formula: it generates a brand new partner room somewhere "
                         + "random and genuinely distant on the overworld surface instead, turning "
                         + "the Kosmos into a way to discover fresh, unexplored territory.",
-                "Cayden and Barbara travel with you automatically if they're right there beside "
-                        + "you when the door shuts. If they've fallen behind, they get several "
-                        + "seconds to catch up on their own before being forced through anyway, "
-                        + "announced with a roar so you know they made it - and Cayden ascends to "
-                        + "Super Saiyan the instant he arrives, whether or not that costs him "
-                        + "anything (arrival is one of the free-ascension triggers from the Cayden "
-                        + "chapter).",
+                "Cayden and Barbara travel with you automatically if they're anywhere reasonably "
+                        + "close when the door shuts, even outside the room itself. If they've "
+                        + "fallen further behind than that, they get several seconds to catch up on "
+                        + "their own before being forced through anyway, announced with a roar so "
+                        + "you know they made it - and Cayden ascends to Super Saiyan the instant he "
+                        + "arrives, whether or not that costs him anything (arrival is one of the "
+                        + "free-ascension triggers from the Cayden chapter).",
                 "The Krave Monster's den generates once, ever, near the dimension's centre: a "
                         + "whole floating island of Krave Dirt with chocolate pouring off its "
                         + "underside, an entire castle in Chocolate Block, Krave Tuff and Krave "

@@ -29,6 +29,7 @@ import net.minecraft.world.level.block.state.properties.BlockSetType;
 import net.minecraft.world.level.block.state.properties.DoorHingeSide;
 import net.minecraft.world.level.block.state.properties.DoubleBlockHalf;
 import net.minecraft.world.level.portal.PortalInfo;
+import net.minecraft.world.phys.AABB;
 import net.minecraft.world.phys.BlockHitResult;
 import net.minecraft.world.phys.Vec3;
 import net.minecraftforge.common.util.ITeleporter;
@@ -42,9 +43,10 @@ import java.util.List;
  * every way that matters visually - opens, closes, plays the normal sound,
  * shows the room behind it - right up until the specific moment it gets
  * CLOSED with a player standing inside a complete room. That close is the
- * trigger, not the open: walk in, shut the door behind you, and you (and
- * anything riding with you) are moved into an identical room built on the
- * other side, the Kosmos if you started outside it or back home if you
+ * trigger, not the open: walk in, shut the door behind you, and everything
+ * actually standing in the room with you - any other player, any mob, not
+ * just your own pets - is moved together into an identical room built on
+ * the other side, the Kosmos if you started outside it or back home if you
  * started inside it. Opening the door on the far side afterward is just...
  * opening a door - by the time you can do that, you're already through.
  *
@@ -63,8 +65,6 @@ public class KraveDoorBlock extends DoorBlock {
     private static final int DOOR_CLOSE_DELAY_TICKS = 8;
     /** How long a companion who didn't make it through with the player gets to catch up before being forced along. */
     private static final int STRAGGLER_DELAY_TICKS = 140;
-    /** How close a companion has to actually be, at the moment the door shuts, to count as "ran in with you." */
-    private static final double COMPANION_MUST_BE_CLOSE_RADIUS = 3.0D;
 
     public KraveDoorBlock(BlockBehaviour.Properties props, BlockSetType setType) {
         super(props, setType);
@@ -95,6 +95,9 @@ public class KraveDoorBlock extends DoorBlock {
             return;
         }
         boolean returningHome = level.dimension().equals(KraveDimensions.KRAVE_KOSMOS);
+        // Snapshotted now, from the room actually being closed - not
+        // recomputed later, once other things may already have moved.
+        AABB sourceRoomBox = roomOccupantBox(lowerPos, into);
 
         Runnable travel = () -> {
             if (!player.isAlive() || player.level() != level) {
@@ -105,9 +108,9 @@ public class KraveDoorBlock extends DoorBlock {
                 return;   // reopened, broken, replaced - something changed in the meantime, don't force it
             }
             if (returningHome) {
-                travelFromKosmos(level, lowerPos, player);
+                travelFromKosmos(level, lowerPos, sourceRoomBox, player);
             } else {
-                travelToKosmos(level, lowerPos, into, player);
+                travelToKosmos(level, lowerPos, sourceRoomBox, player);
             }
         };
 
@@ -191,6 +194,25 @@ public class KraveDoorBlock extends DoorBlock {
                 && feet.getY() >= interior.getY() && feet.getY() <= interior.getY() + 1;
     }
 
+    /**
+     * The room's whole occupiable space - the door cell and the interior
+     * cell together, floor to roof - as one bounding box, so everything
+     * physically standing in the portal when it closes travels with the
+     * player, not just whoever actually clicked the door. Deliberately
+     * bounded by the room's own walls rather than a plain radius around the
+     * player: a radius search would just as happily grab a hostile mob
+     * standing on the other side of a wall, which is not "inside" anything.
+     */
+    private AABB roomOccupantBox(BlockPos lowerPos, Direction into) {
+        BlockPos doorCell = lowerPos;
+        BlockPos interiorCell = lowerPos.relative(into);
+        int minX = Math.min(doorCell.getX(), interiorCell.getX());
+        int minZ = Math.min(doorCell.getZ(), interiorCell.getZ());
+        int maxX = Math.max(doorCell.getX(), interiorCell.getX()) + 1;
+        int maxZ = Math.max(doorCell.getZ(), interiorCell.getZ()) + 1;
+        return new AABB(minX, doorCell.getY(), minZ, maxX, doorCell.getY() + 2, maxZ);
+    }
+
     /** Places the exact shape {@link #isRoomComplete} validates - the door and the interior column are left for the caller. */
     private void placeRoomShell(ServerLevel level, BlockPos lowerPos, Direction into) {
         Direction side = into.getClockWise();
@@ -224,7 +246,7 @@ public class KraveDoorBlock extends DoorBlock {
 
     // ---- travel -------------------------------------------------------------
 
-    private void travelToKosmos(ServerLevel overworld, BlockPos doorLowerPos, Direction into, ServerPlayer player) {
+    private void travelToKosmos(ServerLevel overworld, BlockPos doorLowerPos, AABB sourceRoomBox, ServerPlayer player) {
         ServerLevel kosmos = player.getServer().getLevel(KraveDimensions.KRAVE_KOSMOS);
         if (kosmos == null) {
             return;
@@ -242,18 +264,39 @@ public class KraveDoorBlock extends DoorBlock {
         GlobalPos external = GlobalPos.of(overworld.dimension(), doorLowerPos);
         KraveKosmosData data = KraveKosmosData.get(kosmos);
         BlockPos kosmosDoorPos = data.kosmosDoorFor(external);
+        Direction kosmosInto;
         if (kosmosDoorPos == null) {
             kosmosDoorPos = buildKosmosRoomCopy(kosmos);
             if (kosmosDoorPos == null) {
                 return;   // couldn't find anywhere to put it - leave the player where they are rather than half-teleport them
             }
             data.link(external, kosmosDoorPos);
+            kosmosInto = AUTO_ROOM_INTO;   // buildKosmosRoomCopy always builds this orientation
+        } else {
+            // This door is not necessarily one we auto-built. A player can
+            // hand-build a room in the Kosmos first and walk through it -
+            // travelFromKosmos's "no link" branch then links a freshly
+            // built overworld room back to THIS exact door, so on the
+            // return trip it's found here instead of going through
+            // buildKosmosRoomCopy. A hand-built room's interior can extend
+            // in either direction relative to its door's FACING, so
+            // assuming AUTO_ROOM_INTO landed the player outside their own
+            // walls on the way back in - it has to be looked up fresh here,
+            // exactly like travelFromKosmos already does for its own
+            // destination door.
+            BlockState kosmosDoorState = kosmos.getBlockState(kosmosDoorPos);
+            kosmosInto = kosmosDoorState.getBlock() instanceof KraveDoorBlock
+                    ? validRoomDirection(kosmos, kosmosDoorPos, kosmosDoorState.getValue(FACING))
+                    : null;
+            if (kosmosInto == null) {
+                return;   // the far room was torn down or altered since - nothing sane to teleport into
+            }
         }
 
-        teleportInto(player, kosmos, kosmosDoorPos, AUTO_ROOM_INTO, true);
+        teleportInto(player, kosmos, kosmosDoorPos, kosmosInto, true, sourceRoomBox);
     }
 
-    private void travelFromKosmos(ServerLevel kosmos, BlockPos kosmosDoorPos, ServerPlayer player) {
+    private void travelFromKosmos(ServerLevel kosmos, BlockPos kosmosDoorPos, AABB sourceRoomBox, ServerPlayer player) {
         KraveKosmosData data = KraveKosmosData.get(kosmos);
         GlobalPos external = data.externalDoorFor(kosmosDoorPos);
         ServerLevel dest;
@@ -293,7 +336,7 @@ public class KraveDoorBlock extends DoorBlock {
             return;   // the far room was torn down or altered since - nothing sane to teleport into
         }
 
-        teleportInto(player, dest, destDoorPos, into, false);
+        teleportInto(player, dest, destDoorPos, into, false, sourceRoomBox);
     }
 
     /**
@@ -326,7 +369,7 @@ public class KraveDoorBlock extends DoorBlock {
     }
 
     private void teleportInto(ServerPlayer player, ServerLevel dest, BlockPos doorLowerPos,
-                              Direction into, boolean enteringKosmos) {
+                              Direction into, boolean enteringKosmos, AABB sourceRoomBox) {
         BlockPos interior = doorLowerPos.relative(into);
         Vec3 target = new Vec3(interior.getX() + 0.5D, interior.getY(), interior.getZ() + 0.5D);
         float yRot = into.getOpposite().toYRot();   // face back toward the door you just walked through
@@ -336,12 +379,19 @@ public class KraveDoorBlock extends DoorBlock {
         // within a mod's reach without deep client-side changes.
         preloadChunks(dest, doorLowerPos);
 
-        // Only companions actually within a few blocks at the moment the
-        // door shut count as having "run in with you" and travel instantly.
-        // Anyone farther off gets a real grace period below instead of being
-        // yanked along regardless of distance, which never read as them
-        // running anywhere at all.
-        List<Entity> withPlayer = com.barbarajones.dimension.PetEscort.gatherWithin(player, COMPANION_MUST_BE_CLOSE_RADIUS);
+        // Anything physically standing in the room when the door closed -
+        // any player, any mob, not just whoever's own pets they happen to
+        // be - travels with them instantly, the same way stepping through a
+        // real portal together works. Gathered from the player's CURRENT
+        // (source) level, which at this point hasn't changed yet.
+        List<Entity> withPlayer = com.barbarajones.dimension.PetEscort.gatherRoomOccupants(
+                player.serverLevel(), sourceRoomBox, player);
+
+        // Owned pets a little further off than that still get a real grace
+        // period to catch up instead of being left behind outright - that's
+        // a separate, narrower allowance than "anything in the room", so it
+        // stays limited to Cayden/Barbara specifically rather than becoming
+        // a way to drag arbitrary distant mobs through too.
         List<Entity> stragglers = com.barbarajones.dimension.PetEscort.gather(player);
         stragglers.removeIf(withPlayer::contains);
 

@@ -7,6 +7,7 @@ import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.level.portal.PortalInfo;
+import net.minecraft.world.phys.AABB;
 import net.minecraft.world.phys.Vec3;
 import net.minecraftforge.common.util.ITeleporter;
 
@@ -51,6 +52,24 @@ public final class PetEscort {
                 player.getBoundingBox().inflate(radius))) {
             if (barbara.isAlive() && barbara.isPet() && barbara.getPetOwner() == player) {
                 out.add(barbara);
+            }
+        }
+        return out;
+    }
+
+    /**
+     * Everything actually inside a bounded region - the Krave Door's portal
+     * room, specifically - not filtered by ownership or type the way
+     * {@link #gather}/{@link #gatherWithin} are. A real portal takes whoever
+     * is standing in it, not just the one person who used it and their own
+     * pets; {@code exclude} is the player themselves, since they travel
+     * through {@code changeDimension} directly rather than through this list.
+     */
+    public static List<Entity> gatherRoomOccupants(ServerLevel level, AABB box, Entity exclude) {
+        List<Entity> out = new ArrayList<>();
+        for (Entity entity : level.getEntitiesOfClass(Entity.class, box)) {
+            if (entity != exclude && entity.isAlive()) {
+                out.add(entity);
             }
         }
         return out;
