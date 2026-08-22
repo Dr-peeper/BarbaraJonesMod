@@ -830,10 +830,29 @@ public class KraveMonster extends Monster {
         // independent fight with the old death-driven gauntlet behind it, and
         // clamping that one would leave it unkillable and the gauntlet unable
         // to advance.
+        //
+        // THE SNAP MATTERS. Clamping `applied` to the headroom is only half of
+        // it, and on its own it makes the threshold unreachable rather than
+        // reachable: super.hurt applies armour, enchantments and effects AFTER
+        // this, so what actually lands is strictly LESS than the headroom, and
+        // his health settles strictly ABOVE the floor every single time. The
+        // test is health <= floor, so it was never once true - not flakily,
+        // but by construction. He hit fifteen percent, stuck there, and the
+        // prompt never came, because the clamp meant to create that threshold
+        // was the thing preventing it.
+        //
+        // It only became impossible when he was given armour in the same change
+        // as the clamp. Before that the full clamped amount landed and hit the
+        // floor exactly, which is the sort of coincidence that hides a bug for
+        // exactly as long as it takes to add a defensive stat.
+        boolean reachesFloor = false;
+        float floor = getMaxHealth() * FINISHER_AT;
         if (!level().isClientSide && getBattleState() == KraveBattleState.COMBAT
                 && com.barbarajones.apocalypse.KraveKosmosBattle.isActive(this)) {
-            float floor = getMaxHealth() * FINISHER_AT;
             float headroom = getHealth() - floor;
+            // Still clamped first, so no single hit can kill him outright
+            // whatever it is - the snap below cannot rescue a corpse.
+            reachesFloor = headroom > 0.0F && applied >= headroom;
             applied = headroom <= 0.0F ? 0.0F : Math.min(applied, headroom);
         }
         // The scripted encounter also cuts what actually lands. Tripling the
@@ -846,7 +865,18 @@ public class KraveMonster extends Monster {
                 && com.barbarajones.apocalypse.KraveKosmosBattle.isActive(this)) {
             applied *= SCRIPTED_DAMAGE_SCALE;
         }
-        return super.hurt(source, applied);
+        boolean landed = super.hurt(source, applied);
+        // Put him exactly on the floor when a hit was big enough to reach it,
+        // rather than wherever armour happened to leave him. This is what makes
+        // atFinisherThreshold() actually become true, and it is done AFTER the
+        // hit so it does not care what armour, resistance or absorption did in
+        // between - only that the blow was, before mitigation, enough.
+        if (reachesFloor && getHealth() > floor) {
+            setHealth(floor);
+            LOGGER.info("[CraveBoss] Form {} spent: health pinned to the finisher threshold ({} of {}).",
+                    getForm(), String.format("%.1f", floor), String.format("%.1f", getMaxHealth()));
+        }
+        return landed;
     }
 
     /**
