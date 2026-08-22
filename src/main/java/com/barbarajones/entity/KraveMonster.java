@@ -85,6 +85,17 @@ public class KraveMonster extends Monster {
     private static final EntityDataAccessor<Integer> BATTLE =
             SynchedEntityData.defineId(KraveMonster.class, EntityDataSerializers.INT);
 
+    /**
+     * Which attack of the current form's finisher he is on, zero-based.
+     *
+     * <p>Form N needs N of them, so this runs 0..N-1 and only the last one
+     * advances the form. Saved and synced alongside the state for the same
+     * reason it is: a fight that forgets it was three attacks into a five-part
+     * finisher would restart the whole sequence.
+     */
+    private static final EntityDataAccessor<Integer> QTE_STEP =
+            SynchedEntityData.defineId(KraveMonster.class, EntityDataSerializers.INT);
+
     private final ServerBossEvent bossEvent =
             new ServerBossEvent(Component.literal("The Krave Monster"),
                     BossEvent.BossBarColor.PURPLE, BossEvent.BossBarOverlay.PROGRESS);
@@ -105,6 +116,7 @@ public class KraveMonster extends Monster {
         this.entityData.define(DATA_REAR, 0.0F);
         this.entityData.define(FORM, 1);
         this.entityData.define(BATTLE, KraveBattleState.DORMANT.ordinal());
+        this.entityData.define(QTE_STEP, 0);
     }
 
     /** Client-side, partial-tick-safe: use in setupAnim. */
@@ -141,6 +153,25 @@ public class KraveMonster extends Monster {
     public KraveBattleState getBattleState() {
         return KraveBattleState.byId(this.entityData.get(BATTLE));
     }
+
+    public int getQteStep() {
+        return this.entityData.get(QTE_STEP);
+    }
+
+    public void setQteStep(int step) {
+        this.entityData.set(QTE_STEP, Math.max(0, step));
+    }
+
+    /**
+     * Whoever is currently carrying him through a cinematic, or null.
+     *
+     * <p>Not saved. A grab is meaningful only for the few seconds of the move
+     * that opened it, and persisting one would restore a boss frozen to an
+     * entity that may no longer exist - the worst possible thing to reload
+     * into. The sequencer releases it on every exit path including failure.
+     */
+    public net.minecraft.world.entity.Entity cinematicHolder;
+    public Vec3 cinematicOffset = Vec3.ZERO;
 
     /**
      * Moves the encounter to a new phase.
@@ -500,6 +531,12 @@ public class KraveMonster extends Monster {
             this.formSettled = true;
         }
         if (!level().isClientSide) {
+            // Pinned to whoever is carrying him, before anything else moves him.
+            // His own goals and gravity are still running underneath a hold and
+            // would drag him out of the hands holding him within a tick.
+            if (com.barbarajones.boss.krave.KraveGrab.isHeld(this)) {
+                com.barbarajones.boss.krave.KraveGrab.follow(this);
+            }
             tickGauntletReset();
             tickArenaAnchor();
         }
@@ -753,6 +790,7 @@ public class KraveMonster extends Monster {
         super.addAdditionalSaveData(tag);
         tag.putInt("KraveForm", getForm());
         tag.putInt("KraveBattleState", getBattleState().ordinal());
+        tag.putInt("KraveQteStep", getQteStep());
     }
 
     @Override
@@ -763,6 +801,7 @@ public class KraveMonster extends Monster {
         } else {
             this.formSettled = false;
         }
+        setQteStep(tag.getInt("KraveQteStep"));
         if (tag.contains("KraveBattleState")) {
             KraveBattleState saved = KraveBattleState.byId(tag.getInt("KraveBattleState"));
             // A fight interrupted mid-cinematic cannot resume from the middle of
@@ -778,6 +817,12 @@ public class KraveMonster extends Monster {
 
     @Override
     public boolean hurt(DamageSource source, float amount) {
+        // A boss being carried through a cinematic takes nothing at all. Damage
+        // during a hold means knockback, and knockback means he leaves the hands
+        // holding him - the move then plays out around an empty grip.
+        if (!level().isClientSide && com.barbarajones.boss.krave.KraveGrab.isHeld(this)) {
+            return false;
+        }
         // Nothing lands outside actual combat. Every scripted beat - the
         // confrontation, the prompt, the finisher, the transition - needs the
         // fight to hold still, and a laser already in flight does not know the

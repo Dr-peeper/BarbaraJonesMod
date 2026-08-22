@@ -68,6 +68,17 @@ public enum KraveBattleState {
      */
     FINISHER,
 
+    /**
+     * Between two attacks of the same form. He is getting back up.
+     *
+     * <p>Its own state rather than a timer inside the attack, because the
+     * requirement that matters most here is that the next prompt does NOT
+     * appear while the previous cinematic is still playing. A phase boundary
+     * makes that structural instead of something each of six scripts has to
+     * remember.
+     */
+    QTE_RECOVERY,
+
     /** Between forms: the Monster grows, Cayden ascends to match him. */
     TRANSITION,
 
@@ -99,11 +110,13 @@ public enum KraveBattleState {
     /** Whether this is one of the scripted, non-interactive beats. */
     public boolean scripted() {
         return this == CONFRONTATION || this == QTE || this == QTE_PREPARING
-                || this == QTE_READY || this == FINISHER || this == TRANSITION;
+                || this == QTE_READY || this == FINISHER || this == QTE_RECOVERY
+                || this == TRANSITION;
     }
 
     /** Any of the states between the form being spent and the blow landing. */
     public boolean finisherPhase() {
-        return this == QTE_PREPARING || this == QTE_READY || this == QTE || this == FINISHER;
+        return this == QTE_PREPARING || this == QTE_READY || this == QTE
+                || this == FINISHER || this == QTE_RECOVERY;
     }
 }

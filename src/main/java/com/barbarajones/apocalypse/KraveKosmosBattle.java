@@ -3,7 +3,11 @@ package com.barbarajones.apocalypse;
 import com.barbarajones.boss.krave.KraveAttacks;
 import com.barbarajones.boss.krave.KraveBattleState;
 import com.barbarajones.boss.krave.KraveDemolition;
+import com.barbarajones.boss.krave.KraveCinematic;
 import com.barbarajones.boss.krave.KraveFinisher;
+import com.barbarajones.boss.krave.KraveFinisherMove;
+import com.barbarajones.boss.krave.KraveGrab;
+import com.barbarajones.boss.krave.KraveMoveScripts;
 import com.barbarajones.content.ModEntities;
 import com.barbarajones.content.ModSounds;
 import com.barbarajones.entity.CaydenCobb;
@@ -92,24 +96,21 @@ public final class KraveKosmosBattle {
     /** Close enough to the launch point to count as standing in it. */
     private static final double IN_POSITION = 3.0D;
 
-    /** How long the player is held aloft before release - the beat that sells it. */
-    private static final int HOLD_TICKS = 22;
-
-    /**
-     * Blocks per tick on the way down. Far past ordinary knockback on purpose:
-     * this is a scripted dive, and at survivable Minecraft speeds it reads as
-     * falling rather than being thrown.
-     */
-    private static final double THROW_SPEED = 2.8D;
 
     /** How fast Cayden climbs to his launch point. */
     private static final double CAYDEN_CLIMB = 1.1D;
 
-    /** Slack on the impact test, so a fast dive cannot tunnel past the hitbox. */
-    private static final double IMPACT_REACH = 2.5D;
+    /** Base pause between the attacks of one form, before he is upright again. */
+    private static final int RECOVERY_TICKS = 55;
 
-    /** Throws recovered before the prompt is offered again. */
-    private static final int MAX_THROW_RETRIES = 2;
+    /**
+     * Beat before a player-driven attack is offered.
+     *
+     * <p>Long enough to read as a pause rather than as the prompt appearing on
+     * top of the previous cinematic, short enough that a six-part finisher does
+     * not become six flights.
+     */
+    private static final int SETTLE_TICKS = 20;
 
     private static final org.slf4j.Logger LOGGER = com.mojang.logging.LogUtils.getLogger();
 
@@ -132,8 +133,13 @@ public final class KraveKosmosBattle {
     /** Where Cayden throws from, recomputed as the boss drifts. */
     private Vec3 launch;
     private int prepareTicks;
-    private int holdTicks;
-    private int retries;
+    /** The step the open prompt belongs to, checked back the same way as the form. */
+    private int qteStepAsked;
+    /** The cinematic currently playing, its clock, and how long it may run. */
+    private KraveMoveScripts.Script script;
+    private KraveCinematic cinematic;
+    private int scriptTimeout;
+    private int recoveryTicks;
     /**
      * The form the open prompt belongs to.
      *
@@ -224,7 +230,7 @@ public final class KraveKosmosBattle {
      * before anything else happens so a held key or a spamming client cannot run
      * the finisher twice.
      */
-    public static void onQteInput(ServerPlayer player, int claimedForm) {
+    public static void onQteInput(ServerPlayer player, int claimedForm, int claimedStep) {
         for (KraveKosmosBattle b : ACTIVE) {
             KraveBattleState state = b.boss.getBattleState();
             if (state != KraveBattleState.QTE_READY && state != KraveBattleState.QTE) {
@@ -233,12 +239,11 @@ public final class KraveKosmosBattle {
             if (!player.getUUID().equals(b.qtePlayer)) {
                 continue;                       // this prompt is not theirs
             }
-            if (claimedForm != b.qteForm) {
-                // A press held over from a prompt that has already been
-                // answered or expired. Answering the current form with it would
-                // skip a stage.
-                LOGGER.info("[CraveBoss] Ignoring a stale finisher press for form {} (current {}).",
-                        claimedForm, b.qteForm);
+            if (claimedForm != b.qteForm || claimedStep != b.qteStepAsked) {
+                // Both halves matter. The wrong form skips a stage; the wrong
+                // step skips an attack inside one.
+                LOGGER.info("[CraveBoss] Ignoring a stale press: claimed form {} step {}, open form {} step {}.",
+                        claimedForm, claimedStep, b.qteForm, b.qteStepAsked);
                 continue;
             }
             b.qtePlayer = null;                 // consumed before anything else
@@ -295,6 +300,7 @@ public final class KraveKosmosBattle {
             // meaningful instead of falling through to a missing case.
             case QTE_READY, QTE -> { tickReady(); yield false; }
             case FINISHER -> { tickFinisher(); yield false; }
+            case QTE_RECOVERY -> { tickRecovery(); yield false; }
             case TRANSITION -> { tickTransition(); yield false; }
             case DEFEATED -> true;
             case DORMANT -> true;             // something reset him; stop driving
@@ -372,6 +378,10 @@ public final class KraveKosmosBattle {
 
     private void tickCombat() {
         if (this.boss.atFinisherThreshold()) {
+            // Start of this form's sequence. The step resets here and nowhere
+            // else, so a failed attack retries itself rather than sending the
+            // player back to the first one.
+            this.boss.setQteStep(0);
             enterPreparing();
             return;
         }
@@ -417,15 +427,34 @@ public final class KraveKosmosBattle {
     private void tickPreparing() {
         holdBoss();
 
-        // Recomputed while he climbs rather than fixed once: the boss drifts,
-        // and a launch point pinned to where he was standing ten seconds ago is
-        // no longer above him.
+        KraveFinisherMove move = KraveFinisherMove.atStep(this.boss.getQteStep());
+
+        // Recomputed while he moves rather than fixed once: the boss drifts, and
+        // a launch point pinned to where he was standing ten seconds ago is no
+        // longer above him.
         if (this.launch == null || this.t % 20 == 0) {
             Vec3 fresh = KraveFinisher.launchPoint(this.level, this.boss);
             if (fresh != null) {
                 this.launch = fresh;
             }
         }
+
+        // Only the aerial throw is launched from Kaiden. The other five are the
+        // player's own moves, and gating them on Kaiden finishing a climb he
+        // does not need to make would stall every one of them behind a
+        // twenty-block flight for no reason.
+        if (move != KraveFinisherMove.AERIAL_THROW) {
+            // He still has to be somewhere sensible - two of the later moves are
+            // his as much as the player's, and all of them want him on screen.
+            if (this.launch != null) {
+                flyCaydenTo(this.launch.add(4.0D, -6.0D, 0.0D));
+            }
+            if (++this.prepareTicks > SETTLE_TICKS) {
+                enterReady();
+            }
+            return;
+        }
+
         if (this.launch == null) {
             // Nowhere to throw from - he is under a roof or buried. Give the
             // fight back rather than hanging here with no prompt and no way out.
@@ -483,14 +512,24 @@ public final class KraveKosmosBattle {
         this.phaseTimer = QTE_WINDOW;
         // The form is carried so a press held over from the previous form cannot
         // answer this one: the server compares it back on arrival.
+        // Form AND step are both carried and both compared back on arrival. A
+        // press held over from the previous attack must not answer this one: in
+        // a six-part finisher that skips a move, and at the end of form six it
+        // is the difference between playing the finale and ending the encounter.
         this.qteForm = this.boss.getForm();
+        this.qteStepAsked = this.boss.getQteStep();
+        KraveFinisherMove move = KraveFinisherMove.atStep(this.qteStepAsked);
         ModNetwork.CHANNEL.send(
                 net.minecraftforge.network.PacketDistributor.PLAYER.with(() -> target),
-                new PacketKraveQte(QTE_WINDOW, this.qteForm, this.qteRetry));
+                new PacketKraveQte(QTE_WINDOW, this.qteForm, this.qteRetry,
+                        this.qteStepAsked, KraveFinisherMove.stepsFor(this.qteForm),
+                        move.key(), move.caption()));
         this.level.playSound(null, target.blockPosition(), ModSounds.KRAVE_BOOM.get(),
                 SoundSource.PLAYERS, 1.4F, 1.9F);
-        LOGGER.info("[CraveBoss] QTE ready for {} at form {}; Kaiden at {}/{}/{}.",
+        LOGGER.info("[CraveBoss] QTE ready for {}: form {} step {} of {}, key {}; Kaiden at {}/{}/{}.",
                 target.getGameProfile().getName(), this.qteForm,
+                this.qteStepAsked + 1, KraveFinisherMove.stepsFor(this.qteForm),
+                KraveFinisherMove.atStep(this.qteStepAsked).key(),
                 (int) this.cayden.getX(), (int) this.cayden.getY(), (int) this.cayden.getZ());
     }
 
@@ -529,179 +568,173 @@ public final class KraveKosmosBattle {
     // ---- FINISHER -----------------------------------------------------------
 
     /**
-     * Cayden takes the player up and throws them down at the Monster.
+     * Runs the cinematic for the current step.
      *
-     * <p>Pressing the key does not teleport anybody into the boss. It authorises
-     * a sequence: the player is lifted to Cayden, held there long enough to see
-     * where they are and what is underneath them, and then launched. The blow is
-     * landed by the collision at the end, not by a timer.
+     * <p>Which one is decided entirely by the step index. There is no per-form
+     * branching anywhere, because form N simply means the first N moves in
+     * order - so the six-part finisher and the one-part finisher are the same
+     * code path with a different stopping point, and adding a seventh attack
+     * would be one enum constant and one script.
      */
     private void beginFinisher(ServerPlayer player) {
         this.boss.setBattleState(KraveBattleState.FINISHER);
         this.thrown = player.getUUID();
-        this.phaseTimer = FINISHER_TIMEOUT;
-        this.holdTicks = HOLD_TICKS;
         clearPrompt();
 
-        Vec3 hold = holdPosition();
-        player.teleportTo(hold.x, hold.y, hold.z);
-        player.setDeltaMovement(Vec3.ZERO);
-        player.hurtMarked = true;
-        player.fallDistance = 0.0F;
-        // Survives being used as ammunition, and survives the fall if the throw
-        // goes wrong. Long enough to cover the whole cinematic and the recovery.
-        player.addEffect(new net.minecraft.world.effect.MobEffectInstance(
-                net.minecraft.world.effect.MobEffects.DAMAGE_RESISTANCE,
-                FINISHER_TIMEOUT + 120, 5, false, false));
+        KraveFinisherMove move = KraveFinisherMove.atStep(this.boss.getQteStep());
+        this.script = KraveMoveScripts.forMove(move);
+        this.cinematic = new KraveCinematic(this.level, this.boss, this.cayden, player);
+        this.scriptTimeout = KraveMoveScripts.timeoutFor(move);
 
-        announce(ChatFormatting.GOLD, "" + ChatFormatting.BOLD, "CAYDEN HAS YOU.");
-        this.level.playSound(null, this.cayden.blockPosition(), ModSounds.KRAVE_ROAR.get(),
-                SoundSource.PLAYERS, 1.6F, 1.4F);
-        LOGGER.info("[CraveBoss] Finisher authorised at form {}; launch {}/{}/{}, boss {}/{}/{}.",
-                this.boss.getForm(), (int) hold.x, (int) hold.y, (int) hold.z,
-                (int) this.boss.getX(), (int) this.boss.getY(), (int) this.boss.getZ());
-    }
-
-    /** Just under Cayden, so the throw visibly starts from his hands. */
-    private Vec3 holdPosition() {
-        Vec3 base = this.launch != null ? this.launch : this.cayden.position();
-        return base.add(0.0D, -1.6D, 0.0D);
-    }
-
-    private void tickFinisher() {
-        holdBoss();
-
-        ServerPlayer player = this.thrown == null ? null
-                : this.level.getServer().getPlayerList().getPlayer(this.thrown);
-        if (player == null || player.level() != this.level) {
-            // Logged out or changed dimension mid-throw. Put the prompt back
-            // rather than leaving the phase with no projectile in it.
-            this.thrown = null;
-            enterPreparing();
-            return;
-        }
-        player.fallDistance = 0.0F;
-
-        // ---- the hold ------------------------------------------------------
-        if (this.holdTicks > 0) {
-            this.holdTicks--;
-            Vec3 hold = holdPosition();
-            player.teleportTo(hold.x, hold.y, hold.z);
-            player.setDeltaMovement(Vec3.ZERO);
-            player.hurtMarked = true;
-            this.cayden.getLookControl().setLookAt(this.boss, 60.0F, 60.0F);
-            this.level.sendParticles(ParticleTypes.ELECTRIC_SPARK,
-                    hold.x, hold.y, hold.z, 8, 0.5D, 0.5D, 0.5D, 0.15D);
-            if (this.holdTicks == 0) {
-                release(player);
-            }
-            return;
-        }
-
-        // ---- the fall ------------------------------------------------------
-        // Re-aimed every tick. A dead-reckoned shot misses whenever the boss
-        // shifts even slightly, and missing every time is exactly what the log
-        // showed: a five-second timeout, over and over.
-        Vec3 aim = this.boss.position()
-                .add(0.0D, this.boss.getBbHeight() * 0.5D, 0.0D)
-                .subtract(player.position());
-        double dist = aim.length();
-        if (dist > 0.01D) {
-            Vec3 steer = aim.scale(THROW_SPEED / dist);
-            // Blended rather than assigned, so it reads as a dive with weight
-            // behind it instead of a position update every tick.
-            player.setDeltaMovement(player.getDeltaMovement().scale(0.45D).add(steer.scale(0.55D)));
-            player.hurtMarked = true;
-        }
-        this.level.sendParticles(ParticleTypes.FLAME,
-                player.getX(), player.getY() + 0.4D, player.getZ(), 10, 0.25D, 0.25D, 0.25D, 0.03D);
-        this.level.sendParticles(ParticleTypes.LARGE_SMOKE,
-                player.getX(), player.getY() + 0.4D, player.getZ(), 4, 0.2D, 0.2D, 0.2D, 0.01D);
-
-        // The collision IS the success condition. Nothing here advances the form
-        // because enough ticks went by.
-        if (player.getBoundingBox().inflate(IMPACT_REACH).intersects(this.boss.getBoundingBox())) {
-            impact(player);
-            return;
-        }
-        if (--this.phaseTimer <= 0) {
-            missed(player);
-        }
-    }
-
-    /** The moment of release: velocity down the line to the boss. */
-    private void release(ServerPlayer player) {
-        Vec3 aim = this.boss.position()
-                .add(0.0D, this.boss.getBbHeight() * 0.5D, 0.0D)
-                .subtract(player.position());
-        double dist = Math.max(0.01D, aim.length());
-        player.setDeltaMovement(aim.scale(THROW_SPEED / dist));
-        player.hurtMarked = true;
-        this.level.playSound(null, player.blockPosition(), ModSounds.KRAVE_BOOM.get(),
-                SoundSource.PLAYERS, 2.0F, 0.7F);
-        announce(ChatFormatting.GOLD, "" + ChatFormatting.BOLD, "GO.");
+        LOGGER.info("[CraveBoss] Finisher {} ({}) authorised at form {} step {}/{}.",
+                move, move.key(), this.boss.getForm(),
+                this.boss.getQteStep() + 1, KraveFinisherMove.stepsFor(this.boss.getForm()));
     }
 
     /**
-     * The throw did not connect. Never a silent phase advance.
+     * Ticks the running cinematic, and cleans up however it ends.
      *
-     * <p>Two chances at recovering the same throw before the prompt is offered
-     * again, because being blocked by a stray minion should not cost the player
-     * the whole sequence.
+     * <p>The timeout is the safety net every script needs and none of them
+     * implement. A move can be interrupted by terrain, a disconnect, or simply
+     * failing to connect, and none of those may leave the boss held in mid-air
+     * with his navigation off - which is a far worse outcome than a retry.
+     * Release therefore happens here, on every exit path, rather than at the
+     * end of each script where only the successful path would reach it.
      */
-    private void missed(ServerPlayer player) {
-        this.thrown = null;
-        if (++this.retries <= MAX_THROW_RETRIES) {
-            LOGGER.info("[CraveBoss] Throw missed at form {} (retry {}). Resetting to the launch point.",
-                    this.boss.getForm(), this.retries);
-            announce(ChatFormatting.GRAY, "", "Wide. Cayden catches you.");
-            beginFinisher(player);
+    private void tickFinisher() {
+        ServerPlayer player = this.thrown == null ? null
+                : this.level.getServer().getPlayerList().getPlayer(this.thrown);
+        if (player == null || player.level() != this.level
+                || this.script == null || this.cinematic == null) {
+            abandonScript();
+            enterPreparing();
             return;
         }
-        this.retries = 0;
-        announce(ChatFormatting.GRAY, "", "Cayden resets.");
-        enterPreparing();
-    }
 
-    /** The blow that actually ends a form. */
-    private void impact(ServerPlayer player) {
-        this.thrown = null;
-        this.retries = 0;
-        player.setDeltaMovement(player.getDeltaMovement().scale(-0.25D).add(0.0D, 0.6D, 0.0D));
-        player.hurtMarked = true;
-        player.fallDistance = 0.0F;
+        boolean done;
+        try {
+            done = this.script.tick(this.cinematic);
+        } catch (Exception e) {
+            // One broken cinematic must not take the encounter with it.
+            LOGGER.error("[CraveBoss] Finisher script failed; offering the step again.", e);
+            abandonScript();
+            enterPreparing();
+            return;
+        }
+        this.cinematic.t++;
 
-        Vec3 at = this.boss.position().add(0.0D, this.boss.getBbHeight() * 0.5D, 0.0D);
-        this.level.sendParticles(ParticleTypes.EXPLOSION_EMITTER, at.x, at.y, at.z, 8, 2.5D, 2.5D, 2.5D, 0.0D);
-        this.level.sendParticles(ParticleTypes.FLASH, at.x, at.y, at.z, 4, 1.0D, 1.0D, 1.0D, 0.0D);
-        this.level.sendParticles(ParticleTypes.SONIC_BOOM, at.x, at.y, at.z, 2, 0.5D, 0.5D, 0.5D, 0.0D);
-        this.level.playSound(null, this.boss.blockPosition(), ModSounds.KRAVE_BOOM.get(),
-                SoundSource.HOSTILE, 2.0F, 0.4F);
-
-        // A ring of blown-back air at the point of contact, plus the crater.
-        KraveAttacks.dome(this.level, at, 10.0D, ParticleTypes.SOUL_FIRE_FLAME);
-        KraveAttacks.shockwave(this.level, this.boss, null, this.boss.position(), 8.0D, 0.0F, 5);
-        // Routed through the boss's own demolition so it obeys the same arena
-        // floor and castle protection as everything else. A finisher that
-        // punched through the island would end the fight by dropping it into the
-        // void.
-        KraveDemolition.crater(this.level, this.boss, this.boss.position(), 10.0D, 5);
-
-        // Hit-stop: he is stopped dead for a beat rather than sliding away from
-        // the blow that just landed.
-        this.boss.setDeltaMovement(Vec3.ZERO);
-        this.boss.hurtMarked = true;
-        this.boss.hurtTime = 20;
-
-        LOGGER.info("[CraveBoss] Form {} finished by impact at {}/{}/{}.",
-                this.boss.getForm(), (int) at.x, (int) at.y, (int) at.z);
-
-        if (this.boss.getForm() >= KraveMonster.FINAL_FORM) {
-            finishEncounter();
-        } else {
-            enterTransition();
+        if (done) {
+            finishStep();
+            return;
+        }
+        if (--this.scriptTimeout <= 0) {
+            LOGGER.info("[CraveBoss] Finisher step {} timed out at form {}; offering it again.",
+                    this.boss.getQteStep() + 1, this.boss.getForm());
+            announce(ChatFormatting.GRAY, "", "He twists out of it. Again.");
+            abandonScript();
+            enterPreparing();
         }
     }
+
+    /**
+     * Puts everything a cinematic touched back the way it was.
+     *
+     * <p>Called on success, on timeout, on exception and on a vanished player.
+     * Every one of the six scripts switches off gravity for somebody at some
+     * point, and three of them carry the boss; leaving any of that set is how a
+     * failed finisher becomes a permanently frozen boss.
+     */
+    private void abandonScript() {
+        this.script = null;
+        this.cinematic = null;
+        KraveGrab.release(this.boss, Vec3.ZERO);
+        this.boss.setNoGravity(false);
+        this.cayden.setNoGravity(false);
+        if (this.thrown != null) {
+            ServerPlayer p = this.level.getServer().getPlayerList().getPlayer(this.thrown);
+            if (p != null) {
+                p.setNoGravity(false);
+                p.fallDistance = 0.0F;
+            }
+        }
+        this.thrown = null;
+    }
+
+    /**
+     * One attack landed. Either the form is over, or he gets back up.
+     *
+     * <p>The step advances only here, on a cinematic that actually completed -
+     * never on a timer, and never on the keypress. That is what makes "only the
+     * last attack defeats the form" structural rather than something each of
+     * six scripts has to be trusted to honour.
+     */
+    private void finishStep() {
+        int form = this.boss.getForm();
+        int step = this.boss.getQteStep();
+        abandonScript();
+
+        if (KraveFinisherMove.isLastStep(form, step)) {
+            LOGGER.info("[CraveBoss] Form {} finished on step {} of {}.",
+                    form, step + 1, KraveFinisherMove.stepsFor(form));
+            if (form >= KraveMonster.FINAL_FORM) {
+                finishEncounter();
+            } else {
+                enterTransition();
+            }
+            return;
+        }
+        this.boss.setQteStep(step + 1);
+        enterRecovery();
+    }
+
+    // ---- QTE_RECOVERY -------------------------------------------------------
+
+    /**
+     * He gets back up between attacks.
+     *
+     * <p>A real phase rather than a pause inside a script, because the thing it
+     * exists for is that the NEXT prompt must not appear while the previous
+     * cinematic is still playing. A phase boundary makes that true by
+     * construction, instead of six scripts each having to remember it.
+     */
+    private void enterRecovery() {
+        this.boss.setBattleState(KraveBattleState.QTE_RECOVERY);
+        this.recoveryTicks = RECOVERY_TICKS + this.boss.getQteStep() * 10;
+        // Back to the threshold, not to full. The bar has to stay on the floor
+        // or the next attack would have a health bar to chew through first, and
+        // the finisher sequence would turn back into a fight.
+        this.boss.setHealth(this.boss.getMaxHealth() * KraveMonster.FINISHER_AT);
+    }
+
+    private void tickRecovery() {
+        holdBoss();
+        int step = this.boss.getQteStep();
+        if (this.recoveryTicks == RECOVERY_TICKS + step * 10) {
+            new KraveCinematic(this.level, this.boss, this.cayden, null).stagger(step + 1);
+            announce(ChatFormatting.DARK_RED, "" + ChatFormatting.BOLD, recoveryLine(step));
+        }
+        if (this.t % 4 == 0) {
+            this.level.sendParticles(ParticleTypes.LARGE_SMOKE,
+                    this.boss.getX(), this.boss.getY() + 1.0D, this.boss.getZ(),
+                    12 + step * 4, 1.8D, 1.0D, 1.8D, 0.02D);
+        }
+        if (--this.recoveryTicks <= 0) {
+            enterPreparing();
+        }
+    }
+
+    /** Increasingly desperate, the further into a form he gets. */
+    private static String recoveryLine(int step) {
+        return switch (step) {
+            case 1 -> "HE GETS BACK UP.";
+            case 2 -> "HE CLIMBS OUT OF THE CRATER.";
+            case 3 -> "HE IS STILL STANDING.";
+            case 4 -> "HE WILL NOT GO DOWN.";
+            case 5 -> "HE REFUSES.";
+            default -> "NOT ENOUGH.";
+        };
+    }
+
 
     /**
      * Pins the boss for the length of the cinematic.
@@ -804,7 +837,7 @@ public final class KraveKosmosBattle {
             if (p != null) {
                 ModNetwork.CHANNEL.send(
                         net.minecraftforge.network.PacketDistributor.PLAYER.with(() -> p),
-                        new PacketKraveQte(0, this.boss.getForm(), false));
+                        new PacketKraveQte(0, this.boss.getForm(), false, 0, 1, "", ""));
             }
             this.qtePlayer = null;
         }

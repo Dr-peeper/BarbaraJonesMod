@@ -30,26 +30,38 @@ public final class KraveKeys {
             CATEGORY);
 
     /**
-     * The boss-fight finisher prompt.
+     * The six boss-fight finisher keys, in the order the forms use them.
      *
-     * <p>G rather than a mouse button or a movement key: the prompt appears
-     * mid-fight while the player is already holding something down, and binding
-     * it to anything they might be pressing anyway would let the game answer the
-     * prompt for them.
+     * <p>G, K, H, J, V, B - deliberately none of them a key already held during
+     * a fight. The prompt appears mid-combat while the player is likely holding
+     * movement, attack or sprint, and binding a finisher to any of those would
+     * let the game answer the prompt on the player+s behalf.
+     *
+     * <p>Indexed by the finisher step, so the server decides which one is live
+     * and the client only draws what it was told.
      */
-    public static final KeyMapping FINISHER = new KeyMapping(
-            "key." + BarbaraJonesMod.MODID + ".finisher",
-            InputConstants.Type.KEYSYM,
-            InputConstants.KEY_G,
-            CATEGORY);
+    public static final KeyMapping[] FINISHERS = {
+        finisher("finisher_g", InputConstants.KEY_G),
+        finisher("finisher_k", InputConstants.KEY_K),
+        finisher("finisher_h", InputConstants.KEY_H),
+        finisher("finisher_j", InputConstants.KEY_J),
+        finisher("finisher_v", InputConstants.KEY_V),
+        finisher("finisher_b", InputConstants.KEY_B),
+    };
 
-    /** The bound key as the player would read it, for the on-screen prompt. */
-    public static String finisherKeyName() {
-        try {
-            return FINISHER.getTranslatedKeyMessage().getString().toUpperCase(java.util.Locale.ROOT);
-        } catch (Throwable ignored) {
-            return "G";
+    private static KeyMapping finisher(String name, int code) {
+        return new KeyMapping("key." + BarbaraJonesMod.MODID + "." + name,
+                InputConstants.Type.KEYSYM, code, CATEGORY);
+    }
+
+    /** The binding for a letter the server asked for, or null if it is not one of ours. */
+    public static KeyMapping finisherFor(String letter) {
+        for (KeyMapping k : FINISHERS) {
+            if (k.getName().endsWith("_" + letter.toLowerCase(java.util.Locale.ROOT))) {
+                return k;
+            }
         }
+        return null;
     }
 
     private KraveKeys() { }
@@ -95,7 +107,9 @@ public final class KraveKeys {
         @SubscribeEvent
         public static void onRegisterKeyMappings(RegisterKeyMappingsEvent event) {
             event.register(OPEN_CODEX);
-            event.register(FINISHER);
+            for (KeyMapping k : FINISHERS) {
+                event.register(k);
+            }
         }
     }
 }

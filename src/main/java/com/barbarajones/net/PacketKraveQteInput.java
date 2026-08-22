@@ -32,23 +32,37 @@ public class PacketKraveQteInput {
      */
     private final int form;
 
-    public PacketKraveQteInput(int form) {
+    /**
+     * Which attack of that form the prompt was for.
+     *
+     * <p>The pair identifies the prompt exactly. Neither is trusted - both are
+     * compared against what the server is actually asking and the press is
+     * dropped if either disagrees. That turns a late keypress from something
+     * that answers the NEXT attack into something that answers nothing, which
+     * in a six-part finisher is the difference between skipping a move and
+     * ending the whole encounter early.
+     */
+    private final int step;
+
+    public PacketKraveQteInput(int form, int step) {
         this.form = form;
+        this.step = step;
     }
 
     public static void encode(PacketKraveQteInput msg, FriendlyByteBuf buf) {
         buf.writeVarInt(msg.form);
+        buf.writeVarInt(msg.step);
     }
 
     public static PacketKraveQteInput decode(FriendlyByteBuf buf) {
-        return new PacketKraveQteInput(buf.readVarInt());
+        return new PacketKraveQteInput(buf.readVarInt(), buf.readVarInt());
     }
 
     public static void handle(PacketKraveQteInput msg, Supplier<NetworkEvent.Context> ctx) {
         ctx.get().enqueueWork(() -> {
             ServerPlayer sender = ctx.get().getSender();
             if (sender != null) {
-                com.barbarajones.apocalypse.KraveKosmosBattle.onQteInput(sender, msg.form);
+                com.barbarajones.apocalypse.KraveKosmosBattle.onQteInput(sender, msg.form, msg.step);
             }
         });
         ctx.get().setPacketHandled(true);
