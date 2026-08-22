@@ -45,7 +45,7 @@ public class KraveKosmosData extends SavedData {
     private boolean chocolateRaining;
     private int chocolateWeatherTimer;
     private boolean chocolateWeatherInitialized;
-    private boolean redStarEverSpawned;
+    private boolean leviathanOrbitFixApplied;
 
     /**
      * Where the Kraved Castle actually stands, saved with the world.
@@ -151,13 +151,21 @@ public class KraveKosmosData extends SavedData {
         setDirty();
     }
 
-    /** One-time flag: the red star is spawned exactly once, ever, same pattern as the boss/leviathans. */
-    public boolean isRedStarEverSpawned() {
-        return this.redStarEverSpawned;
+    /**
+     * One-time migration flag - see KraveLeviathan#ensureSpawned. On any
+     * world where the very first leviathan spawn already happened before
+     * their orbit radius was corrected, that one-time spawn flag is
+     * permanently consumed by three entities stuck forever at the old,
+     * out-of-range orbit. This flag forces exactly one additional spawn
+     * pass with the current, correct parameters, independent of whatever
+     * state the original flag is already in.
+     */
+    public boolean isLeviathanOrbitFixApplied() {
+        return this.leviathanOrbitFixApplied;
     }
 
-    public void setRedStarEverSpawned(boolean value) {
-        this.redStarEverSpawned = value;
+    public void setLeviathanOrbitFixApplied(boolean value) {
+        this.leviathanOrbitFixApplied = value;
         setDirty();
     }
 
@@ -216,13 +224,13 @@ public class KraveKosmosData extends SavedData {
         data.chocolateRaining = tag.getBoolean("ChocolateRaining");
         data.chocolateWeatherTimer = tag.getInt("ChocolateWeatherTimer");
         data.chocolateWeatherInitialized = tag.getBoolean("ChocolateWeatherInitialized");
-        data.redStarEverSpawned = tag.getBoolean("RedStarEverSpawned");
         if (tag.contains("CastleBounds")) {
             int[] b = tag.getIntArray("CastleBounds");
             if (b.length == 6) {
                 data.castleBounds = new BoundingBox(b[0], b[1], b[2], b[3], b[4], b[5]);
             }
         }
+        data.leviathanOrbitFixApplied = tag.getBoolean("LeviathanOrbitFixApplied");
 
         if (tag.contains("PortalLinks")) {
             ListTag links = tag.getList("PortalLinks", Tag.TAG_COMPOUND);
@@ -252,12 +260,12 @@ public class KraveKosmosData extends SavedData {
         tag.putBoolean("ChocolateRaining", this.chocolateRaining);
         tag.putInt("ChocolateWeatherTimer", this.chocolateWeatherTimer);
         tag.putBoolean("ChocolateWeatherInitialized", this.chocolateWeatherInitialized);
-        tag.putBoolean("RedStarEverSpawned", this.redStarEverSpawned);
         if (this.castleBounds != null) {
             tag.putIntArray("CastleBounds", new int[] {
                     this.castleBounds.minX(), this.castleBounds.minY(), this.castleBounds.minZ(),
                     this.castleBounds.maxX(), this.castleBounds.maxY(), this.castleBounds.maxZ() });
         }
+        tag.putBoolean("LeviathanOrbitFixApplied", this.leviathanOrbitFixApplied);
 
         ListTag links = new ListTag();
         for (Map.Entry<BlockPos, GlobalPos> e : this.kosmosToExternal.entrySet()) {

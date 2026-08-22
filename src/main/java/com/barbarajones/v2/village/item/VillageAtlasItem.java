@@ -16,8 +16,6 @@ import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.TooltipFlag;
 import net.minecraft.world.level.Level;
-import net.minecraftforge.api.distmarker.Dist;
-import net.minecraftforge.fml.DistExecutor;
 
 import javax.annotation.Nullable;
 import java.util.List;
@@ -55,13 +53,14 @@ public class VillageAtlasItem extends Item {
             VillageNetwork.sendTo(serverPlayer, PacketVillageStatus.of(view.orElse(null)));
         }
 
+        // Calling a same-named static method on a genuinely separate class
+        // (see VillageScreen.openIfNone's own doc comment for exactly why
+        // this has to be a separate class and not a lambda body written
+        // here) - the isClientSide guard means this is never reached at
+        // all server-side, so that class's own Minecraft/Screen references
+        // are never touched there either.
         if (level.isClientSide) {
-            DistExecutor.unsafeRunWhenOn(Dist.CLIENT, () -> () -> {
-                net.minecraft.client.Minecraft mc = net.minecraft.client.Minecraft.getInstance();
-                if (mc.screen == null) {
-                    mc.setScreen(new com.barbarajones.v2.village.client.VillageScreen());
-                }
-            });
+            com.barbarajones.v2.village.client.VillageScreen.openIfNone();
         }
         return InteractionResultHolder.sidedSuccess(held, level.isClientSide);
     }

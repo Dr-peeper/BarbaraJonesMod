@@ -8,6 +8,7 @@ import com.barbarajones.entity.KraveHealingBox;
 import com.barbarajones.v2.mobs.ModMobEntities;
 
 import net.minecraft.core.BlockPos;
+import net.minecraft.core.particles.DustParticleOptions;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
@@ -84,7 +85,8 @@ public final class KraveKosmosAmbience {
         // comment. Gated by its own one-time flag, so this is a no-op on
         // every call after the first that actually spawns anything.
         com.barbarajones.entity.KraveLeviathan.ensureSpawned(kosmos);
-        com.barbarajones.entity.KraveRedStar.ensureSpawned(kosmos);
+
+        spawnRedStarGlow(kosmos);
 
         for (ServerPlayer player : kosmos.players()) {
             int nearby = kosmos.getEntitiesOfClass(Mob.class, player.getBoundingBox().inflate(SCAN_RADIUS),
@@ -135,6 +137,38 @@ public final class KraveKosmosAmbience {
         }
         kosmos.addFreshEntity(new ItemEntity(kosmos, pos.getX() + 0.5D, pos.getY() + 0.5D, pos.getZ() + 0.5D,
                 new ItemStack(ModItems.KRAVE_CEREAL.get(), 2 + kosmos.random.nextInt(3))));
+    }
+
+    /** How high above BOSS_ISLAND the red star sits - well clear of the den, the leviathans' orbit, and the island's own hills. */
+    private static final double RED_STAR_ALTITUDE = 230.0D;
+
+    /**
+     * The red star: not a real light source (nothing in vanilla lets an
+     * entity cast one - the actual fix for the dimension being dark is
+     * has_skylight/ambient_light in the dimension_type), just something
+     * that visibly glows up in the sky. An earlier version tried this as a
+     * custom Entity with a hand-built crossed-quad model, which rendered as
+     * a broken, jagged shape - CubeListBuilder's automatic per-face UV
+     * unwrapping was never going to place one single circular glow image
+     * correctly across six auto-mapped cube faces, degenerate (zero-depth)
+     * ones especially. A cluster of large, bright DustParticleOptions
+     * particles sidesteps all of that - the same particle system already
+     * proven working for chocolate rain, just red and stationary.
+     */
+    private static void spawnRedStarGlow(ServerLevel kosmos) {
+        double x = KraveDimensions.BOSS_ISLAND.x;
+        double y = RED_STAR_ALTITUDE;
+        double z = KraveDimensions.BOSS_ISLAND.z;
+        var color = new org.joml.Vector3f(1.0F, 0.15F, 0.05F);
+
+        for (int i = 0; i < 14; i++) {
+            double ox = (kosmos.random.nextDouble() - 0.5D) * 8.0D;
+            double oy = (kosmos.random.nextDouble() - 0.5D) * 8.0D;
+            double oz = (kosmos.random.nextDouble() - 0.5D) * 8.0D;
+            float scale = 6.0F + kosmos.random.nextFloat() * 4.0F;
+            kosmos.sendParticles(new DustParticleOptions(color, scale),
+                    x + ox, y + oy, z + oz, 1, 0.0D, 0.0D, 0.0D, 0.0D);
+        }
     }
 
     private static void spawnNear(ServerLevel kosmos, ServerPlayer player) {
