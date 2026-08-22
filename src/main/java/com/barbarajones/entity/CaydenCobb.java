@@ -452,24 +452,6 @@ public class CaydenCobb extends TamableAnimal {
         }
     }
 
-    /**
-     * Rough total damage-per-second across melee and Krave lasers combined,
-     * at whatever rung/fed level he's actually at right now. Used by
-     * KraveMonster's matchRival() to size the boss off what Cayden can
-     * ACTUALLY do this fight, rather than a fixed formula that ignores fed
-     * (which directly multiplies melee damage via applyKraveStats) and the
-     * lasers, both of which used to make the old estimate wildly low and the
-     * fight end in a couple of hits.
-     */
-    public double estimatedDps() {
-        double meleeDps = getAttributeValue(Attributes.ATTACK_DAMAGE);   // ~1 swing/sec baseline
-        double laserDps = 0.0D;
-        if (isSuperSaiyan()) {
-            int interval = Math.max(7, LASER_INTERVAL - getTier() * 4);
-            laserDps = (3 * 6.0D) / (interval / 20.0D);   // 3 bolts * KraveLaser.DAMAGE per fire, per fire cadence
-        }
-        return meleeDps + laserDps;
-    }
 
     // ---- the upgrade ladder --------------------------------------------------
 

@@ -131,7 +131,6 @@ public class KraveMonster extends Monster {
     // so nothing between SSJ2 and GOD gets skipped over.
     public static final int FINAL_FORM = 7;
 
-    private int matchedTier;
     private int duelBlink;
 
 
@@ -213,10 +212,16 @@ public class KraveMonster extends Monster {
      * <p>Each form is a genuine step up rather than a health bar with a bigger
      * number: he hits harder, moves faster and is physically larger, so you can
      * see across a field which one you are dealing with. These are the
-     * standing/idle baseline numbers - matchRival() re-scales health and
-     * attack live once he's actually dueling a Cayden, sized off Cayden's
-     * real current DPS so every form is a genuine ~20-second fight regardless
-     * of how strong Cayden's build actually is.
+     * standing/idle baseline numbers, and now the only ones.
+     *
+     * <p>matchRival() used to re-scale health, attack, speed AND form live
+     * against Cayden's measured damage output every three seconds - a second
+     * owner of everything this method sets, ratcheting upward and never down.
+     * It topped his CURRENT health up each time it raised his maximum, so he
+     * regained health faster than an early-form Cayden could take it off and
+     * his bar settled at a level it would not drop below. And because the
+     * finisher threshold is a share of a maximum that kept growing, the prompt
+     * never fired either. The form table is the single owner now.
      */
     public void setForm(int form) {
         this.formSettled = true;
@@ -495,7 +500,6 @@ public class KraveMonster extends Monster {
             this.formSettled = true;
         }
         if (!level().isClientSide) {
-            matchRival();
             tickGauntletReset();
             tickArenaAnchor();
         }
@@ -618,117 +622,6 @@ public class KraveMonster extends Monster {
         }
     }
 
-    /**
-     * Scales him to whatever Cayden has turned into.
-     *
-     * <p>He is built as a 100-health boss, which an Ultra Instinct Cayden at
-     * twelve times damage deletes in about two hits. Rather than nerf Cayden -
-     * the transformations are the point - the Monster grows to match, and is
-     * healed to full when he does so the fight starts properly rather than with
-     * a chunk already missing.
-     *
-     * <p>He never scales back down within a fight: dropping his maximum health
-     * mid-duel would leave him instantly near-dead the moment Cayden powered
-     * down for a tick.
-     */
-    private void matchRival() {
-        // The form ladder gives him a starting strength, but Cayden's real
-        // output at high tiers is nowhere near a flat "3.0 * attackMul" guess -
-        // fed multiplies melee damage directly (applyKraveStats) and the Krave
-        // lasers add a second damage stream on top, so the old estimate had
-        // him dying to Ultra Instinct in a couple of swings even after being
-        // "matched." Sized off CaydenCobb#estimatedDps() instead - his actual
-        // live damage-per-second, melee and lasers combined - targeting a
-        // floor of a genuine 20-second fight, not a guessed number.
-        if (!this.bossFightActive) {
-            return;
-        }
-        if (!(getTarget() instanceof CaydenCobb c) || !c.isAlive() || !c.isSuperSaiyan()) {
-            return;
-        }
-        int tier = c.getTier();
-
-        // Recomputed on every tier-up, and also periodically mid-fight (every
-        // 3s) so a Cayden who eats more Krave and gets stronger DURING the
-        // duel doesn't suddenly start deleting a Monster sized for his damage
-        // at the moment the fight started.
-        boolean newTier = tier > this.matchedTier;
-        if (!newTier && this.matchedTier != 0 && this.tickCount % 60 != 0) {
-            return;
-        }
-        this.matchedTier = Math.max(tier, this.matchedTier);
-
-        // AscensionLadder's tiers (SSJ=1 .. ULTRA=6) line up 1:1 with his own
-        // six forms, so a rising tier should physically transform him too -
-        // bigger silhouette, harsher tint (see FORM_SCALE/render() in
-        // KraveMonsterRenderer) - not just quietly buff his stats. Previously
-        // this method only ever touched raw attributes, so the fight could
-        // escalate all the way to Ultra Instinct-tier numbers while he stayed
-        // rendered as whatever form he spawned in.
-        // Only ever UPWARD, and never past where the gauntlet already has him.
-        //
-        // This was a flat setForm(tier), which was fine back when his form was
-        // simply a mirror of Cayden's tier. It is not any more - the gauntlet
-        // drives forms through deaths now, and the two systems fought each
-        // other. Cayden at Ultra Instinct is tier 6, so a Monster revived at
-        // form 7 was knocked straight back down to 6 on the very next tick,
-        // which killed him again, revived him at 7 again, and looped forever.
-        // That is the "he keeps respawning at Overload" bug.
-        if (newTier && tier > getForm()) {
-            setForm(tier);
-        }
-
-        double caydenDps = c.estimatedDps();
-        double targetHealth = Math.max(getMaxHealth(), caydenDps * 20.0D);
-
-        var maxHp = getAttribute(Attributes.MAX_HEALTH);
-        boolean healthRaised = false;
-        if (maxHp != null && targetHealth > maxHp.getBaseValue() + 0.5D) {
-            double added = targetHealth - maxHp.getBaseValue();
-            maxHp.setBaseValue(targetHealth);
-            if (newTier) {
-                setHealth(getMaxHealth());   // a real tier-up: fresh bar
-            } else {
-                setHealth((float) (getHealth() + added));   // headroom only - never free-heals existing damage
-            }
-            healthRaised = true;
-        }
-
-        AscensionLadder.Rung rung = AscensionLadder.rung(Math.max(AscensionLadder.SSJ, tier));
-        // His own damage should land Cayden - base health 24 plus this rung's
-        // bonusHealth, filtered through the rung's own damage-taken multiplier -
-        // in roughly a 20-second fight too, not the couple of seconds a "5
-        // hits" target worked out to. RivalDuelGoal strikes every 11 ticks
-        // (0.55s), so ~36 hits lands in 20 seconds if every one connects -
-        // in practice Cayden moves/dodges, so this is a floor, not a timer.
-        double caydenEffectiveHealth = (24.0D + rung.bonusHealth()) / Math.max(0.2D, rung.damageTaken());
-        double attack = Math.max(getAttribute(Attributes.ATTACK_DAMAGE) != null
-                ? getAttribute(Attributes.ATTACK_DAMAGE).getBaseValue() : 5.0D,
-                caydenEffectiveHealth / 36.0D);
-        double speed = Math.min(0.85D, 0.32D + tier * 0.08D);
-
-        var atk = getAttribute(Attributes.ATTACK_DAMAGE);
-        var spd = getAttribute(Attributes.MOVEMENT_SPEED);
-        if (atk != null) {
-            atk.setBaseValue(attack);
-        }
-        if (spd != null) {
-            spd.setBaseValue(speed);
-        }
-
-        if (newTier && healthRaised) {
-            playSound(roarSound(), 2.0F, 0.6F);
-            if (level() instanceof ServerLevel sl) {
-                sl.sendParticles(net.minecraft.core.particles.ParticleTypes.EXPLOSION_EMITTER,
-                        getX(), getY() + 1.5D, getZ(), 1, 0.0D, 0.0D, 0.0D, 0.0D);
-            }
-            for (Player p : level().getEntitiesOfClass(Player.class, getBoundingBox().inflate(64.0D))) {
-                p.sendSystemMessage(net.minecraft.network.chat.Component.literal(
-                        net.minecraft.ChatFormatting.DARK_PURPLE + ""
-                        + net.minecraft.ChatFormatting.BOLD + "HE MATCHES HIM."));
-            }
-        }
-    }
 
     /**
      * A blink-strike duel: close instantly, hit, vanish, reappear somewhere
