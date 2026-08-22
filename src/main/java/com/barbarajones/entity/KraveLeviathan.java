@@ -118,6 +118,16 @@ public class KraveLeviathan extends Entity {
         for (int i = 0; i < 3; i++) {
             KraveLeviathan leviathan = ModEntities.KRAVE_LEVIATHAN.get().create(kosmos);
             if (leviathan != null) {
+                // Force its starting chunk BEFORE handing it to the level,
+                // not after - confirmed on the real test server that a
+                // freshly spawned entity with nothing already keeping its
+                // chunk loaded can be unloaded again before its own first
+                // tick() ever runs, and an entity that never ticks can never
+                // force-load anything itself. It would sit in that unloaded
+                // chunk forever, since nothing else was ever going to load
+                // it again either. This closes that gap at the one moment
+                // it's guaranteed not to already exist.
+                leviathan.updateOrbit(kosmos);
                 kosmos.addFreshEntity(leviathan);
             }
         }
@@ -130,6 +140,33 @@ public class KraveLeviathan extends Entity {
     public void tick() {
         super.tick();
 
+        if (!level().isClientSide && level() instanceof ServerLevel serverLevel) {
+            updateOrbit(serverLevel);
+
+            if (--this.nextCallTick <= 0) {
+                call();
+                this.nextCallTick = randomCallDelay();
+            }
+        } else {
+            updateOrbitPositionOnly();
+        }
+    }
+
+    /**
+     * Computes this tick's orbital position from tickCount, moves there, and
+     * force-loads the chunk it landed in. Called from {@link #tick()} every
+     * server tick, and ALSO called once by hand from {@link #ensureSpawned}
+     * before the entity is even added to the level - see that method's own
+     * comment for why the second call exists.
+     */
+    private void updateOrbit(ServerLevel serverLevel) {
+        double x = updateOrbitPositionOnly();
+        double z = getZ();
+        keepChunkLoaded(serverLevel, x, z);
+    }
+
+    /** The position-math half of updateOrbit, split out so ensureSpawned's pre-add call doesn't need a real ServerLevel cast twice. Returns the new X for convenience. */
+    private double updateOrbitPositionOnly() {
         double originX = KraveDimensions.BOSS_ISLAND.x;
         double originZ = KraveDimensions.BOSS_ISLAND.z;
         double angle = this.phase + this.direction * ANGULAR_SPEED * this.tickCount;
@@ -146,15 +183,7 @@ public class KraveLeviathan extends Entity {
 
         setPos(x, y, z);
         move(MoverType.SELF, net.minecraft.world.phys.Vec3.ZERO);
-
-        if (!level().isClientSide && level() instanceof ServerLevel serverLevel) {
-            keepChunkLoaded(serverLevel, x, z);
-
-            if (--this.nextCallTick <= 0) {
-                call();
-                this.nextCallTick = randomCallDelay();
-            }
-        }
+        return x;
     }
 
     /**

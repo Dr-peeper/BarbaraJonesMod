@@ -30,6 +30,28 @@ public class VillageScreen extends KraveScreen {
         super(Component.translatable("village.barbarajones.screen.title"));
     }
 
+    /**
+     * The client-only half of VillageAtlasItem's use() - deliberately kept
+     * here rather than inlined into that item's own use() method. A lambda
+     * body compiles into a synthetic method on its ENCLOSING class, so a
+     * Minecraft/Screen reference written inline inside VillageAtlasItem
+     * ends up baked into VillageAtlasItem.class's own bytecode - and
+     * Forge's RuntimeDistCleaner scans every class for exactly that kind of
+     * reference to an @OnlyIn(CLIENT) vanilla type, blocking the whole
+     * class from loading at all on a dedicated server the instant anything
+     * (like this item's own DeferredRegister entry) tries to construct one.
+     * Calling a method BY NAME on a separate class, as done in
+     * VillageAtlasItem, only ever loads that separate class's bytecode if
+     * the call is actually reached - which the isClientSide guard there
+     * already ensures never happens server-side.
+     */
+    public static void openIfNone() {
+        net.minecraft.client.Minecraft mc = net.minecraft.client.Minecraft.getInstance();
+        if (mc.screen == null) {
+            mc.setScreen(new VillageScreen());
+        }
+    }
+
     @Override
     protected int preferredWidth() {
         return 320;
