@@ -45,8 +45,21 @@ import java.util.List;
  */
 public class KraveWaterfallFeature extends Feature<NoneFeatureConfiguration> {
 
-    private static final int SEARCH_RADIUS = 22;
-    private static final int SAMPLE_STEP = 3;
+    // The search radius is a write-range budget, not a taste call. Everything
+    // this feature places is measured from the cliff it picks, so the furthest
+    // block it can touch is SEARCH_RADIUS + one strand offset + one fall
+    // offset + the basin radius. That has to stay inside
+    // KraveTerrainShape.MAX_WRITE_OFFSET (15) or the far side of a cascade is
+    // silently dropped during generation: 8 + 1 + 1 + 5 = 15 exactly.
+    //
+    // It used to search 22 out, which could put a whole waterfall up to 29
+    // blocks from origin - roughly half of one would survive. Sampling is
+    // twice as dense now to claw back some of the candidate columns the
+    // smaller radius costs; mountains also each place a guaranteed spring of
+    // their own (see KraveMountainFeature), so this feature was never the
+    // only source of them.
+    private static final int SEARCH_RADIUS = 8;
+    private static final int SAMPLE_STEP = 2;
     private static final int EDGE_LOOKAHEAD = 2;
     private static final int FAR_LOOKAHEAD = 6;
     private static final int MIN_DROP = 13;

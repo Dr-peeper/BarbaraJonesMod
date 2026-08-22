@@ -78,6 +78,21 @@ public final class ModSounds {
     public static final RegistryObject<SoundEvent> EVT_ROLL     = reg("evt_roll");
     public static final RegistryObject<SoundEvent> EVT_NOTREADY = reg("evt_notready");
 
+    // The other seven canon lines. Their .ogg files and their sounds.json
+    // entries were both already here and correct - only the registration was
+    // missing, and a sound with no registered SoundEvent cannot be played by
+    // anything, so these seven recordings shipped in the jar completely
+    // unreachable. They feed the boombox's track pool (see BoomboxBlock),
+    // which is the one place in the mod whose whole job is playing a Barbara
+    // clip for its own sake.
+    public static final RegistryObject<SoundEvent> EVT_INTRO    = reg("evt_intro");
+    public static final RegistryObject<SoundEvent> EVT_BITS     = reg("evt_bits");
+    public static final RegistryObject<SoundEvent> EVT_DONUTS   = reg("evt_donuts");
+    public static final RegistryObject<SoundEvent> EVT_NUGGET   = reg("evt_nugget");
+    public static final RegistryObject<SoundEvent> EVT_OHGOD    = reg("evt_ohgod");
+    public static final RegistryObject<SoundEvent> EVT_OHGOD2   = reg("evt_ohgod2");
+    public static final RegistryObject<SoundEvent> EVT_SHOWER   = reg("evt_shower");
+
     // second batch of synthesized cues (see tools/make_krave_audio2.ps1) -
     // built because krave_roar/krave_boom/krave_screech were being reused
     // for everything and combat + transformations needed real variety

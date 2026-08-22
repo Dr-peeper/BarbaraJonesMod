@@ -2,6 +2,7 @@
 & (Join-Path $PSScriptRoot "tools/check_renderers.ps1")
 & (Join-Path $PSScriptRoot "tools/check_module_init.ps1")
 & (Join-Path $PSScriptRoot "tools/check_creative_tabs.ps1")
+& (Join-Path $PSScriptRoot "tools/check_attributes.ps1")
 # Builds the 1.20.1 mod. Uses the JDK 17 in .tools and a memory-capped Gradle,
 # because this machine is tight on RAM.
 #

@@ -55,7 +55,8 @@ public final class ModEntityAttributes {
     private static final List<RegistryObject<? extends EntityType<?>>> REQUIRED = List.of(
             ModEntities.BARBARA, ModEntities.CAYDEN, ModEntities.KRAVE_MONSTER,
             ModEntities.NUGGET, ModEntities.DANIEL, ModEntities.MOM, ModEntities.PLUG,
-            ModEntities.DUHL_WOL, ModEntities.KRAVE_MINION, ModEntities.MOM_BOSS);
+            ModEntities.DUHL_WOL, ModEntities.KRAVE_MINION, ModEntities.MOM_BOSS,
+            ModEntities.THE_MANAGER, ModEntities.MANAGER_MINION, ModEntities.MOM_STASH);
 
     /** Populated as we register, then checked against REQUIRED. */
     private static final Set<EntityType<?>> REGISTERED = new HashSet<>();
@@ -78,6 +79,25 @@ public final class ModEntityAttributes {
         put(event, ModEntities.DUHL_WOL.get(),      DuhlWol.createAttributes().build());
         put(event, ModEntities.KRAVE_MINION.get(),  KraveMinion.createAttributes().build());
         put(event, ModEntities.MOM_BOSS.get(),      MomCobbBoss.createAttributes().build());
+        // Both shipped registered as MONSTER entity types, with finished
+        // createAttributes() builders, and were never bound here - this class
+        // even imported them already. The dedicated server said so on every
+        // boot ("Entity barbarajones:the_manager has no attributes"), and the
+        // effect was that The Manager and his minions could not be spawned by
+        // any means at all.
+        put(event, ModEntities.THE_MANAGER.get(),    TheManager.createAttributes().build());
+        put(event, ModEntities.MANAGER_MINION.get(), ManagerMinion.createAttributes().build());
+        // Mom Cobb's stash boxes. This one hid from every check there was:
+        // it is a Monster, so it genuinely needs attributes, but it is
+        // registered under MobCategory.MISC, and both vanilla's
+        // DefaultAttributes.validate() and the category-based half of
+        // tools/check_attributes.ps1 skip MISC. The effect was that
+        // MOM_STASH.get().create(level) returned null every time, and
+        // MomCobbBoss.spawnStash() null-checks and quietly returns - so her
+        // entire phase-three mechanic (seek a stash, eat it for a large heal,
+        // get staggered if you smash it mid-windup) never once happened, with
+        // nothing logged anywhere to say so.
+        put(event, ModEntities.MOM_STASH.get(),      MomKraveStash.createAttributes().build());
 
         verifyEveryMobRegistered();
         verifyRequiredAttributes();

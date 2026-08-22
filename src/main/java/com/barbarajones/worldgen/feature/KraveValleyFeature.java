@@ -52,8 +52,14 @@ public class KraveValleyFeature extends Feature<NoneFeatureConfiguration> {
         if (depth < MIN_DEPTH) {
             return false;
         }
-        int baseRadius = MIN_BASE_RADIUS + random.nextInt(BASE_RADIUS_RANGE);
         double[][] lobes = crevasseLobes(random);
+        // Same write-range fit the mountains needed. A valley carries an extra
+        // elongation lobe on top of its jaggedness, so its worst-case radius
+        // ran even further past the legal 16 than theirs did; it only escaped
+        // the error log because valleys are rarer and need deep solid ground
+        // under them, not because it was safe.
+        int baseRadius = KraveTerrainShape.fitBaseRadius(
+                MIN_BASE_RADIUS + random.nextInt(BASE_RADIUS_RANGE), lobes);
 
         BlockState air = Blocks.AIR.defaultBlockState();
         BlockState floorBlock = ModBlocks.KRAVE_DIRT.get().defaultBlockState();
@@ -61,7 +67,8 @@ public class KraveValleyFeature extends Feature<NoneFeatureConfiguration> {
         for (int y = 0; y < depth; y++) {
             double layerBase = radiusAt(y, depth, baseRadius);
             boolean isFloor = y == depth - 1;
-            int scanR = (int) Math.ceil(layerBase * 1.8) + 1;
+            int scanR = Math.min(KraveTerrainShape.MAX_WRITE_OFFSET,
+                    (int) Math.ceil(layerBase * 1.8) + 1);
             for (int dx = -scanR; dx <= scanR; dx++) {
                 for (int dz = -scanR; dz <= scanR; dz++) {
                     double dist = Math.sqrt(dx * dx + dz * dz);

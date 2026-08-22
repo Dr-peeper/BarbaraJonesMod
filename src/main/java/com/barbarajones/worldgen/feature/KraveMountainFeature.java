@@ -61,14 +61,24 @@ public class KraveMountainFeature extends Feature<NoneFeatureConfiguration> {
         }
 
         int height = MIN_HEIGHT + random.nextInt(HEIGHT_RANGE);
-        int baseRadius = MIN_BASE_RADIUS + random.nextInt(BASE_RADIUS_RANGE);
         double[][] lobes = KraveTerrainShape.randomLobes(random, 2, 3, 0.18, 0.38);
+        // Rolled, then fitted to what a feature is actually allowed to write
+        // (see KraveTerrainShape.MAX_WRITE_OFFSET). Before this, a mountain
+        // could reach 27 blocks out, past the legal 16, and every block beyond
+        // that was silently thrown away by WorldGenRegion - so any mountain
+        // that happened to sit near a chunk edge generated with slices of
+        // itself simply absent. Height is untouched: vertical writes have no
+        // such limit, so these are the same mountains, just narrower and
+        // correspondingly steeper.
+        int baseRadius = KraveTerrainShape.fitBaseRadius(
+                MIN_BASE_RADIUS + random.nextInt(BASE_RADIUS_RANGE), lobes);
 
         BlockState dirt = ModBlocks.KRAVE_DIRT.get().defaultBlockState();
         BlockState grass = ModBlocks.KRAVE_GRASS.get().defaultBlockState();
         BlockState frame = ModBlocks.KRAVE_BLOCK.get().defaultBlockState();
 
-        int maxRadius = (int) Math.ceil(baseRadius * 1.6) + 1;
+        int maxRadius = Math.min(KraveTerrainShape.MAX_WRITE_OFFSET,
+                (int) Math.ceil(baseRadius * 1.6) + 1);
         List<BlockPos> upperSurface = new ArrayList<>();
         // The origin's own column always exists if we got this far (the
         // isSolid() check above guarantees it), so it's a reliable fallback

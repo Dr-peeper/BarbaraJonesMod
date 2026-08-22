@@ -93,12 +93,27 @@ public class BoomboxBlock extends HorizontalDirectionalBlock {
         level.playSound(null, pos, pickTrack(random), SoundSource.RECORDS, 2.4F, 1.0F);
     }
 
+    /**
+     * The boombox is the only thing in the mod that plays a Barbara clip purely
+     * to be heard, so it is where the voice lines that no cutscene or
+     * apocalypse stage claims belong. Seven of these (intro, bits, donuts,
+     * nugget, ohgod, ohgod2, shower) were recorded, packaged, and listed in
+     * sounds.json but never registered, so nothing could play them at all -
+     * putting them here is what actually makes them audible in game.
+     */
     private static SoundEvent pickTrack(RandomSource random) {
-        return switch (random.nextInt(5)) {
+        return switch (random.nextInt(12)) {
             case 0 -> ModSounds.EVT_MUSIC.get();
             case 1 -> ModSounds.EVT_ROLL.get();
             case 2 -> ModSounds.EVT_CHEPINA.get();
             case 3 -> ModSounds.CAYDEN_SHOUT.get();
+            case 4 -> ModSounds.EVT_INTRO.get();
+            case 5 -> ModSounds.EVT_BITS.get();
+            case 6 -> ModSounds.EVT_DONUTS.get();
+            case 7 -> ModSounds.EVT_NUGGET.get();
+            case 8 -> ModSounds.EVT_OHGOD.get();
+            case 9 -> ModSounds.EVT_OHGOD2.get();
+            case 10 -> ModSounds.EVT_SHOWER.get();
             default -> ModSounds.BARBARA_IDLE.get();
         };
     }
