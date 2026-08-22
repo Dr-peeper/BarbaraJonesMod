@@ -144,6 +144,27 @@ public class CaydenCobb extends TamableAnimal {
     private static final int ARSENAL_INTERVAL = 90;
     /** How far he will look for something worth transforming for. */
     private static final double BOSS_SCAN_RANGE = 160.0D;
+    /**
+     * How far a boss he has already committed to may get before he lets go.
+     *
+     * <p>Deliberately past the range at which he could first see it. An Ender
+     * Dragon crosses the scan boundary twice a lap, and a leash equal to the
+     * scan range would drop and re-take the same fight every time it turned.
+     */
+    private static final double BOSS_LEASH = 192.0D;
+    /**
+     * The Krave Monster's own leash, matching the re-acquisition sweep in
+     * {@link #tick()}.
+     *
+     * <p>The Kosmos is one arena built for one fight, with nothing else living
+     * in it - there is no zombie in a cave there for him to mistake for the
+     * boss - so the usual worry about a long leash simply does not apply. The
+     * number has to agree with that sweep or the two disagree about whether he
+     * is still in the fight, and the one that runs more often wins.
+     */
+    private static final double KOSMOS_LEASH = 512.0D;
+    /** Past this a kill was somebody else's and he is not owed ki for it. */
+    private static final double CREDIT_RANGE = 256.0D;
     /** Heal a point this often, once out of combat. */
     private static final int REGEN_INTERVAL = 60;
     /** How long since being hit before he starts healing again. */
@@ -330,20 +351,138 @@ public class CaydenCobb extends TamableAnimal {
      * Refuses targets he is not supposed to have.
      *
      * <p>Every goal that picks a fight funnels through here - the three vanilla
-     * owner/hurt-by goals, the nearest-attackable scan, and the boss scan - so
-     * this is the only place the rule can be enforced once instead of five
-     * times with one of them forgotten.
+     * owner/hurt-by goals, the nearest-attackable scan, the boss scan and the
+     * Kosmos battle controller - so this is the only place the rule can be
+     * enforced once instead of six times with one of them forgotten. Vanilla's
+     * {@code Mob#setTarget(LivingEntity)} is the sole way the field is written,
+     * so there is no path round it.
+     *
+     * <p>What counts as allowed is {@link #isValidTarget} and nothing else.
      */
     @Override
     public void setTarget(@Nullable LivingEntity target) {
-        if (target instanceof com.barbarajones.entity.KraveMonster boss
-                && !boss.getBattleState().hostile()) {
+        LivingEntity previous = getTarget();
+        LivingEntity allowed = isValidTarget(target) ? target : null;
+        if (allowed != previous) {
+            // The steering commits to a detour for a couple of seconds at a
+            // time. That detour was chosen to get round something standing
+            // between him and the OLD target; carrying it into a new fight
+            // flies him at scenery for no reason anybody could see.
+            this.flight.forget();
+        }
+        super.setTarget(allowed);
+    }
+
+    /**
+     * The one test for whether something is still a fight he should be in.
+     *
+     * <p>There were four separate ideas of "valid" before this - the vanilla
+     * target goals' follow-range rule, the boss scan's 320-block box, the fly
+     * goal's bare null-and-alive check, and combatFlight's bare null check -
+     * and the loosest of them won, because it was the one that ran every tick.
+     *
+     * <p>The distance rule is the part that actually mattered. See
+     * {@link #scanForBoss}: an ordinary mob is not worth crossing a valley for,
+     * and the Field Power cap made every Mob alive look like it was.
+     */
+    private boolean isValidTarget(@Nullable LivingEntity foe) {
+        if (foe == null || foe == this || foe.isRemoved() || !foe.isAlive()) {
+            return false;
+        }
+        // The level INSTANCE, not the dimension key. A reference kept across a
+        // dimension change still has coordinates on it, and steering at those
+        // coordinates in THIS world is precisely the "he is flying at nothing"
+        // this whole method exists to end.
+        if (foe.level() != level()) {
+            return false;
+        }
+        // His own side. Ordinarily the target selector could never propose
+        // these - it only looks at Monsters - but the Field Power path scores
+        // any Mob at all, and Barbara and a second Cayden are both Mobs.
+        if (foe instanceof BarbaraJones || foe instanceof CaydenCobb) {
+            return false;
+        }
+        // Kosmonauts ignore him and he ignores them; the player handles those.
+        if (foe instanceof KraveMinion) {
+            return false;
+        }
+        if (foe instanceof KraveMonster boss && !boss.getBattleState().hostile()) {
             // Before the confrontation the encounter has not started, and
             // afterwards it is over. Either way he must not be pathing at him.
-            super.setTarget(null);
+            return false;
+        }
+        // Nothing in an unloaded chunk can be reached, hit, or even relied on
+        // to move: it is a set of coordinates with a corpse's worth of life in
+        // it. He would fly at it until the chunk came back or he died trying.
+        if (!level().hasChunkAt(foe.blockPosition())) {
+            return false;
+        }
+        double leash = leashFor(foe);
+        return distanceToSqr(foe) <= leash * leash;
+    }
+
+    /**
+     * How far this particular foe is allowed to be before he lets go of it.
+     *
+     * <p>Three answers, because they are three different things. An ordinary
+     * mob gets his follow range - the same number vanilla's own target goals
+     * use both to take a fight and to drop one - so something he was never
+     * meant to notice cannot become something he refuses to forget. A boss gets
+     * the boss scan's reach and a little over. The Krave Monster gets the whole
+     * Kosmos, because that fight is the reason the long scan exists at all.
+     */
+    private double leashFor(LivingEntity foe) {
+        if (foe instanceof KraveMonster) {
+            return KOSMOS_LEASH;
+        }
+        return bossDemand(foe) > 0 ? BOSS_LEASH : followReach();
+    }
+
+    /**
+     * His follow range, read from the attribute rather than written down again.
+     *
+     * <p>It is one number doing two jobs that must not disagree: it is how far
+     * an ordinary fight is allowed to be, and it is the hard bound on what
+     * {@code PathNavigation#createPath} will even attempt. A second copy is how
+     * a leash ends up longer than the pathing that has to honour it, which is
+     * how you get a Cayden committed to a fight he cannot walk to.
+     */
+    private double followReach() {
+        return getAttributeValue(Attributes.FOLLOW_RANGE);
+    }
+
+    /**
+     * Drops a target that has stopped being a fight, every tick rather than
+     * only on the tick one was picked.
+     *
+     * <p>A target rots after acquisition - it dies, its chunk unloads, it walks
+     * into a portal, he overshoots it - and nothing in him ever looked again.
+     * Worse, a target set from OUTSIDE the goal selector (the boss scan, the
+     * Kosmos battle controller) belongs to no goal, so vanilla never cleared it
+     * either: {@code TargetGoal#stop} is what normally nulls a target and it
+     * only runs for the goal that set one. So combatFlight and the fly goal
+     * went on steering at a corpse, and {@link CaydenFollowOrHomeGoal} - which
+     * only runs when there is no target - stayed switched off for good.
+     */
+    private void enforceTargetSanity() {
+        LivingEntity target = getTarget();
+        if (target == null || isValidTarget(target)) {
             return;
         }
-        super.setTarget(target);
+        setTarget(null);
+        // The path was drawn to where that thing used to be. Left alone he
+        // walks it to the end and stands there looking at nothing.
+        getNavigation().stop();
+        if (this.flightTicks > 0) {
+            // combatFlight is the only thing that turns gravity off for a
+            // chase, and the only thing that turns it back on - at the end of a
+            // burst that is now never going to end, because what he was flying
+            // at is gone. Fall distance goes with it: Rule #1 is that he does
+            // not die, and least of all to being dropped by his own fix.
+            this.flightTicks = 0;
+            setNoGravity(false);
+            this.fallDistance = 0.0F;
+        }
     }
 
     @Override
@@ -845,16 +984,29 @@ public class CaydenCobb extends TamableAnimal {
         if (isSuperSaiyan() && this.ssjUntilBossDies && this.tickCount % 20 == 0
                 && level() instanceof ServerLevel sl) {
             // Go and find him. The Kosmos is far too big to rely on follow range.
+            // The box is KOSMOS_LEASH rather than its own copy of 512, because a
+            // sweep that reaches further than the leash re-takes a boss that
+            // isValidTarget then refuses, twenty times a second, forever.
             if (!(getTarget() instanceof KraveMonster boss) || !boss.isAlive()) {
                 for (KraveMonster candidate : sl.getEntitiesOfClass(KraveMonster.class,
-                        getBoundingBox().inflate(512.0D, 256.0D, 512.0D))) {
-                    if (candidate.isAlive()) {
+                        getBoundingBox().inflate(KOSMOS_LEASH, KOSMOS_LEASH * 0.5D, KOSMOS_LEASH))) {
+                    // The full test, not just "is it breathing" - otherwise the
+                    // loop stops on a candidate setTarget goes on to reject and
+                    // he spends the next second with no target at all.
+                    if (isValidTarget(candidate)) {
                         setTarget(candidate);
                         break;
                     }
                 }
             }
         }
+
+        // First, before anything reads getTarget(). Everything below - the
+        // desperation check, Dark Cayden, the boss scan's "already committed"
+        // shortcut, the tier ladder, the arsenal, combatFlight, the lasers -
+        // takes the target on trust, so the target has to be true by the time
+        // they get to it rather than each of them checking a bit of it.
+        enforceTargetSanity();
 
         regenerate();
         updateDesperation();
@@ -1082,31 +1234,54 @@ public class CaydenCobb extends TamableAnimal {
     }
 
     /**
-     * Finds a boss worth transforming for, far outside his ordinary follow
+     * Finds a BOSS worth transforming for, far outside his ordinary follow
      * range.
      *
      * <p>His FOLLOW_RANGE is 32 blocks and NearestAttackableTargetGoal will not
      * look past it, but an Ender Dragon circles hundreds of blocks out and
      * hundreds of blocks up. Without this he simply never noticed one was there,
      * which read in play as him doing nothing at all.
+     *
+     * <p>It scores candidates with {@link #bossDemand} and NOT with
+     * {@link #demandFor}, and that swap is the whole of the "he takes off into
+     * the distance" bug. demandFor answers "which form is he ALLOWED to use on
+     * this", not "is this worth crossing a valley for". The moment the owner
+     * switched the Field Power cap on, its answer for every Mob inside the
+     * 320-block box - a cow, a bat, a zombie in a cave under the hill, Barbara,
+     * and himself, since the sweep does not exclude the searcher - became "some
+     * form, yes". So the scan nominated whichever one the entity list happened
+     * to hand it first, and he flew at it: a real target, in a loaded chunk,
+     * that the player could neither see nor follow. An authorisation is not a
+     * reason to leave.
+     *
+     * <p>Ordinary mobs are back to being NearestAttackableTargetGoal's job,
+     * inside his follow range, where they always belonged.
      */
     private void scanForBoss() {
         if (this.tickCount % 20 != 0 || !isTame()) {
             return;
         }
         LivingEntity current = getTarget();
-        if (current != null && current.isAlive() && demandFor(current) > 0) {
-            return;                       // already committed to something worthy
+        if (isValidTarget(current) && bossDemand(current) > 0) {
+            return;                       // already committed to a real boss
         }
         AABB far = getBoundingBox().inflate(BOSS_SCAN_RANGE, BOSS_SCAN_RANGE, BOSS_SCAN_RANGE);
         LivingEntity best = null;
         int bestTier = 0;
         for (LivingEntity e : level().getEntitiesOfClass(LivingEntity.class, far)) {
-            int t = demandFor(e);
-            if (t > bestTier) {
-                bestTier = t;
-                best = e;
+            int t = bossDemand(e);
+            if (t <= bestTier) {
+                continue;
             }
+            // The box is a box: its corners sit 277 blocks out, well over half
+            // again the range the constant advertises. Noticing happens inside
+            // a sphere of the honest radius; letting go happens at BOSS_LEASH,
+            // so the two boundaries cannot chatter against each other.
+            if (distanceToSqr(e) > BOSS_SCAN_RANGE * BOSS_SCAN_RANGE || !isValidTarget(e)) {
+                continue;
+            }
+            bestTier = t;
+            best = e;
         }
         if (best != null) {
             setTarget(best);
@@ -1123,22 +1298,39 @@ public class CaydenCobb extends TamableAnimal {
      * player is usually the one who lands the last hit on a boss - Cayden was
      * still the reason it died.
      *
-     * <p>The reference is only ever kept for something in this level, so it
-     * cannot pin an entity across a dimension change.
+     * <p>The reference is only ever TAKEN for a target {@link #isValidTarget}
+     * has already vouched for, and {@link #payCredit} drops it the moment it is
+     * in another level or absurdly far off, so it cannot pin an entity across a
+     * dimension change or hold one alive on the far side of the world.
      */
     private void collectKi() {
+        // Settle up BEFORE taking a new note. The old order captured first, and
+        // its capture condition explicitly replaced a creditFoe that was no
+        // longer alive - so on the exact tick a foe died and a fresh one was
+        // acquired, the reward for the kill was overwritten a line before the
+        // payout could read it, and the ki simply vanished.
+        payCredit();
+
         LivingEntity target = getTarget();
-        if (target != null && target.isAlive() && target.level() == level()) {
-            int demand = demandFor(target);
-            if (this.creditFoe == null || !this.creditFoe.isAlive() || demand >= this.creditDemand) {
-                this.creditFoe = target;
-                this.creditDemand = demand;
-            }
+        if (!isValidTarget(target)) {
+            return;
         }
+        int demand = demandFor(target);
+        if (this.creditFoe == null || demand >= this.creditDemand) {
+            this.creditFoe = target;
+            this.creditDemand = demand;
+        }
+    }
+
+    /**
+     * Pays out the note he is holding, once whatever it is written against has
+     * stopped moving - or tears it up if that thing has left the story.
+     */
+    private void payCredit() {
         if (this.creditFoe == null) {
             return;
         }
-        if (this.creditFoe.level() != level() || distanceToSqr(this.creditFoe) > 256.0D * 256.0D) {
+        if (this.creditFoe.level() != level() || distanceToSqr(this.creditFoe) > CREDIT_RANGE * CREDIT_RANGE) {
             this.creditFoe = null;                 // it walked out of the story
             this.creditDemand = 0;
             return;
@@ -1220,19 +1412,16 @@ public class CaydenCobb extends TamableAnimal {
     };
 
     /**
-     * What he turns into is decided by what is in front of him. Fighting the
-     * Wither is worth a transformation; fighting the Krave Monster is worth
-     * everything he has.
+     * What a genuine BOSS demands of him, and zero for everything else.
      *
-     * <p>Returns the tier the opponent deserves, 0 for anything ordinary. Note
-     * this is what the fight <em>demands</em>, not what he can actually reach -
-     * {@link #updateTier()} clamps it to what he has been taught.
+     * <p>Split out of {@link #demandFor} because one method was answering two
+     * questions that only look alike: "what form does this fight deserve" and
+     * "is this thing worth flying across a valley for". The Field Power cap
+     * makes the first answer non-zero for every mob alive, and it must never be
+     * allowed to make the second one non-zero for anything at all. Only the
+     * boss scan and {@link #leashFor} ask this one.
      */
-    private int demandFor(@Nullable LivingEntity foe) {
-        if (foe == null || !foe.isAlive()) {
-            return 0;
-        }
-        int base;
+    private int bossDemand(@Nullable LivingEntity foe) {
         if (foe instanceof com.barbarajones.entity.KraveMonster monster) {
             // A Monster who has not been confronted yet is not a fight. His boss
             // scan reaches far past his follow range - it has to, an Ender Dragon
@@ -1244,24 +1433,59 @@ public class CaydenCobb extends TamableAnimal {
                 return 0;
             }
             int form = Math.max(1, Math.min(KRAVE_FORM_DEMAND.length, monster.getForm()));
-            base = KRAVE_FORM_DEMAND[form - 1];
-        } else if (foe instanceof net.minecraft.world.entity.boss.enderdragon.EnderDragon) {
-            base = AscensionLadder.SSJ3;                  // it flies, so he has to
-        } else if (foe instanceof com.barbarajones.v2.internet.InternetManagerBoss) {
+            return KRAVE_FORM_DEMAND[form - 1];
+        }
+        if (foe instanceof net.minecraft.world.entity.boss.enderdragon.EnderDragon) {
+            return AscensionLadder.SSJ3;                  // it flies, so he has to
+        }
+        if (foe instanceof com.barbarajones.v2.internet.InternetManagerBoss) {
             // The outage boss. Its own module suggested God; Blue is what was
             // asked for, and it reads better anyway - Blue is God power held
             // perfectly still, which is the right answer to a man whose whole
             // threat is latency and throttling.
-            base = AscensionLadder.BLUE;
-        } else if (foe instanceof net.minecraft.world.entity.monster.warden.Warden
+            return AscensionLadder.BLUE;
+        }
+        if (foe instanceof net.minecraft.world.entity.monster.warden.Warden
                 || foe instanceof com.barbarajones.boss.manager.TheManager) {
-            base = AscensionLadder.SSJ2;                  // above a Wither
-        } else if (foe instanceof net.minecraft.world.entity.boss.wither.WitherBoss) {
-            base = AscensionLadder.SSJ;
-        } else {
+            return AscensionLadder.SSJ2;                  // above a Wither
+        }
+        if (foe instanceof net.minecraft.world.entity.boss.wither.WitherBoss) {
+            return AscensionLadder.SSJ;
+        }
+        return 0;
+    }
+
+    /**
+     * What he turns into is decided by what is in front of him. Fighting the
+     * Wither is worth a transformation; fighting the Krave Monster is worth
+     * everything he has.
+     *
+     * <p>Returns the tier the opponent deserves, 0 for anything ordinary. Note
+     * this is what the fight <em>demands</em>, not what he can actually reach -
+     * {@link #updateTier()} clamps it to what he has been taught.
+     *
+     * <p>And note harder what it is NOT: it is not a reason to go anywhere.
+     * Only {@link #bossDemand} answers that, and only the boss scan asks.
+     */
+    private int demandFor(@Nullable LivingEntity foe) {
+        if (foe == null || !foe.isAlive()) {
+            return 0;
+        }
+        int base = bossDemand(foe);
+        if (base <= 0) {
+            // A Krave Monster who is not hostile is not an ordinary fight
+            // either - he is no fight at all. Falling through to the Field
+            // Power branch here would quietly hand him a tier for the very
+            // Monster bossDemand just refused, and the refusal is the thing
+            // that stops him flying off to meet the boss on his own.
+            if (foe instanceof com.barbarajones.entity.KraveMonster) {
+                return 0;
+            }
             // Anything that is not a boss. He only engages these above his own
             // weight class if the owner has explicitly allowed it, and never
-            // above what the menu was set to.
+            // above what the menu was set to. Note what this is and is not: it
+            // decides which form he may wear against something he is ALREADY
+            // fighting. It is not, and must not be read as, a reason to go.
             int cap = getFieldCap();
             if (cap <= 0 || !(foe instanceof net.minecraft.world.entity.Mob)) {
                 return 0;
@@ -2078,14 +2302,15 @@ public class CaydenCobb extends TamableAnimal {
 
         @Override
         public boolean canUse() {
-            LivingEntity target = this.cayden.getTarget();
-            if (target instanceof KraveMonster boss && !boss.getBattleState().hostile()) {
-                // Scripted beats own his movement. Letting the attack goal keep
-                // steering during the confrontation or a finisher drags him out
-                // of position mid-cinematic.
-                return false;
-            }
-            return this.cayden.isSuperSaiyan() && target != null && target.isAlive();
+            // Deliberately the same test the rest of him uses. This goal sets
+            // his velocity directly at half a block a tick, so it is the single
+            // fastest way for a bad target to become a Cayden three hundred
+            // blocks away - it needs the strictest answer available, not its own
+            // looser one. isValidTarget already refuses a Krave Monster who is
+            // mid-cinematic, which is why the scripted beats keep their hold on
+            // his movement.
+            return this.cayden.isSuperSaiyan()
+                    && this.cayden.isValidTarget(this.cayden.getTarget());
         }
 
         @Override
@@ -2135,9 +2360,72 @@ public class CaydenCobb extends TamableAnimal {
         }
     }
 
+    /**
+     * Somewhere beside the owner he can actually be put down, or null.
+     *
+     * <p>Vanilla's own pet teleport insists on solid ground and it is right to:
+     * an owner two hundred blocks up on an elytra is not a place to drop a
+     * twenty-four-heart child. Finding nowhere is a perfectly good answer - the
+     * goal simply asks again in another five seconds.
+     */
+    @Nullable
+    private BlockPos landingNear(LivingEntity owner) {
+        BlockPos base = owner.blockPosition();
+        for (int i = 0; i < 12; i++) {
+            BlockPos p = i == 0 ? base : base.offset(
+                    this.random.nextInt(7) - 3,
+                    this.random.nextInt(3) - 1,
+                    this.random.nextInt(7) - 3);
+            if (level().getBlockState(p.below()).isSolid()
+                    && level().getBlockState(p).isAir()
+                    && level().getBlockState(p.above()).isAir()) {
+                return p;
+            }
+        }
+        return null;
+    }
+
+    /**
+     * Puts a stranded Cayden back beside his owner.
+     *
+     * <p>Deliberately the same shape as {@link #onBelowWorld}: he is caught, not
+     * abandoned. Nothing about the boss scan - which is allowed, on purpose, to
+     * send him a hundred and sixty blocks after an Ender Dragon - is worth him
+     * being left out there once the dragon is dead, because his navigator
+     * cannot build a path longer than his follow range and so will not even try.
+     *
+     * @return true when he was actually moved
+     */
+    private boolean recallToOwner(LivingEntity owner) {
+        BlockPos landing = landingNear(owner);
+        if (landing == null) {
+            return false;
+        }
+        teleportTo(landing.getX() + 0.5D, landing.getY(), landing.getZ() + 0.5D);
+        getNavigation().stop();
+        setDeltaMovement(Vec3.ZERO);
+        this.fallDistance = 0.0F;
+        this.hurtMarked = true;
+        playSound(ModSounds.CAYDEN_SHOUT.get(), 0.9F, 1.3F);
+        if (level() instanceof ServerLevel sl) {
+            sl.sendParticles(ParticleTypes.POOF, getX(), getY() + getBbHeight() * 0.5D, getZ(),
+                    12, 0.3D, 0.4D, 0.3D, 0.02D);
+        }
+        if (owner instanceof Player p) {
+            p.sendSystemMessage(Component.literal(ChatFormatting.GRAY
+                    + "Cayden lost you out there and caught up."));
+        }
+        return true;
+    }
+
     /** Follow the owner when unhoused; stay near home when housed. */
     static class CaydenFollowOrHomeGoal extends net.minecraft.world.entity.ai.goal.Goal {
+
+        /** How long he is left to find his own way back before he is fetched. */
+        private static final int STRANDED_TICKS = 100;
+
         private final CaydenCobb cayden;
+        private int stranded;
 
         CaydenFollowOrHomeGoal(CaydenCobb cayden) {
             this.cayden = cayden;
@@ -2149,18 +2437,57 @@ public class CaydenCobb extends TamableAnimal {
         }
 
         @Override
+        public void start() {
+            // Stranded means "has been trying to get back and getting nowhere".
+            // A fight in the middle of it means he was not trying, so the clock
+            // starts again rather than resuming where a fight interrupted it.
+            this.stranded = 0;
+        }
+
+        @Override
         public void tick() {
             BlockPos home = this.cayden.getHome();
             if (home != null && this.cayden.homeIsInThisDimension()) {
+                this.stranded = 0;
                 if (this.cayden.blockPosition().distSqr(home) > HOME_LEASH * HOME_LEASH) {
                     this.cayden.getNavigation().moveTo(home.getX() + 0.5D, home.getY(), home.getZ() + 0.5D, 1.0D);
                 }
                 return;
             }
             LivingEntity owner = this.cayden.getOwner();
-            if (owner != null && this.cayden.distanceToSqr(owner) > 36.0D
-                    && this.cayden.distanceToSqr(owner) < 1024.0D) {
+            if (owner == null) {
+                this.stranded = 0;        // owner offline or in another dimension
+                return;
+            }
+            double distSq = this.cayden.distanceToSqr(owner);
+            double reach = this.cayden.followReach();
+            if (distSq <= 36.0D) {
+                this.stranded = 0;        // near enough; leave him be
+                return;
+            }
+            if (distSq < reach * reach) {
+                this.stranded = 0;
                 this.cayden.getNavigation().moveTo(owner, 1.1D);
+                return;
+            }
+            // Past his follow range the navigator will not build a path at all -
+            // createPath is bounded by that same attribute - so the old goal
+            // simply gave up above 32 blocks and he stood wherever the fight had
+            // left him, for good. Survivable when a zombie led him thirty blocks
+            // out; permanent when a dragon led him a hundred and sixty.
+            if (++this.stranded < STRANDED_TICKS) {
+                return;
+            }
+            this.stranded = 0;
+            if (this.cayden.inScriptedBossBeat()) {
+                return;                   // a cinematic is holding his position on purpose
+            }
+            if (!this.cayden.recallToOwner(owner)) {
+                // Nowhere safe to set him down: the owner is airborne, or in a
+                // wall. Try again in a second rather than starting the whole
+                // five over, or an owner gliding across a lake leaves him out
+                // there for as long as the flight lasts.
+                this.stranded = STRANDED_TICKS - 20;
             }
         }
     }

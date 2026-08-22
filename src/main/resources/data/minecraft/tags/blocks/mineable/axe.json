@@ -1,6 +1,26 @@
 {
   "replace": false,
   "values": [
-    "barbarajones:chocolate_door"
+    "barbarajones:krave_log",
+    "barbarajones:krave_wood",
+    "barbarajones:stripped_krave_log",
+    "barbarajones:stripped_krave_wood",
+    "barbarajones:krave_planks",
+    "barbarajones:krave_stairs",
+    "barbarajones:krave_slab",
+    "barbarajones:krave_fence",
+    "barbarajones:krave_fence_gate",
+    "barbarajones:krave_trapdoor",
+    "barbarajones:krave_button",
+    "barbarajones:krave_pressure_plate",
+    "barbarajones:krave_pod",
+    "barbarajones:chocolate_log",
+    "barbarajones:chocolate_planks",
+    "barbarajones:chocolate_fence",
+    "barbarajones:chocolate_door",
+    "barbarajones:krafting_bench",
+    "barbarajones:wood_paneling",
+    "barbarajones:television",
+    "barbarajones:stash_box"
   ]
 }

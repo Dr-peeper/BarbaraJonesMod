@@ -3,8 +3,10 @@ package com.barbarajones.entity;
 import com.barbarajones.content.ModItems;
 import com.barbarajones.content.ModSounds;
 import com.barbarajones.quest.Quests;
+import com.barbarajones.v2.plug.PlugBusiness;
 
 import net.minecraft.ChatFormatting;
+import net.minecraft.nbt.CompoundTag;
 import net.minecraft.network.chat.Component;
 import net.minecraft.sounds.SoundEvent;
 import net.minecraft.world.InteractionHand;
@@ -34,10 +36,31 @@ import java.util.List;
  *
  * He also owns a sniper: an instant long-range hitscan with a particle tracer.
  * Every so often he just uses it on Cayden.
+ *
+ * <p>He also works. Sneak-click him and he'll take money to go and fetch things
+ * - see {@code com.barbarajones.v2.plug}, which owns the whole job board, the
+ * timers and his opinion of you. Everything in that package hangs off the three
+ * calls below into {@code PlugBusiness}; nothing about the deals he already did
+ * changed.
  */
 public class ThePlug extends Monster {
 
+    /** How often his body is checked against the job board. Once a second is generous. */
+    private static final int PRESENCE_SYNC_INTERVAL = 20;
+
     private int sniperCooldown;
+
+    /**
+     * Whether his body is currently wearing the "he's out" look.
+     *
+     * <p>Deliberately <em>not</em> the authority on whether a job exists - the
+     * save data in {@code PlugJobData} is, always. This records only that the
+     * invisibility and the frozen AI have already been applied, which is what
+     * lets {@code PlugBusiness.syncPresence} fire each transition exactly once
+     * and still put him right from either direction if the two ever disagree:
+     * lose the save data and he reappears, reload him mid-job and he hides again.
+     */
+    private boolean awayApplied;
 
     public ThePlug(EntityType<? extends Monster> type, Level level) {
         super(type, level);
@@ -67,6 +90,17 @@ public class ThePlug extends Monster {
         if (level().isClientSide) {
             return;
         }
+
+        // Whether he is out on a job is a return time sitting in save data, so
+        // this is a cached lookup and a boolean compare, not a scan - once a
+        // second is far more than it needs.
+        if (this.tickCount % PRESENCE_SYNC_INTERVAL == 0) {
+            PlugBusiness.syncPresence(this);
+        }
+        if (this.awayApplied) {
+            return;   // he is not here. nobody gets sniped by a man who is out working.
+        }
+
         if (this.sniperCooldown > 0) {
             this.sniperCooldown--;
         }
@@ -120,10 +154,26 @@ public class ThePlug extends Monster {
         }
     }
 
-    /** The $500 deal. You will regret it. */
+    /** The $500 deal. You will regret it. Sneaking gets you the job board instead. */
     @Override
     public InteractionResult mobInteract(Player player, InteractionHand hand) {
         ItemStack held = player.getItemInHand(hand);
+
+        // He is out on somebody's job. The body standing here is not answering.
+        if (this.awayApplied) {
+            return InteractionResult.PASS;
+        }
+
+        // The job board lives behind sneak so that both deals below keep behaving
+        // exactly the way players already learned them - a plain click with the
+        // $500 still buys the bundle of nothing, a plain click with an emerald
+        // still buys grass at his usual rate.
+        if (player.isShiftKeyDown()) {
+            if (!level().isClientSide) {
+                PlugBusiness.negotiate(this, player, held);
+            }
+            return InteractionResult.sidedSuccess(level().isClientSide);
+        }
 
         if (held.is(ModItems.FIVE_HUNDRED_DOLLARS.get())) {
             if (!level().isClientSide) {
@@ -168,6 +218,14 @@ public class ThePlug extends Monster {
             }
             return InteractionResult.sidedSuccess(level().isClientSide);
         }
+
+        // Empty hand, no sneak: pick up a finished job, or just get talked at.
+        if (held.isEmpty()) {
+            if (!level().isClientSide) {
+                PlugBusiness.streetTalk(this, player);
+            }
+            return InteractionResult.sidedSuccess(level().isClientSide);
+        }
         return super.mobInteract(player, hand);
     }
 
@@ -200,5 +258,38 @@ public class ThePlug extends Monster {
     @Override
     public boolean removeWhenFarAway(double dist) {
         return false;
+    }
+
+    /** See the {@code awayApplied} field. Read and written only by {@code PlugBusiness.syncPresence}. */
+    public boolean isAwayApplied() {
+        return this.awayApplied;
+    }
+
+    public void setAwayApplied(boolean value) {
+        this.awayApplied = value;
+    }
+
+    /**
+     * While he is out on a job the body is loaded but he is not in it - so it is
+     * not a valid target for a click, an arrow or anything else that picks an
+     * entity out of the world. Shooting a man who is provably three biomes away
+     * fetching your diamonds should not be possible just because his coat is
+     * still standing where you left it.
+     */
+    @Override
+    public boolean isPickable() {
+        return !this.awayApplied && super.isPickable();
+    }
+
+    @Override
+    public void addAdditionalSaveData(CompoundTag tag) {
+        super.addAdditionalSaveData(tag);
+        tag.putBoolean("PlugAwayApplied", this.awayApplied);
+    }
+
+    @Override
+    public void readAdditionalSaveData(CompoundTag tag) {
+        super.readAdditionalSaveData(tag);
+        this.awayApplied = tag.getBoolean("PlugAwayApplied");
     }
 }
