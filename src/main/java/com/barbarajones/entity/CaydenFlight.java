@@ -134,6 +134,25 @@ public final class CaydenFlight {
     }
 
     /**
+     * Throws away everything remembered about the flight in progress.
+     *
+     * <p>Called when his target changes or is taken off him. The committed
+     * detour is the reason: it is a direction, held for a couple of seconds,
+     * chosen to get round something standing between him and the target he had
+     * at the time. Carried into the next fight it is a heading with nothing on
+     * the end of it - he flies off at scenery for a second and a half and
+     * nobody watching can tell why. The progress sample goes too, or the first
+     * sample against the new target is measured from where the old one was and
+     * flags him stuck the moment he arrives.
+     */
+    public void forget() {
+        this.detour = null;
+        this.detourTicks = 0;
+        this.sampleTimer = 0;
+        this.lastSample = Vec3.ZERO;
+    }
+
+    /**
      * Samples how far he has actually travelled and flags a detour if the
      * answer is "not far".
      *

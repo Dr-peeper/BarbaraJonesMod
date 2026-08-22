@@ -195,8 +195,20 @@ public final class KraveKosmosBattle {
         }
         KraveKosmosBattle battle = new KraveKosmosBattle(level, boss, cayden);
         ACTIVE.add(battle);
-        battle.boss.setTarget(cayden);
-        cayden.setTarget(boss);
+
+        // Only in COMBAT. Both entities now refuse each other as targets unless
+        // the encounter is actually hostile - which is deliberate, and which
+        // made these two lines silently do nothing on a fight saved during any
+        // of the six scripted phases. Written unconditionally they read as
+        // wiring while being discarded, which is the failure mode this fight has
+        // produced more than any other.
+        //
+        // The scripted phases do not want targets anyway: they own positioning
+        // themselves, and beginCombat re-targets when the fight resumes.
+        if (boss.getBattleState().hostile()) {
+            boss.setTarget(cayden);
+            cayden.setTarget(boss);
+        }
         // Matched to the form he was already on, so a fight resumed at form five
         // does not restart with a Super Saiyan.
         cayden.ascendTo(Math.min(boss.getForm(), AscensionLadder.ULTRA));
@@ -556,9 +568,20 @@ public final class KraveKosmosBattle {
         // to ask again. qtePlayer is what tells them apart - it is set only
         // while a prompt is actually up.
         if (this.qtePlayer != null) {
+            // Resolved before clearPrompt(), which is the thing that nulls
+            // qtePlayer. Reading it afterwards would always find nobody, and
+            // the punishment would be a blast that never hits anyone - present
+            // in the code and inert in the game.
+            ServerPlayer missed = this.level.getServer().getPlayerList().getPlayer(this.qtePlayer);
             clearPrompt();
             this.qteRetry = true;
             announce(ChatFormatting.GRAY, "", "The moment passes. Cayden holds him.");
+            // Letting the window lapse is no longer free. Note what this does
+            // NOT touch: the step lives on the boss, openWindow() reads it
+            // fresh when the retry delay runs out, and nothing here writes it -
+            // so a miss costs the player a beating, never their place in the
+            // sequence, and never a form.
+            new KraveCinematic(this.level, this.boss, this.cayden, missed).punish(missed);
             this.phaseTimer = QTE_RETRY_DELAY;
             return;
         }
@@ -631,7 +654,19 @@ public final class KraveKosmosBattle {
             LOGGER.info("[CraveBoss] Finisher step {} timed out at form {}; offering it again.",
                     this.boss.getQteStep() + 1, this.boss.getForm());
             announce(ChatFormatting.GRAY, "", "He twists out of it. Again.");
+            // Held across abandonScript(), which drops the reference. The blast
+            // deliberately fires AFTER the cleanup rather than before it: the
+            // cleanup is what puts the boss back on the ground he started from
+            // and gives the player his gravity back, and punishing first would
+            // shove a weightless player mid-script, where the knockback goes
+            // nowhere and the boss is still hanging in the sky.
+            KraveCinematic failed = this.cinematic;
             abandonScript();
+            failed.punish(player);
+            // The same step, on purpose. enterPreparing() does not touch
+            // getQteStep - only tickCombat resets it to zero and only
+            // finishStep advances it - so the attack that was fumbled is the
+            // attack that gets offered again, at the form he was already on.
             enterPreparing();
         }
     }

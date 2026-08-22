@@ -606,5 +606,23 @@
     "sounds": [
       "barbarajones:krave_leviathan_call_3"
     ]
+  },
+  "music_bet": {
+    "category": "music",
+    "sounds": [
+      {
+        "name": "barbarajones:music/bet",
+        "stream": true
+      }
+    ]
+  },
+  "music_bet_car": {
+    "category": "music",
+    "sounds": [
+      {
+        "name": "barbarajones:music/bet_car",
+        "stream": true
+      }
+    ]
   }
 }

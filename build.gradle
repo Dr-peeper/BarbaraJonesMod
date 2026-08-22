@@ -3,7 +3,7 @@ plugins {
     id 'net.minecraftforge.gradle' version '[6.0,6.2)'
 }
 
-version = '5.7.2'
+version = '5.8.0'
 group = 'com.barbarajones'
 base { archivesName = 'BarbaraJonesMod' }
 
@@ -66,7 +66,7 @@ tasks.named('jar', Jar).configure {
 
 // Source is UTF-8. Without this javac uses the platform default, which on this
 // machine is windows-1252 - that is why the quest book's tick mark shipped as
-// "âœ”" in chat, and why a '★' char literal failed to compile at all: a 3-byte
+// "Ã¢Å“â€" in chat, and why a 'â˜…' char literal failed to compile at all: a 3-byte
 // UTF-8 sequence read as three cp1252 characters is not a character literal.
 tasks.withType(JavaCompile).configureEach {
     options.encoding = 'UTF-8'

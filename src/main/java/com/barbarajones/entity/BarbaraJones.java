@@ -4,6 +4,7 @@ import com.barbarajones.content.ModItems;
 import com.barbarajones.content.ModSounds;
 import com.barbarajones.entity.barbara.BarbaraCombat;
 import com.barbarajones.quest.Quests;
+import com.barbarajones.v2.mayor.KraveMayor;
 
 import net.minecraft.ChatFormatting;
 import net.minecraft.core.BlockPos;
@@ -304,6 +305,15 @@ public class BarbaraJones extends PathfinderMob {
             addEffect(new MobEffectInstance(MobEffects.DAMAGE_BOOST, 60, 0, false, false));
         }
         this.combat.tick();
+
+        // The mayor's office. Called every tick and gated to one tick in two
+        // hundred inside KraveMayor, so the interval lives next to the pipeline
+        // it paces rather than being a bare number in the middle of her tick.
+        // Driving it from here rather than from a level tick is deliberate: the
+        // village only grows while Barbara is actually loaded and standing in
+        // it, which is what stops the settlement building itself out in chunks
+        // nobody is looking at.
+        KraveMayor.tick(this);
     }
 
     private void updateSpeed(boolean raging) {
@@ -396,6 +406,14 @@ public class BarbaraJones extends PathfinderMob {
     public InteractionResult mobInteract(Player player, InteractionHand hand) {
         ItemStack held = player.getItemInHand(hand);
         boolean joint = held.is(ModItems.ROLLED_JOINT.get());
+
+        // Mayoral business first: a permit in the hand, or a sneaking player
+        // asking for the numbers. It returns PASS for everything else, including
+        // grass while sneaking, so none of the behaviour below changes.
+        InteractionResult mayor = KraveMayor.interact(this, player, hand);
+        if (mayor != InteractionResult.PASS) {
+            return mayor;
+        }
 
         if (isGrass(held)) {
             if (!level().isClientSide) {

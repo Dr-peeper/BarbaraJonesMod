@@ -35,6 +35,17 @@ public final class ModSounds {
     // the horror set
     public static final RegistryObject<SoundEvent> KRAVE_LAUGH   = reg("krave_laugh");
     public static final RegistryObject<SoundEvent> KRAVE_SCREECH = reg("krave_screech");
+    /**
+     * The mod's own track, on the menu and out of Duhl Wol's car.
+     *
+     * <p>Two encodings of one song, deliberately. The menu wants stereo; the car
+     * wants MONO, because Minecraft only positions a sound in 3D if it has one
+     * channel. A stereo file plays flat at full volume wherever you stand, which
+     * is precisely wrong for a stereo you are supposed to hear coming.
+     */
+    public static final RegistryObject<SoundEvent> MUSIC_BET     = reg("music_bet");
+    public static final RegistryObject<SoundEvent> MUSIC_BET_CAR = reg("music_bet_car");
+
     public static final RegistryObject<SoundEvent> KRAVE_BOOM    = reg("krave_boom");
     public static final RegistryObject<SoundEvent> KRAVE_TORNADO = reg("krave_tornado");
     public static final RegistryObject<SoundEvent> KRAVE_SPAWN   = reg("krave_spawn");

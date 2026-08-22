@@ -60,9 +60,45 @@ public class DuhlWolCar extends Entity {
         return this.entityData.get(TARGET_Z);
     }
 
+    /**
+     * Ticks left on the track currently coming out of the car.
+     *
+     * <p>Counted down rather than watched for, because a server has no way to
+     * ask whether a client-side sound has finished. The length is known, so the
+     * honest thing is to time it and start it again - which is also what a car
+     * stereo on repeat actually does.
+     */
+    private int musicTicks;
+
+    /** 2:47 at twenty ticks a second, plus a beat of silence between plays. */
+    private static final int TRACK_TICKS = 167 * 20 + 20;
+
+    /**
+     * Keeps the song coming out of the car while it is here.
+     *
+     * <p>Played through playSound rather than playLocalSound so it reaches every
+     * client in range rather than only the one that happens to be nearest, and
+     * at a volume above one so it carries - Minecraft scales audible range with
+     * volume, so a value of 4 is not four times louder, it is four times further
+     * away that you can hear it from. Which is the point of a car stereo.
+     */
+    private void tickMusic() {
+        if (this.level().isClientSide || getState() == 2) {
+            return;   // silent once it is pulling away
+        }
+        if (--this.musicTicks > 0) {
+            return;
+        }
+        this.musicTicks = TRACK_TICKS;
+        this.level().playSound(null, this.getX(), this.getY(), this.getZ(),
+                com.barbarajones.content.ModSounds.MUSIC_BET_CAR.get(),
+                net.minecraft.sounds.SoundSource.RECORDS, 4.0F, 1.0F);
+    }
+
     @Override
     public void tick() {
         super.tick();
+        tickMusic();
 
         int state = getState();
         double tx = getTargetX(), tz = getTargetZ();
