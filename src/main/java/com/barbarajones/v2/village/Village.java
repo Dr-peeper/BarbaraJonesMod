@@ -133,6 +133,18 @@ public class Village {
      * town for the first five minutes.
      */
     private int guardPower;
+
+    /**
+     * How many guards are actually standing in the village.
+     *
+     * <p>Kept next to guardPower rather than derived from it, because they
+     * answer different questions and the profession chooser needs both. Power
+     * is defence-per-level summed over everyone, so one veteran reads the same
+     * as five recruits - which is right for working out whether the place can
+     * defend itself, and useless for working out whether the streets are
+     * already full of them.
+     */
+    private int guardCount;
     private int professionProduction;
     private int professionAttraction;
     private int builderBonus;
@@ -504,10 +516,14 @@ public class Village {
         int prod = 0;
         int attract = 0;
         int builders = 0;
+        int guardHeads = 0;
         for (KraveVillagerEntity v : found) {
             int lvl = v.getTradeLevel();
             KraveProfession job = v.getProfession();
             guards += job.defencePerLevel() * lvl;
+            if (job == KraveProfession.GUARD) {
+                guardHeads++;
+            }
             prod += job.productionPerLevel() * lvl;
             attract += job.attractionPerLevel() * lvl;
             if (job == KraveProfession.BUILDER) {
@@ -518,6 +534,7 @@ public class Village {
             this.villagers.add(v.getUUID());
         }
         this.guardPower = guards;
+        this.guardCount = guardHeads;
         this.professionProduction = prod;
         this.professionAttraction = attract;
         this.builderBonus = builders;
@@ -656,6 +673,14 @@ public class Village {
                 level.getRandom().nextFloat() * 360.0F, 0.0F);
         villager.setProfession(job);
         villager.setVillageId(this.id);
+        // Counted the moment he arrives rather than whenever the sweep next
+        // reaches him. Waiting is what let a burst of arrivals all be told the
+        // village had no guards, one after another, when the first of them was
+        // already standing there.
+        if (job == KraveProfession.GUARD) {
+            this.guardCount++;
+            this.guardPower += job.defencePerLevel();
+        }
         villager.finalizeSpawn(level, level.getCurrentDifficultyAt(spot),
                 MobSpawnType.EVENT, null, null);
         level.addFreshEntity(villager);
@@ -671,8 +696,25 @@ public class Village {
         }
     }
 
+    /** Guards may be at most this share of the population. One in three. */
+    private static final int GUARDS_PER_RESIDENTS = 3;
+
     private KraveProfession chooseNeededProfession(RandomSource random) {
-        if (this.guardPower < this.buildingScore / 2) {
+        // Both tests, and the head count is the one that stops the flood.
+        //
+        // The power test alone produced a village of nothing but guards. It
+        // reads guardPower, which is only recomputed by the cell sweep - three
+        // cells a tick across a hundred and ninety-six of them, and only
+        // counting residents in chunks that happen to be loaded. So the number
+        // it consults is both stale and an undercount, while the attraction
+        // timer keeps handing it new arrivals. Every one of them came back
+        // GUARD until a sweep finally caught up, by which point there were
+        // eight of them standing around three houses.
+        //
+        // Deciding from a lagging figure is the whole bug; the proportional cap
+        // is what makes the decision safe regardless of how far behind it is.
+        int guardCeiling = Math.max(1, population() / GUARDS_PER_RESIDENTS);
+        if (this.guardPower < this.buildingScore / 2 && this.guardCount < guardCeiling) {
             return KraveProfession.GUARD;
         }
         if (this.professionProduction < 8) {
@@ -755,6 +797,7 @@ public class Village {
         tag.putInt("ProduceProgress", this.produceProgress);
         tag.putInt("AttractProgress", this.attractProgress);
         tag.putInt("GuardPower", this.guardPower);
+        tag.putInt("GuardCount", this.guardCount);
         tag.putInt("ProfProduction", this.professionProduction);
         tag.putInt("ProfAttraction", this.professionAttraction);
         tag.putInt("BuilderBonus", this.builderBonus);
@@ -800,6 +843,7 @@ public class Village {
         village.produceProgress = tag.getInt("ProduceProgress");
         village.attractProgress = tag.getInt("AttractProgress");
         village.guardPower = tag.getInt("GuardPower");
+        village.guardCount = tag.getInt("GuardCount");
         village.professionProduction = tag.getInt("ProfProduction");
         village.professionAttraction = tag.getInt("ProfAttraction");
         village.builderBonus = tag.getInt("BuilderBonus");

@@ -7,6 +7,7 @@ import net.minecraft.client.Minecraft;
 import net.minecraft.client.renderer.entity.EntityRendererProvider;
 import net.minecraft.client.renderer.entity.MobRenderer;
 import net.minecraft.core.BlockPos;
+import com.barbarajones.v2.village.KraveProfession;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.util.Mth;
 
@@ -43,6 +44,17 @@ public class KraveVillagerRenderer extends MobRenderer<KraveVillagerEntity, Krav
         return entity.getProfession().texture();
     }
 
+    /**
+     * How much wider and taller a guard is than everyone else.
+     *
+     * <p>Wider by more than he is taller, deliberately. Scaling a model evenly
+     * makes a bigger villager, not a heavier one - he reads as someone standing
+     * closer to the camera. The width is what makes him look like he lifts, and
+     * the depth has to come with it or he is a cardboard cutout when he turns.
+     */
+    private static final float GUARD_WIDTH = 1.45F;
+    private static final float GUARD_HEIGHT = 1.22F;
+
     @Override
     protected void scale(KraveVillagerEntity entity, PoseStack pose, float partialTicks) {
         float byLevel = 1.0F + (entity.getTradeLevel() - 1) * 0.04F;
@@ -50,7 +62,14 @@ public class KraveVillagerRenderer extends MobRenderer<KraveVillagerEntity, Krav
         // A short outward punch on the feed, easing out rather than snapping back.
         float punch = 1.0F + glow * glow * 0.14F;
         float scale = byLevel * punch;
-        pose.scale(scale, scale, scale);
+
+        // Guards are built differently. This is the only place it can happen:
+        // the mesh is baked once and shared by every profession, so a per-job
+        // difference has to be a transform rather than a different cube.
+        boolean guard = entity.getProfession() == KraveProfession.GUARD;
+        float wide = guard ? GUARD_WIDTH : 1.0F;
+        float tall = guard ? GUARD_HEIGHT : 1.0F;
+        pose.scale(scale * wide, scale * tall, scale * wide);
     }
 
     /**
