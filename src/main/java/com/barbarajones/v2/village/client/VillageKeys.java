@@ -47,6 +47,12 @@ public final class VillageKeys {
         if (!pressed || mc.player == null || mc.level == null || mc.screen != null) {
             return;
         }
+        // V is also the fifth finisher key. See KraveQteClient: a live prompt
+        // owns its key, so this screen does not open on top of the cinematic
+        // that same press just started.
+        if (com.barbarajones.client.KraveQteClient.active()) {
+            return;
+        }
         try {
             mc.setScreen(new VillageScreen());
         } catch (Throwable ignored) {

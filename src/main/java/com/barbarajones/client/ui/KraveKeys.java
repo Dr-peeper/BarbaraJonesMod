@@ -90,6 +90,10 @@ public final class KraveKeys {
         if (!pressed || mc.player == null || mc.level == null || mc.screen != null) {
             return;
         }
+        // K is also the second finisher key. A live prompt owns it.
+        if (com.barbarajones.client.KraveQteClient.active()) {
+            return;
+        }
         try {
             mc.setScreen(new KraveCodexScreen());
         } catch (Throwable ignored) {

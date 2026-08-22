@@ -58,7 +58,24 @@ public final class QuestClientSetup {
             if (mc.player == null || mc.screen != null) {
                 return;
             }
+            boolean pressed = false;
             while (OPEN_QUESTS.consumeClick()) {
+                pressed = true;
+            }
+        // A live finisher prompt owns its key for as long as it is up.
+        //
+        // The finisher keys were chosen from a spec without checking what this
+        // mod already binds, and two of the six collided: K opens the quest
+        // atlas and the Krave Codex, V opens the village screen. Pressing K
+        // mid-finisher therefore answered the prompt AND threw a full-screen GUI
+        // over the cinematic it had just started.
+        //
+        // Suppressed rather than rebound, because the prompt names the key on
+        // screen and moving it would make the on-screen instruction wrong; and
+        // because this also covers the case that cannot be fixed by choosing
+        // better letters - another mod binding over one of them. The click is
+        // still drained above, so it does not fire the moment the prompt clears.
+            if (pressed && !com.barbarajones.client.KraveQteClient.active()) {
                 QuestScreens.open();
             }
         }
