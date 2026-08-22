@@ -474,10 +474,6 @@ public class KraveDoorBlock extends DoorBlock {
         // this raw position - spawn him up on it, not floating in the air
         // below it.
         monster.setPos(pos.x, pos.y + com.barbarajones.dimension.KraveDenBuilder.DEN_HEIGHT_OFFSET, pos.z);
-        // The one scripted encounter. Everything that separates him from a
-        // Krave Box summon - the confrontation, the finisher prompt, the
-        // damage floor, no death-driven respawn - hangs off this flag.
-        monster.markScriptedEncounter();
         kosmos.addFreshEntity(monster);
         data.setBossId(monster.getUUID());
         // The den's healing boxes were built before the boss existed, so they

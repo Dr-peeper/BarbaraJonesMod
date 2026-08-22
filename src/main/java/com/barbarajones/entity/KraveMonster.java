@@ -185,69 +185,19 @@ public class KraveMonster extends Monster {
         return getHealth() <= getMaxHealth() * FINISHER_AT;
     }
 
-    /**
-     * True for the one Kosmos resident, false for every independent summon.
-     *
-     * <p>Not derivable from the battle state, which says where a fight has got
-     * to rather than which fight it is, and not from whether a controller
-     * happens to be attached, which is exactly the mistake this replaces - a
-     * boss respawned by the old death gauntlet has no controller, so the
-     * finisher clamp did not apply to him and the prompt never came.
-     */
-    private boolean scriptedEncounter;
-
-    /** Checked once, then never again - the answer cannot change. */
-    private boolean scriptedChecked;
 
     /**
-     * Recognises a Kosmos boss that predates the scripted-encounter flag.
-     *
-     * <p>The flag is set when the den is built, and the den is built once,
-     * behind a permanent one-time guard. So on any world that already had a
-     * boss - which is every world where this matters - he would load with the
-     * flag false: no damage floor, no finisher clamp, no prompt, and Cayden
-     * deleting each form in seconds. Exactly the symptom that was reported.
-     *
-     * <p>KraveKosmosData has always recorded which entity is the Kosmos
-     * resident, so the answer is already saved; it just was not being asked.
-     */
-    private void adoptScriptedFlag() {
-        if (this.scriptedChecked || this.scriptedEncounter) {
-            this.scriptedChecked = true;
-            return;
-        }
-        this.scriptedChecked = true;
-        if (!(level() instanceof ServerLevel sl)
-                || !level().dimension().equals(com.barbarajones.dimension.KraveDimensions.KRAVE_KOSMOS)) {
-            return;
-        }
-        java.util.UUID resident = com.barbarajones.dimension.KraveKosmosData.get(sl).getBossId();
-        if (getUUID().equals(resident)) {
-            this.scriptedEncounter = true;
-            LOGGER.info("Adopted an existing Kosmos boss into the scripted encounter (form {}).", getForm());
-        }
-    }
-
-    public boolean isScriptedEncounter() {
-        return this.scriptedEncounter;
-    }
-
-    /** Marks him as the scripted Kosmos encounter. Set once, when the den is built. */
-    public void markScriptedEncounter() {
-        this.scriptedEncounter = true;
-    }
-
-    /**
-     * Spawns him already fighting, for the summons that are not the scripted
-     * Kosmos encounter.
+     * Wakes a summoned Monster so the confrontation can pick him up.
      *
      * <p>The Krave Box and the tenth Cayden death each summon their own
-     * independent Monster. Those have no confrontation to wake them, so without
-     * this they sit dormant forever - invisible to Cayden and harmless - which
-     * is a working feature quietly deleted.
+     * Monster, and those should still start a fight rather than standing there.
+     * They no longer start it by jumping straight to COMBAT, which is what made
+     * a summoned boss skip the confrontation, the form ladder and the prompt:
+     * he simply stays DORMANT and the confrontation trigger finds him like any
+     * other, running the same opening every other encounter gets.
      */
     public void spawnHostile() {
-        setBattleState(KraveBattleState.COMBAT);
+        setBattleState(KraveBattleState.DORMANT);
     }
 
     /** Puts a form back on its feet for the next phase. */
@@ -533,19 +483,21 @@ public class KraveMonster extends Monster {
     public void tick() {
         super.tick();
         if (!level().isClientSide && !this.formSettled) {
-            // Decide his own incarnation the first time he ticks, from whoever is
-            // nearest. Spawn sites used to set this, but /summon and spawn eggs
-            // bypass every one of them, so a command-spawned Monster was always
-            // form 1 no matter how many had already been beaten.
-            Player near = level().getNearestPlayer(this, 128.0D);
-            setForm(com.barbarajones.EventHandler.nextKraveForm(near));
+            // Form one, dormant, always - unless NBT already said otherwise, in
+            // which case readAdditionalSaveData has set formSettled and this
+            // never runs.
+            //
+            // A body with no saved encounter on it is a new encounter. It does
+            // not inherit where the last one got to, from the player's progress
+            // or from anything else: the ladder is the content, and a boss that
+            // opens at form five has skipped four fifths of it.
+            setForm(1);
             this.formSettled = true;
         }
         if (!level().isClientSide) {
             matchRival();
             tickGauntletReset();
             tickArenaAnchor();
-            adoptScriptedFlag();
         }
         pushGhost();
 
@@ -908,7 +860,6 @@ public class KraveMonster extends Monster {
         super.addAdditionalSaveData(tag);
         tag.putInt("KraveForm", getForm());
         tag.putInt("KraveBattleState", getBattleState().ordinal());
-        tag.putBoolean("KraveScripted", this.scriptedEncounter);
     }
 
     @Override
@@ -919,7 +870,6 @@ public class KraveMonster extends Monster {
         } else {
             this.formSettled = false;
         }
-        this.scriptedEncounter = tag.getBoolean("KraveScripted");
         if (tag.contains("KraveBattleState")) {
             KraveBattleState saved = KraveBattleState.byId(tag.getInt("KraveBattleState"));
             // A fight interrupted mid-cinematic cannot resume from the middle of
@@ -988,7 +938,7 @@ public class KraveMonster extends Monster {
         // clamping that one would leave it unkillable and the gauntlet unable
         // to advance.
         if (!level().isClientSide && getBattleState() == KraveBattleState.COMBAT
-                && this.scriptedEncounter) {
+                && com.barbarajones.apocalypse.KraveKosmosBattle.isActive(this)) {
             float floor = getMaxHealth() * FINISHER_AT;
             float headroom = getHealth() - floor;
             applied = headroom <= 0.0F ? 0.0F : Math.min(applied, headroom);
@@ -999,8 +949,8 @@ public class KraveMonster extends Monster {
         // which is still not a fight. Each form has to last long enough to
         // read as a stage rather than a hiccup, and it has to survive long
         // enough for the player to be given something to do.
-        if (!level().isClientSide && this.scriptedEncounter
-                && getBattleState() == KraveBattleState.COMBAT) {
+        if (!level().isClientSide && getBattleState() == KraveBattleState.COMBAT
+                && com.barbarajones.apocalypse.KraveKosmosBattle.isActive(this)) {
             applied *= SCRIPTED_DAMAGE_SCALE;
         }
         return super.hurt(source, applied);

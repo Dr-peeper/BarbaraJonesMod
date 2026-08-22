@@ -73,7 +73,7 @@ public final class KraveQteClient {
         }
         ticksLeft--;
         if (pressed) {
-            ModNetwork.CHANNEL.sendToServer(new PacketKraveQteInput());
+            ModNetwork.CHANNEL.sendToServer(new PacketKraveQteInput(form));
             // Cleared locally for responsiveness only. The server clears the
             // real window, and a press it rejects simply does nothing.
             ticksLeft = 0;

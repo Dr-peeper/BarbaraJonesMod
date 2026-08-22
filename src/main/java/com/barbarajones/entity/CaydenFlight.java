@@ -93,6 +93,15 @@ public final class CaydenFlight {
         }
         Vec3 direct = straight.scale(1.0D / dist);
 
+        // Never dive toward something that is above. The direct vector can point
+        // downward even when the target is higher - around the lip of a floating
+        // island, or while he is still rising - and following it takes him under
+        // the terrain, where the line to the target is still clear and he
+        // happily keeps going.
+        if (to.y > from.y + 1.0D && direct.y < 0.0D) {
+            direct = new Vec3(direct.x, 0.0D, direct.z).normalize();
+        }
+
         trackProgress(self, dist);
 
         // A committed detour outranks a fresh look. Re-deciding every tick is

@@ -164,7 +164,6 @@ public class EventHandler {
         net.minecraft.world.phys.Vec3 den = com.barbarajones.dimension.KraveDimensions.BOSS_ISLAND;
         next.setPos(den.x, den.y + com.barbarajones.dimension.KraveDenBuilder.DEN_HEIGHT_OFFSET, den.z);
         next.setForm(Math.max(1, form));
-        next.markScriptedEncounter();
         kosmos.addFreshEntity(next);
         KraveKosmosData.get(kosmos).setBossId(next.getUUID());
         LOGGER.info("Kosmos boss died outside its finisher; reseated at the den, dormant, form {}.",
@@ -172,71 +171,29 @@ public class EventHandler {
     }
 
     private void reviveNextForm(ServerLevel level, KraveMonster fallen, int nextForm) {
-        if (fallen.isScriptedEncounter()) {
-            // The scripted encounter advances through its finisher, never through
-            // death. Reaching here at all means he died some other way - a
-            // command, the void - so put him back at the den, dormant, and let
-            // the confrontation be attempted again. Silently doing nothing would
-            // leave the Kosmos with no boss and no way to get one back.
-            reseatKosmosBoss(level, fallen, nextForm);
-            return;
-        }
-        KraveMonster next = ModEntities.KRAVE_MONSTER.get().create(level);
-        if (next == null) {
-            return;
-        }
-        next.moveTo(fallen.getX(), fallen.getY(), fallen.getZ(), fallen.getYRot(), 0.0F);
-        next.setForm(nextForm);
-        // Straight back into the fight. This is the death-driven gauntlet, which
-        // is still how the independent summons escalate - the Kosmos resident
-        // uses the scripted finisher instead and never reaches this path.
-        next.spawnHostile();
-        next.setTarget(fallen.getTarget());
-        level.addFreshEntity(next);
-
-        // Hand the Kosmos boss identity to the new body. Reviving spawns a NEW
-        // entity with a NEW uuid, but KraveKosmosData still held the ORIGINAL
-        // one - so when the final form finally fell, the uuid check in onDeath
-        // did not match and setBossEverDefeated never ran. Killing the Kosmos
-        // boss simply never registered, and anything gated behind having beaten
-        // him stayed locked forever.
-        ServerLevel kosmosLevel = level.getServer().getLevel(KraveDimensions.KRAVE_KOSMOS);
-        if (kosmosLevel != null) {
-            KraveKosmosData bossData = KraveKosmosData.get(kosmosLevel);
-            if (fallen.getUUID().equals(bossData.getBossId())) {
-                bossData.setBossId(next.getUUID());
-            }
-        }
-
-        // Vanilla's ~1s death animation (plus his own ghost-trail afterimage
-        // effect) used to leave the collapsing old body on screen at the same
-        // moment the new form spawned in the same spot - two Krave Monsters
-        // visible at once, which reads as "he duplicated" rather than "he got
-        // back up." Discarding him immediately instead of letting death play
-        // out makes the hand-off read as one boss, not two.
+        // The death-driven escalation that used to live here is gone. Forms
+        // advance through the scripted finisher now, for every Krave Monster,
+        // and running both meant the same job done twice under different rules:
+        // a boss killed outside his finisher came back one form stronger AND
+        // already in combat, skipping the confrontation. A handful of test kills
+        // then produced a "freshly spawned" boss at form five who had never been
+        // through a confrontation and whose first prompt read Form 5.
+        //
+        // He goes back to his den instead, dormant, at the form he had reached,
+        // and the encounter opens properly from there. Progress is kept; the
+        // shortcut past the ladder is not.
         fallen.discard();
+        reseatKosmosBoss(level, fallen, Math.max(1, fallen.getForm()));
 
         level.playSound(null, fallen.blockPosition(),
                 nextForm >= 4 ? ModSounds.MONSTER_ROAR_2.get() : ModSounds.KRAVE_ROAR.get(),
                 SoundSource.HOSTILE, 2.4F, 0.45F);
-        level.sendParticles(net.minecraft.core.particles.ParticleTypes.EXPLOSION_EMITTER,
-                fallen.getX(), fallen.getY() + 1.0D, fallen.getZ(), 2, 1.5D, 1.0D, 1.5D, 0.0D);
         level.sendParticles(net.minecraft.core.particles.ParticleTypes.SOUL_FIRE_FLAME,
                 fallen.getX(), fallen.getY() + 1.0D, fallen.getZ(), 120, 2.0D, 2.0D, 2.0D, 0.25D);
-
-        // One incarnation per rung now (SSJ through Ultra Instinct) instead
-        // of four - each line escalates the same way the Cayden fight does.
-        String line = switch (nextForm) {
-            case 2 -> "It gets back up. SECOND FORM.";
-            case 3 -> "That was not all of it either. THIRD FORM.";
-            case 4 -> "It stops being an animal about it. GOD FORM.";
-            case 5 -> "Cold, and perfectly still. BLUE FORM.";
-            default -> "FINAL FORM. There is nothing after this one.";
-        };
         for (Player p : level.getEntitiesOfClass(Player.class,
                 fallen.getBoundingBox().inflate(72.0D))) {
             p.sendSystemMessage(Component.literal(ChatFormatting.DARK_PURPLE + ""
-                    + ChatFormatting.BOLD + line));
+                    + ChatFormatting.BOLD + "It goes back to the den. It is not finished."));
         }
     }
 

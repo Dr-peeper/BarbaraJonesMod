@@ -1,6 +1,9 @@
 package com.barbarajones.apocalypse;
 
+import com.barbarajones.boss.krave.KraveAttacks;
 import com.barbarajones.boss.krave.KraveBattleState;
+import com.barbarajones.boss.krave.KraveDemolition;
+import com.barbarajones.boss.krave.KraveFinisher;
 import com.barbarajones.content.ModEntities;
 import com.barbarajones.content.ModSounds;
 import com.barbarajones.entity.CaydenCobb;
@@ -83,6 +86,33 @@ public final class KraveKosmosBattle {
     /** Ticks the Monster spends growing into his next form. */
     private static final int TRANSITION_TICKS = 90;
 
+    /** How long Cayden gets to reach the launch point before he is placed there. */
+    private static final int PREPARE_TIMEOUT = 160;
+
+    /** Close enough to the launch point to count as standing in it. */
+    private static final double IN_POSITION = 3.0D;
+
+    /** How long the player is held aloft before release - the beat that sells it. */
+    private static final int HOLD_TICKS = 22;
+
+    /**
+     * Blocks per tick on the way down. Far past ordinary knockback on purpose:
+     * this is a scripted dive, and at survivable Minecraft speeds it reads as
+     * falling rather than being thrown.
+     */
+    private static final double THROW_SPEED = 2.8D;
+
+    /** How fast Cayden climbs to his launch point. */
+    private static final double CAYDEN_CLIMB = 1.1D;
+
+    /** Slack on the impact test, so a fast dive cannot tunnel past the hitbox. */
+    private static final double IMPACT_REACH = 2.5D;
+
+    /** Throws recovered before the prompt is offered again. */
+    private static final int MAX_THROW_RETRIES = 2;
+
+    private static final org.slf4j.Logger LOGGER = com.mojang.logging.LogUtils.getLogger();
+
     private final ServerLevel level;
     private final KraveMonster boss;
     private final CaydenCobb cayden;
@@ -99,6 +129,19 @@ public final class KraveKosmosBattle {
     private boolean qteRetry;
     /** The player currently in the air, mid-finisher. */
     private UUID thrown;
+    /** Where Cayden throws from, recomputed as the boss drifts. */
+    private Vec3 launch;
+    private int prepareTicks;
+    private int holdTicks;
+    private int retries;
+    /**
+     * The form the open prompt belongs to.
+     *
+     * <p>Sent to the client and compared again when the answer comes back, so a
+     * key pressed a moment too late cannot answer the form that has already
+     * started.
+     */
+    private int qteForm;
 
     private KraveKosmosBattle(ServerLevel level, KraveMonster boss, CaydenCobb cayden) {
         this.level = level;
@@ -181,14 +224,26 @@ public final class KraveKosmosBattle {
      * before anything else happens so a held key or a spamming client cannot run
      * the finisher twice.
      */
-    public static void onQteInput(ServerPlayer player) {
+    public static void onQteInput(ServerPlayer player, int claimedForm) {
         for (KraveKosmosBattle b : ACTIVE) {
-            if (b.boss.getBattleState() == KraveBattleState.QTE
-                    && player.getUUID().equals(b.qtePlayer)) {
-                b.qtePlayer = null;
-                b.beginFinisher(player);
-                return;
+            KraveBattleState state = b.boss.getBattleState();
+            if (state != KraveBattleState.QTE_READY && state != KraveBattleState.QTE) {
+                continue;                       // not asking, or not asking yet
             }
+            if (!player.getUUID().equals(b.qtePlayer)) {
+                continue;                       // this prompt is not theirs
+            }
+            if (claimedForm != b.qteForm) {
+                // A press held over from a prompt that has already been
+                // answered or expired. Answering the current form with it would
+                // skip a stage.
+                LOGGER.info("[CraveBoss] Ignoring a stale finisher press for form {} (current {}).",
+                        claimedForm, b.qteForm);
+                continue;
+            }
+            b.qtePlayer = null;                 // consumed before anything else
+            b.beginFinisher(player);
+            return;
         }
     }
 
@@ -218,10 +273,27 @@ public final class KraveKosmosBattle {
 
         catchTheFallen();
 
+        // Validated through the whole encounter, not just the cinematic. He does
+        // not arrive under the island at throw time - he gets there during the
+        // fight, chasing a boss that is above him - so checking only once the
+        // finisher starts is checking long after it happened.
+        //
+        // Twice a second rather than every tick: it reads blockstates, and a
+        // position that has been invalid for half a second is no worse than one
+        // that has been invalid for one tick.
+        if (this.t % 10 == 0
+                && !KraveFinisher.isValidPosition(this.level, this.cayden, this.boss)) {
+            KraveFinisher.recover(this.level, this.cayden, this.boss);
+        }
+
         return switch (this.boss.getBattleState()) {
             case CONFRONTATION -> { tickConfrontation(); yield false; }
             case COMBAT -> { tickCombat(); yield false; }
-            case QTE -> { tickQte(); yield false; }
+            case QTE_PREPARING -> { tickPreparing(); yield false; }
+            // QTE and QTE_READY run the same window. The bare QTE state only
+            // still exists so a world saved mid-prompt loads into something
+            // meaningful instead of falling through to a missing case.
+            case QTE_READY, QTE -> { tickReady(); yield false; }
             case FINISHER -> { tickFinisher(); yield false; }
             case TRANSITION -> { tickTransition(); yield false; }
             case DEFEATED -> true;
@@ -234,7 +306,12 @@ public final class KraveKosmosBattle {
     private void enterConfrontation() {
         this.boss.setBattleState(KraveBattleState.CONFRONTATION);
         this.phaseTimer = CONFRONTATION_TICKS;
-        this.boss.setForm(1);
+        // Whatever form he is carrying, NOT a hardcoded one. A fresh body is
+        // already form one - that is settled at spawn - and forcing it here
+        // would instead wipe the progress of a boss who legitimately kept his
+        // form: one reseated at his den after being killed outside his
+        // finisher, or one loaded from a save. Hardcoding the answer is only
+        // correct in the case where it changes nothing.
         this.boss.restoreForPhase();
         this.boss.setTarget(null);
         this.cayden.setTarget(null);
@@ -266,7 +343,9 @@ public final class KraveKosmosBattle {
 
         if (this.phaseTimer == CONFRONTATION_TICKS - 40) {
             announce(ChatFormatting.GOLD, "" + ChatFormatting.BOLD, "Cayden steps forward.");
-            this.cayden.ascendTo(AscensionLadder.SSJ);
+            // Matched to the form actually in front of him. Form one opens with
+            // Super Saiyan; a fight resumed at form five opens with Blue.
+            this.cayden.ascendTo(Math.min(this.boss.getForm(), AscensionLadder.ULTRA));
         }
         if (--this.phaseTimer <= 0) {
             beginCombat();
@@ -286,7 +365,7 @@ public final class KraveKosmosBattle {
 
     private void tickCombat() {
         if (this.boss.atFinisherThreshold()) {
-            enterQte();
+            enterPreparing();
             return;
         }
         if (--this.meteorTimer <= 0) {
@@ -307,12 +386,71 @@ public final class KraveKosmosBattle {
         }
     }
 
-    // ---- QTE ----------------------------------------------------------------
+    // ---- QTE_PREPARING -> QTE_READY -> FINISHER -----------------------------
 
-    private void enterQte() {
-        this.boss.setBattleState(KraveBattleState.QTE);
+    /**
+     * The form is spent. Cayden breaks off and climbs.
+     *
+     * <p>Nothing is offered to the player yet. The prompt used to appear on the
+     * tick the threshold was crossed, wherever Cayden happened to be - across
+     * the arena, inside the castle, or under the island - and answering it
+     * produced a throw from nowhere. There is nothing to press until he is in
+     * position.
+     */
+    private void enterPreparing() {
+        this.boss.setBattleState(KraveBattleState.QTE_PREPARING);
         this.boss.setTarget(null);
         this.cayden.setTarget(null);
+        this.launch = null;
+        this.prepareTicks = 0;
+        clearPrompt();
+        announce(ChatFormatting.GOLD, "" + ChatFormatting.BOLD, "CAYDEN BREAKS OFF.");
+    }
+
+    private void tickPreparing() {
+        holdBoss();
+
+        // Recomputed while he climbs rather than fixed once: the boss drifts,
+        // and a launch point pinned to where he was standing ten seconds ago is
+        // no longer above him.
+        if (this.launch == null || this.t % 20 == 0) {
+            Vec3 fresh = KraveFinisher.launchPoint(this.level, this.boss);
+            if (fresh != null) {
+                this.launch = fresh;
+            }
+        }
+        if (this.launch == null) {
+            // Nowhere to throw from - he is under a roof or buried. Give the
+            // fight back rather than hanging here with no prompt and no way out.
+            if (++this.prepareTicks > PREPARE_TIMEOUT) {
+                LOGGER.warn("[CraveBoss] No launch point above the boss after {} ticks; resuming combat.",
+                        this.prepareTicks);
+                this.boss.restoreForPhase();
+                beginCombat();
+            }
+            return;
+        }
+
+        flyCaydenTo(this.launch);
+
+        if (this.cayden.position().distanceTo(this.launch) < IN_POSITION) {
+            enterReady();
+            return;
+        }
+        if (++this.prepareTicks > PREPARE_TIMEOUT) {
+            // He cannot get there under his own power. This is the one case a
+            // teleport is the right answer - it is recovery from a navigation
+            // failure, not his way of travelling.
+            LOGGER.info("[CraveBoss] Kaiden could not reach the launch point in {} ticks; placing him.",
+                    this.prepareTicks);
+            KraveFinisher.recover(this.level, this.cayden, this.boss);
+            enterReady();
+        }
+    }
+
+    /** In position above the boss. Now the prompt means something. */
+    private void enterReady() {
+        this.boss.setBattleState(KraveBattleState.QTE_READY);
         this.qteRetry = false;
         openWindow();
     }
@@ -321,31 +459,41 @@ public final class KraveKosmosBattle {
      * Puts the prompt up for the nearest player.
      *
      * <p>One player is chosen and named in the window rather than accepting the
-     * first press from anybody. On a server that means the prompt belongs to
-     * somebody in particular, and a second player mashing the key cannot fire
-     * a finisher that was never offered to them.
+     * first press from anybody. On a server the prompt then belongs to somebody
+     * in particular, and a second player mashing the key cannot fire a finisher
+     * that was never offered to them.
      */
     private void openWindow() {
         ServerPlayer target = nearestPlayer();
         if (target == null) {
-            // Nobody here to ask. Hold the phase - the fight is frozen anyway -
-            // and offer it again as soon as somebody arrives.
+            // Nobody here to ask. Hold - the fight is frozen anyway - and offer
+            // it again as soon as somebody arrives.
             this.phaseTimer = QTE_RETRY_DELAY;
             this.qtePlayer = null;
             return;
         }
         this.qtePlayer = target.getUUID();
         this.phaseTimer = QTE_WINDOW;
+        // The form is carried so a press held over from the previous form cannot
+        // answer this one: the server compares it back on arrival.
+        this.qteForm = this.boss.getForm();
         ModNetwork.CHANNEL.send(
                 net.minecraftforge.network.PacketDistributor.PLAYER.with(() -> target),
-                new PacketKraveQte(QTE_WINDOW, this.boss.getForm(), this.qteRetry));
+                new PacketKraveQte(QTE_WINDOW, this.qteForm, this.qteRetry));
         this.level.playSound(null, target.blockPosition(), ModSounds.KRAVE_BOOM.get(),
                 SoundSource.PLAYERS, 1.4F, 1.9F);
+        LOGGER.info("[CraveBoss] QTE ready for {} at form {}; Kaiden at {}/{}/{}.",
+                target.getGameProfile().getName(), this.qteForm,
+                (int) this.cayden.getX(), (int) this.cayden.getY(), (int) this.cayden.getZ());
     }
 
-    private void tickQte() {
-        // Held completely still. This is the pause the whole finisher depends on.
-        this.boss.setDeltaMovement(this.boss.getDeltaMovement().scale(0.4D));
+    private void tickReady() {
+        holdBoss();
+        // Held at the launch point. Without this he drifts off it during the
+        // window and the throw starts from somewhere else after all.
+        if (this.launch != null) {
+            flyCaydenTo(this.launch);
+        }
         this.cayden.getLookControl().setLookAt(this.boss, 30.0F, 30.0F);
 
         if (this.t % 5 == 0) {
@@ -361,10 +509,6 @@ public final class KraveKosmosBattle {
         // running out is a miss; the pause after a miss running out is the cue
         // to ask again. qtePlayer is what tells them apart - it is set only
         // while a prompt is actually up.
-        //
-        // Written as one branch originally, which announced the miss and
-        // reopened the prompt on the same tick: the pause never happened and the
-        // player was told the moment had passed while looking at the new prompt.
         if (this.qtePlayer != null) {
             clearPrompt();
             this.qteRetry = true;
@@ -372,100 +516,178 @@ public final class KraveKosmosBattle {
             this.phaseTimer = QTE_RETRY_DELAY;
             return;
         }
-        // Never a softlock: the boss stays at the threshold and undamageable, so
-        // a player who cannot manage the timing is delayed, not stopped - and one
-        // who walked away is asked again the moment they come back.
         openWindow();
     }
 
     // ---- FINISHER -----------------------------------------------------------
 
     /**
-     * Cayden picks the player up and throws them at the Monster.
+     * Cayden takes the player up and throws them down at the Monster.
      *
-     * <p>The player is the projectile, which is the point - the finisher is the
-     * one part of the fight that is not Cayden doing it for them.
+     * <p>Pressing the key does not teleport anybody into the boss. It authorises
+     * a sequence: the player is lifted to Cayden, held there long enough to see
+     * where they are and what is underneath them, and then launched. The blow is
+     * landed by the collision at the end, not by a timer.
      */
     private void beginFinisher(ServerPlayer player) {
         this.boss.setBattleState(KraveBattleState.FINISHER);
         this.thrown = player.getUUID();
         this.phaseTimer = FINISHER_TIMEOUT;
+        this.holdTicks = HOLD_TICKS;
         clearPrompt();
 
-        announce(ChatFormatting.GOLD, "" + ChatFormatting.BOLD, "CAYDEN HAS YOU.");
-
-        // Snatched up to Cayden, then flung. Teleporting the player here is
-        // deliberate and bounded - it is one scripted grab, not a navigation
-        // shortcut - and it is the only way the throw can start from his hands.
-        Vec3 grab = this.cayden.position().add(0.0D, this.cayden.getBbHeight() + 0.5D, 0.0D);
-        player.teleportTo(grab.x, grab.y, grab.z);
+        Vec3 hold = holdPosition();
+        player.teleportTo(hold.x, hold.y, hold.z);
         player.setDeltaMovement(Vec3.ZERO);
         player.hurtMarked = true;
-
-        Vec3 aim = this.boss.position()
-                .add(0.0D, this.boss.getBbHeight() * 0.55D, 0.0D)
-                .subtract(grab).normalize().scale(2.6D);
-        player.setDeltaMovement(aim.x, aim.y + 0.35D, aim.z);
-        player.hurtMarked = true;
-        // Survives being used as ammunition. Without this the impact he is being
-        // thrown into is the thing that kills him.
-        player.addEffect(new net.minecraft.world.effect.MobEffectInstance(
-                net.minecraft.world.effect.MobEffects.DAMAGE_RESISTANCE, FINISHER_TIMEOUT + 60, 5,
-                false, false));
         player.fallDistance = 0.0F;
+        // Survives being used as ammunition, and survives the fall if the throw
+        // goes wrong. Long enough to cover the whole cinematic and the recovery.
+        player.addEffect(new net.minecraft.world.effect.MobEffectInstance(
+                net.minecraft.world.effect.MobEffects.DAMAGE_RESISTANCE,
+                FINISHER_TIMEOUT + 120, 5, false, false));
 
-        this.level.playSound(null, this.cayden.blockPosition(), ModSounds.KRAVE_BOOM.get(),
-                SoundSource.PLAYERS, 1.8F, 0.8F);
+        announce(ChatFormatting.GOLD, "" + ChatFormatting.BOLD, "CAYDEN HAS YOU.");
+        this.level.playSound(null, this.cayden.blockPosition(), ModSounds.KRAVE_ROAR.get(),
+                SoundSource.PLAYERS, 1.6F, 1.4F);
+        LOGGER.info("[CraveBoss] Finisher authorised at form {}; launch {}/{}/{}, boss {}/{}/{}.",
+                this.boss.getForm(), (int) hold.x, (int) hold.y, (int) hold.z,
+                (int) this.boss.getX(), (int) this.boss.getY(), (int) this.boss.getZ());
+    }
+
+    /** Just under Cayden, so the throw visibly starts from his hands. */
+    private Vec3 holdPosition() {
+        Vec3 base = this.launch != null ? this.launch : this.cayden.position();
+        return base.add(0.0D, -1.6D, 0.0D);
     }
 
     private void tickFinisher() {
+        holdBoss();
+
         ServerPlayer player = this.thrown == null ? null
                 : this.level.getServer().getPlayerList().getPlayer(this.thrown);
         if (player == null || player.level() != this.level) {
-            // They logged out or changed dimension mid-throw. Put the prompt
-            // back rather than leaving the phase with no projectile in it.
+            // Logged out or changed dimension mid-throw. Put the prompt back
+            // rather than leaving the phase with no projectile in it.
             this.thrown = null;
-            enterQte();
+            enterPreparing();
+            return;
+        }
+        player.fallDistance = 0.0F;
+
+        // ---- the hold ------------------------------------------------------
+        if (this.holdTicks > 0) {
+            this.holdTicks--;
+            Vec3 hold = holdPosition();
+            player.teleportTo(hold.x, hold.y, hold.z);
+            player.setDeltaMovement(Vec3.ZERO);
+            player.hurtMarked = true;
+            this.cayden.getLookControl().setLookAt(this.boss, 60.0F, 60.0F);
+            this.level.sendParticles(ParticleTypes.ELECTRIC_SPARK,
+                    hold.x, hold.y, hold.z, 8, 0.5D, 0.5D, 0.5D, 0.15D);
+            if (this.holdTicks == 0) {
+                release(player);
+            }
             return;
         }
 
-        player.fallDistance = 0.0F;
+        // ---- the fall ------------------------------------------------------
+        // Re-aimed every tick. A dead-reckoned shot misses whenever the boss
+        // shifts even slightly, and missing every time is exactly what the log
+        // showed: a five-second timeout, over and over.
+        Vec3 aim = this.boss.position()
+                .add(0.0D, this.boss.getBbHeight() * 0.5D, 0.0D)
+                .subtract(player.position());
+        double dist = aim.length();
+        if (dist > 0.01D) {
+            Vec3 steer = aim.scale(THROW_SPEED / dist);
+            // Blended rather than assigned, so it reads as a dive with weight
+            // behind it instead of a position update every tick.
+            player.setDeltaMovement(player.getDeltaMovement().scale(0.45D).add(steer.scale(0.55D)));
+            player.hurtMarked = true;
+        }
         this.level.sendParticles(ParticleTypes.FLAME,
-                player.getX(), player.getY() + 0.5D, player.getZ(), 6, 0.2D, 0.2D, 0.2D, 0.02D);
+                player.getX(), player.getY() + 0.4D, player.getZ(), 10, 0.25D, 0.25D, 0.25D, 0.03D);
+        this.level.sendParticles(ParticleTypes.LARGE_SMOKE,
+                player.getX(), player.getY() + 0.4D, player.getZ(), 4, 0.2D, 0.2D, 0.2D, 0.01D);
 
-        boolean hit = player.getBoundingBox().inflate(1.5D).intersects(this.boss.getBoundingBox());
-        if (hit) {
+        // The collision IS the success condition. Nothing here advances the form
+        // because enough ticks went by.
+        if (player.getBoundingBox().inflate(IMPACT_REACH).intersects(this.boss.getBoundingBox())) {
             impact(player);
             return;
         }
         if (--this.phaseTimer <= 0) {
-            // The throw missed - knocked off course, or he moved. Not a
-            // softlock: back to the prompt and try again.
-            this.thrown = null;
-            announce(ChatFormatting.GRAY, "", "Wide. Cayden resets.");
-            enterQte();
+            missed(player);
         }
+    }
+
+    /** The moment of release: velocity down the line to the boss. */
+    private void release(ServerPlayer player) {
+        Vec3 aim = this.boss.position()
+                .add(0.0D, this.boss.getBbHeight() * 0.5D, 0.0D)
+                .subtract(player.position());
+        double dist = Math.max(0.01D, aim.length());
+        player.setDeltaMovement(aim.scale(THROW_SPEED / dist));
+        player.hurtMarked = true;
+        this.level.playSound(null, player.blockPosition(), ModSounds.KRAVE_BOOM.get(),
+                SoundSource.PLAYERS, 2.0F, 0.7F);
+        announce(ChatFormatting.GOLD, "" + ChatFormatting.BOLD, "GO.");
+    }
+
+    /**
+     * The throw did not connect. Never a silent phase advance.
+     *
+     * <p>Two chances at recovering the same throw before the prompt is offered
+     * again, because being blocked by a stray minion should not cost the player
+     * the whole sequence.
+     */
+    private void missed(ServerPlayer player) {
+        this.thrown = null;
+        if (++this.retries <= MAX_THROW_RETRIES) {
+            LOGGER.info("[CraveBoss] Throw missed at form {} (retry {}). Resetting to the launch point.",
+                    this.boss.getForm(), this.retries);
+            announce(ChatFormatting.GRAY, "", "Wide. Cayden catches you.");
+            beginFinisher(player);
+            return;
+        }
+        this.retries = 0;
+        announce(ChatFormatting.GRAY, "", "Cayden resets.");
+        enterPreparing();
     }
 
     /** The blow that actually ends a form. */
     private void impact(ServerPlayer player) {
         this.thrown = null;
-        player.setDeltaMovement(player.getDeltaMovement().scale(-0.4D).add(0.0D, 0.5D, 0.0D));
+        this.retries = 0;
+        player.setDeltaMovement(player.getDeltaMovement().scale(-0.25D).add(0.0D, 0.6D, 0.0D));
         player.hurtMarked = true;
         player.fallDistance = 0.0F;
 
         Vec3 at = this.boss.position().add(0.0D, this.boss.getBbHeight() * 0.5D, 0.0D);
-        this.level.sendParticles(ParticleTypes.EXPLOSION_EMITTER, at.x, at.y, at.z, 6, 2.0D, 2.0D, 2.0D, 0.0D);
-        this.level.sendParticles(ParticleTypes.FLASH, at.x, at.y, at.z, 3, 1.0D, 1.0D, 1.0D, 0.0D);
+        this.level.sendParticles(ParticleTypes.EXPLOSION_EMITTER, at.x, at.y, at.z, 8, 2.5D, 2.5D, 2.5D, 0.0D);
+        this.level.sendParticles(ParticleTypes.FLASH, at.x, at.y, at.z, 4, 1.0D, 1.0D, 1.0D, 0.0D);
+        this.level.sendParticles(ParticleTypes.SONIC_BOOM, at.x, at.y, at.z, 2, 0.5D, 0.5D, 0.5D, 0.0D);
         this.level.playSound(null, this.boss.blockPosition(), ModSounds.KRAVE_BOOM.get(),
-                SoundSource.HOSTILE, 2.0F, 0.5F);
+                SoundSource.HOSTILE, 2.0F, 0.4F);
 
-        // The impact craters the arena. Routed through the boss's own demolition
-        // so it obeys the same arena floor and castle protection as everything
-        // else - a finisher that punched through the island would end the fight
-        // by dropping it into the void.
-        com.barbarajones.boss.krave.KraveDemolition.crater(
-                this.level, this.boss, this.boss.position(), 9.0D, 4);
+        // A ring of blown-back air at the point of contact, plus the crater.
+        KraveAttacks.dome(this.level, at, 10.0D, ParticleTypes.SOUL_FIRE_FLAME);
+        KraveAttacks.shockwave(this.level, this.boss, null, this.boss.position(), 8.0D, 0.0F, 5);
+        // Routed through the boss's own demolition so it obeys the same arena
+        // floor and castle protection as everything else. A finisher that
+        // punched through the island would end the fight by dropping it into the
+        // void.
+        KraveDemolition.crater(this.level, this.boss, this.boss.position(), 10.0D, 5);
+
+        // Hit-stop: he is stopped dead for a beat rather than sliding away from
+        // the blow that just landed.
+        this.boss.setDeltaMovement(Vec3.ZERO);
+        this.boss.hurtMarked = true;
+        this.boss.hurtTime = 20;
+
+        LOGGER.info("[CraveBoss] Form {} finished by impact at {}/{}/{}.",
+                this.boss.getForm(), (int) at.x, (int) at.y, (int) at.z);
 
         if (this.boss.getForm() >= KraveMonster.FINAL_FORM) {
             finishEncounter();
@@ -473,6 +695,52 @@ public final class KraveKosmosBattle {
             enterTransition();
         }
     }
+
+    /**
+     * Pins the boss for the length of the cinematic.
+     *
+     * <p>He does not get to sprint out from under a finisher. Without this the
+     * throw is aimed at somewhere he no longer is by the time it arrives.
+     */
+    private void holdBoss() {
+        this.boss.setDeltaMovement(this.boss.getDeltaMovement().multiply(0.1D, 1.0D, 0.1D));
+        this.boss.getNavigation().stop();
+        this.boss.getLookControl().setLookAt(
+                this.cayden.getX(), this.cayden.getY(), this.cayden.getZ(), 30.0F, 30.0F);
+    }
+
+    /**
+     * Flies Cayden toward a point, refusing to go below the boss on the way.
+     *
+     * <p>The floor is the whole of the underground bug. His steering takes the
+     * direct vector and checks it for obstacles, which says nothing about which
+     * side of the terrain he is on: a boss on a floating island, approached from
+     * below, is a clear straight line up through open sky into the underside of
+     * the world. From down there the line is still clear, so he kept trying.
+     */
+    private void flyCaydenTo(Vec3 target) {
+        this.cayden.setNoGravity(true);
+        this.cayden.fallDistance = 0.0F;
+
+        Vec3 to = target.subtract(this.cayden.position());
+        double dist = to.length();
+        if (dist < 0.05D) {
+            this.cayden.setDeltaMovement(this.cayden.getDeltaMovement().scale(0.6D));
+            return;
+        }
+        Vec3 dir = to.scale(1.0D / dist);
+        // Climb first, cross second. Going up is always safe here - the launch
+        // point is open air by construction - and it is being under things that
+        // gets him stuck.
+        if (this.cayden.getY() < target.y - 2.0D) {
+            dir = new Vec3(dir.x * 0.35D, 1.0D, dir.z * 0.35D).normalize();
+        }
+        this.cayden.setDeltaMovement(this.cayden.getDeltaMovement().scale(0.6D)
+                .add(dir.scale(CAYDEN_CLIMB)));
+        this.cayden.hurtMarked = true;
+        this.cayden.getLookControl().setLookAt(this.boss, 30.0F, 30.0F);
+    }
+
 
     // ---- TRANSITION ---------------------------------------------------------
 

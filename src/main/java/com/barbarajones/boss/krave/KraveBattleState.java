@@ -45,6 +45,24 @@ public enum KraveBattleState {
     QTE,
 
     /**
+     * The form is spent and Cayden is flying to his launch position above the
+     * boss. No prompt yet.
+     *
+     * <p>Split out because the prompt used to appear the instant the threshold
+     * was crossed, while Cayden was still wherever the fight had left him -
+     * across the arena, underground, or on the far side of the castle. Pressing
+     * it then produced a throw from nowhere. There is nothing to press until he
+     * is actually in position.
+     */
+    QTE_PREPARING,
+
+    /**
+     * Cayden is in position above the boss and the prompt is live. The only
+     * state in which the finisher key does anything.
+     */
+    QTE_READY,
+
+    /**
      * The player has been thrown and is in the air. Runs to the impact, which
      * is what actually ends the form.
      */
@@ -80,6 +98,12 @@ public enum KraveBattleState {
 
     /** Whether this is one of the scripted, non-interactive beats. */
     public boolean scripted() {
-        return this == CONFRONTATION || this == QTE || this == FINISHER || this == TRANSITION;
+        return this == CONFRONTATION || this == QTE || this == QTE_PREPARING
+                || this == QTE_READY || this == FINISHER || this == TRANSITION;
+    }
+
+    /** Any of the states between the form being spent and the blow landing. */
+    public boolean finisherPhase() {
+        return this == QTE_PREPARING || this == QTE_READY || this == QTE || this == FINISHER;
     }
 }

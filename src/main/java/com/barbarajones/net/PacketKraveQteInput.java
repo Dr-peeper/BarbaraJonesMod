@@ -22,19 +22,33 @@ import java.util.function.Supplier;
  */
 public class PacketKraveQteInput {
 
-    public PacketKraveQteInput() { }
+    /**
+     * Which form the prompt on screen was for.
+     *
+     * <p>The one field, and it is not trusted - it is compared against the form
+     * the server is actually asking about and the press is dropped if they
+     * disagree. That turns a late keypress from something that answers the NEXT
+     * form into something that answers nothing.
+     */
+    private final int form;
 
-    public static void encode(PacketKraveQteInput msg, FriendlyByteBuf buf) { }
+    public PacketKraveQteInput(int form) {
+        this.form = form;
+    }
+
+    public static void encode(PacketKraveQteInput msg, FriendlyByteBuf buf) {
+        buf.writeVarInt(msg.form);
+    }
 
     public static PacketKraveQteInput decode(FriendlyByteBuf buf) {
-        return new PacketKraveQteInput();
+        return new PacketKraveQteInput(buf.readVarInt());
     }
 
     public static void handle(PacketKraveQteInput msg, Supplier<NetworkEvent.Context> ctx) {
         ctx.get().enqueueWork(() -> {
             ServerPlayer sender = ctx.get().getSender();
             if (sender != null) {
-                com.barbarajones.apocalypse.KraveKosmosBattle.onQteInput(sender);
+                com.barbarajones.apocalypse.KraveKosmosBattle.onQteInput(sender, msg.form);
             }
         });
         ctx.get().setPacketHandled(true);
