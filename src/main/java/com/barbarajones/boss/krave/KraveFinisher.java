@@ -33,6 +33,9 @@ public final class KraveFinisher {
 
     private static final org.slf4j.Logger LOGGER = com.mojang.logging.LogUtils.getLogger();
 
+    /** Game time of the last no-launch-point warning, so it cannot flood. */
+    private static long lastNoPointWarning = Long.MIN_VALUE;
+
     /** Preferred height above the boss's head. */
     private static final int WANT_ABOVE = 22;
 
@@ -96,8 +99,17 @@ public final class KraveFinisher {
                 }
             }
         }
-        LOGGER.warn("[CraveBoss] No open launch point above the boss at {} {} {}.",
-                (int) cx, headY, (int) cz);
+        // Once every five seconds at most. This is called every tick while a
+        // move is preparing, and a boss somewhere it cannot find sky is exactly
+        // the situation that lasts - so the unthrottled version buried the
+        // transition lines that explain WHY under thousands of copies of the
+        // symptom.
+        long now = level.getGameTime();
+        if (now - lastNoPointWarning > 100L) {
+            lastNoPointWarning = now;
+            LOGGER.warn("[CraveBoss] No open launch point above the boss at {} {} {}.",
+                    (int) cx, headY, (int) cz);
+        }
         return null;
     }
 

@@ -38,15 +38,39 @@ public final class KraveCinematic {
     /** Ticks since this move started. */
     public int t;
 
-    /** Where the boss stood when the move began - the ground the slam returns to. */
+    /**
+     * The ground under the boss when the move began.
+     *
+     * <p>The GROUND, not his position. Every sky move aims at origin plus some
+     * height, and a retry builds a fresh cinematic from wherever the failed
+     * attempt left him - so anchoring to his current Y meant each attempt
+     * started higher than the last and added its offset again. Twenty-six
+     * blocks a go, looping every few seconds, put him a thousand blocks above a
+     * world that is two hundred and fifty-six tall; and once he was above it no
+     * launch point could be found, so the loop had no way to end.
+     *
+     * <p>A retry now aims at exactly the same place as the first attempt.
+     */
     public final Vec3 origin;
+
+    /** Nothing in a cinematic may fly higher than this. */
+    public final double ceiling;
 
     public KraveCinematic(ServerLevel level, KraveMonster boss, CaydenCobb cayden, ServerPlayer player) {
         this.level = level;
         this.boss = boss;
         this.cayden = cayden;
         this.player = player;
-        this.origin = boss.position();
+        // Snapped to the surface beneath him. getHeight returns the first free
+        // space above the ground, which is where a slam should land.
+        int groundY = level.getHeight(net.minecraft.world.level.levelgen.Heightmap.Types.MOTION_BLOCKING,
+                net.minecraft.util.Mth.floor(boss.getX()), net.minecraft.util.Mth.floor(boss.getZ()));
+        // Never above where he actually is: if he is mid-air over a hole, the
+        // heightmap answer could be far below and the move would aim into it.
+        this.origin = new Vec3(boss.getX(), Math.min(groundY, boss.getY()), boss.getZ());
+        // A hard lid, well under the build limit. Belt and braces against any
+        // future move that adds height without thinking about where it ends up.
+        this.ceiling = Math.min(this.origin.y + 70.0D, level.getMaxBuildHeight() - 10.0D);
     }
 
     // ---- moving people ------------------------------------------------------
@@ -60,6 +84,11 @@ public final class KraveCinematic {
     public void fly(net.minecraft.world.entity.Entity who, Vec3 target, double speed) {
         who.setNoGravity(true);
         who.fallDistance = 0.0F;
+        // Clamped here rather than at each call site: one lid that every script
+        // passes through cannot be forgotten by the seventh move somebody adds.
+        if (target.y > this.ceiling) {
+            target = new Vec3(target.x, this.ceiling, target.z);
+        }
         Vec3 to = target.subtract(who.position());
         double d = to.length();
         if (d < 0.25D) {
@@ -77,7 +106,12 @@ public final class KraveCinematic {
         double flat = Math.sqrt(to.x * to.x + to.z * to.z);
         who.setYRot((float) (Math.toDegrees(Math.atan2(-to.x, to.z))));
         who.setXRot((float) (-Math.toDegrees(Math.atan2(to.y, flat))));
-        if (who instanceof ServerPlayer sp) {
+        // Pushed to the client only every few ticks, not every one. A forced
+        // rotation sync is a full position packet, and sending one twenty times
+        // a second fights the mouse the whole way through a cinematic - the
+        // camera judders and the player cannot follow what they are looking at,
+        // which defeats the point of aiming it for them.
+        if (who instanceof ServerPlayer sp && sp.tickCount % 5 == 0) {
             sp.connection.teleport(sp.getX(), sp.getY(), sp.getZ(), sp.getYRot(), sp.getXRot());
         }
     }

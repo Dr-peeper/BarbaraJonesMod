@@ -26,6 +26,49 @@ public final class KraveMoveScripts {
         boolean tick(KraveCinematic c);
     }
 
+    /**
+     * Where a carried boss sits relative to whoever has him.
+     *
+     * <p>BELOW them, by his own height plus clearance. He was anchored two
+     * blocks ABOVE the carrier, which works fine for something person-sized and
+     * not at all for a boss up to twenty-two blocks tall and eleven wide: the
+     * player ended up buried inside his model, seeing nothing, while the two of
+     * them shoved each other around. Held underneath, the player is looking down
+     * at the thing they are carrying, which is both readable and the way a
+     * lift actually looks.
+     */
+    private static Vec3 carryOffset(KraveCinematic c) {
+        return new Vec3(0.0D, -(c.boss.getBbHeight() * 0.6D + 2.0D), 0.0D);
+    }
+
+    /**
+     * Drives the boss into the ground and reports when it has landed.
+     *
+     * <p>Shared by every move that ends in a slam, and deliberately bounded:
+     * waiting purely on onGround() means a boss released over a hole, inside a
+     * block, or on terrain his own crater just removed never lands, the script
+     * never returns true, and the move times out and offers itself again
+     * forever. After the grace period it lands where it is, which is a real
+     * slam at a real position - not a faked success.
+     *
+     * @return true once the impact has happened
+     */
+    private static boolean driveDown(KraveCinematic c, int sinceRelease, int power) {
+        c.boss.setNoGravity(false);
+        c.boss.setDeltaMovement(c.boss.getDeltaMovement().scale(0.7D).add(0.0D, -1.2D, 0.0D));
+        c.boss.hurtMarked = true;
+        c.trail(c.boss, ParticleTypes.FLAME, 14);
+        c.fly(c.player, c.boss.position().add(0.0D, 5.0D, 0.0D), 2.6D);
+        c.faceBoss(c.player);
+
+        boolean landed = c.boss.onGround() || c.boss.getY() <= c.origin.y + 0.5D;
+        if (landed || sinceRelease > 60) {
+            c.slam(c.boss.position(), power);
+            return true;
+        }
+        return false;
+    }
+
     public static Script forMove(KraveFinisherMove move) {
         return switch (move) {
             case AERIAL_THROW -> KraveMoveScripts::aerialThrow;
@@ -117,7 +160,7 @@ public final class KraveMoveScripts {
             return false;
         }
         if (!KraveGrab.isHeld(c.boss)) {
-            KraveGrab.grab(c.boss, c.player, new Vec3(0.0D, 2.0D, 0.0D));
+            KraveGrab.grab(c.boss, c.player, carryOffset(c));
             c.say("UP HE GOES.", ChatFormatting.GOLD);
             c.stagger(2);
         }
@@ -139,16 +182,7 @@ public final class KraveMoveScripts {
             KraveGrab.release(c.boss, new Vec3(0.0D, -3.4D, 0.0D));
             c.say("DOWN.", ChatFormatting.RED);
         }
-        c.boss.setDeltaMovement(c.boss.getDeltaMovement().add(0.0D, -0.45D, 0.0D));
-        c.boss.hurtMarked = true;
-        c.trail(c.boss, ParticleTypes.FLAME, 12);
-        c.fly(c.player, c.boss.position().add(0.0D, 3.0D, 0.0D), 1.8D);
-
-        if (c.boss.onGround() || c.boss.getY() <= c.origin.y + 0.5D) {
-            c.slam(c.boss.position(), 2);
-            return true;
-        }
-        return false;
+        return driveDown(c, c.t - 68, 2);
     }
 
     // ---- 3. H: launched into the sky, struck back down -----------------------
@@ -187,17 +221,7 @@ public final class KraveMoveScripts {
             c.boss.setNoGravity(false);
             c.say("METEOR.", ChatFormatting.RED);
         }
-        // Driven down.
-        c.boss.setDeltaMovement(c.boss.getDeltaMovement().scale(0.6D).add(0.0D, -3.2D, 0.0D));
-        c.boss.hurtMarked = true;
-        c.trail(c.boss, ParticleTypes.FLAME, 16);
-        c.fly(c.player, c.boss.position().add(0.0D, 5.0D, 0.0D), 3.0D);
-
-        if (c.boss.onGround() || c.boss.getY() <= c.origin.y + 0.5D) {
-            c.slam(c.boss.position(), 3);
-            return true;
-        }
-        return false;
+        return driveDown(c, c.t - 88, 3);
     }
 
     // ---- 4. J: carried through the terrain at speed --------------------------
@@ -210,7 +234,7 @@ public final class KraveMoveScripts {
             return false;
         }
         if (!KraveGrab.isHeld(c.boss)) {
-            KraveGrab.grab(c.boss, c.player, new Vec3(0.0D, 0.0D, 0.0D));
+            KraveGrab.grab(c.boss, c.player, carryOffset(c));
             c.say("THROUGH IT.", ChatFormatting.GOLD);
         }
         KraveGrab.follow(c.boss);
@@ -242,15 +266,7 @@ public final class KraveMoveScripts {
             c.faceBoss(c.player);
             return false;
         }
-        c.boss.setDeltaMovement(c.boss.getDeltaMovement().scale(0.6D).add(0.0D, -3.0D, 0.0D));
-        c.boss.hurtMarked = true;
-        c.trail(c.boss, ParticleTypes.FLAME, 14);
-        c.fly(c.player, c.boss.position().add(0.0D, 4.0D, 0.0D), 2.8D);
-        if (c.boss.onGround() || c.boss.getY() <= c.origin.y + 0.5D) {
-            c.slam(c.boss.position(), 4);
-            return true;
-        }
-        return false;
+        return driveDown(c, c.t - 104, 4);
     }
 
     // ---- 5. V: Kaiden and the player, alternating ----------------------------
@@ -321,14 +337,7 @@ public final class KraveMoveScripts {
             }
             return false;
         }
-        c.boss.setNoGravity(false);
-        c.boss.setDeltaMovement(c.boss.getDeltaMovement().add(0.0D, -0.5D, 0.0D));
-        c.trail(c.boss, ParticleTypes.FLAME, 14);
-        if (c.boss.onGround() || c.boss.getY() <= c.origin.y + 0.5D) {
-            c.slam(c.boss.position(), 5);
-            return true;
-        }
-        return false;
+        return driveDown(c, after - 30, 5);
     }
 
     // ---- 6. B: the end --------------------------------------------------------
@@ -382,7 +391,7 @@ public final class KraveMoveScripts {
             c.trail(c.boss, ParticleTypes.LARGE_SMOKE, 12);
             if (c.player.getBoundingBox().inflate(3.0D).intersects(c.boss.getBoundingBox())
                     && !KraveGrab.isHeld(c.boss)) {
-                KraveGrab.grab(c.boss, c.player, new Vec3(0.0D, 2.2D, 0.0D));
+                KraveGrab.grab(c.boss, c.player, carryOffset(c));
                 c.say("CAUGHT.", ChatFormatting.GOLD);
             }
             if (KraveGrab.isHeld(c.boss)) {
@@ -423,6 +432,7 @@ public final class KraveMoveScripts {
         c.faceBoss(c.player);
 
         if (c.boss.onGround() || c.boss.getY() <= c.origin.y + 1.0D
+                || c.t - 206 > 80
                 || c.player.getBoundingBox().inflate(3.0D).intersects(c.boss.getBoundingBox())) {
             Vec3 at = c.boss.position();
             // Everything, at once.

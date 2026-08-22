@@ -645,6 +645,21 @@ public final class KraveKosmosBattle {
      * failed finisher becomes a permanently frozen boss.
      */
     private void abandonScript() {
+        // Put the boss back on the ground the move started from, before the
+        // cinematic is dropped. Without this a failed sky move leaves him
+        // hundreds of blocks up, and the retry - which anchors to where he is -
+        // starts from there and climbs again. That is a loop with no exit, and
+        // it is what a single failed slam actually did.
+        if (this.cinematic != null && this.boss.isAlive()
+                && this.boss.getY() > this.cinematic.origin.y + 3.0D) {
+            Vec3 back = this.cinematic.origin;
+            LOGGER.info("[CraveBoss] Cinematic left the boss at y={}; returning him to y={}.",
+                    (int) this.boss.getY(), (int) back.y);
+            this.boss.teleportTo(back.x, back.y, back.z);
+            this.boss.setDeltaMovement(Vec3.ZERO);
+            this.boss.fallDistance = 0.0F;
+            this.boss.hurtMarked = true;
+        }
         this.script = null;
         this.cinematic = null;
         KraveGrab.release(this.boss, Vec3.ZERO);
