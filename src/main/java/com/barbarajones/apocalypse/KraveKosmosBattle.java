@@ -195,8 +195,20 @@ public final class KraveKosmosBattle {
         }
         KraveKosmosBattle battle = new KraveKosmosBattle(level, boss, cayden);
         ACTIVE.add(battle);
-        battle.boss.setTarget(cayden);
-        cayden.setTarget(boss);
+
+        // Only in COMBAT. Both entities now refuse each other as targets unless
+        // the encounter is actually hostile - which is deliberate, and which
+        // made these two lines silently do nothing on a fight saved during any
+        // of the six scripted phases. Written unconditionally they read as
+        // wiring while being discarded, which is the failure mode this fight has
+        // produced more than any other.
+        //
+        // The scripted phases do not want targets anyway: they own positioning
+        // themselves, and beginCombat re-targets when the fight resumes.
+        if (boss.getBattleState().hostile()) {
+            boss.setTarget(cayden);
+            cayden.setTarget(boss);
+        }
         // Matched to the form he was already on, so a fight resumed at form five
         // does not restart with a Super Saiyan.
         cayden.ascendTo(Math.min(boss.getForm(), AscensionLadder.ULTRA));

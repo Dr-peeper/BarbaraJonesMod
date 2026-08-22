@@ -234,9 +234,21 @@ public final class MayorSettlement {
     /**
      * One tick's worth of Plug jobs and shop takings.
      *
-     * <p>Paid on the <em>count of finished buildings</em> rather than on a flag,
-     * so knocking the headquarters down stops the money - the income is a
-     * property of what is standing, not of what was once built.
+     * <p>Paid on the count of buildings Barbara has FINISHED, which is a record
+     * of what was built and not a census of what is standing. Blow the
+     * headquarters up and the money keeps coming.
+     *
+     * <p>This javadoc used to claim the opposite - that income was a property of
+     * what still stands - and it was not true: the completed tally only ever
+     * increases, and nothing decrements it. The village module does keep a live
+     * building map and does prune demolished entries, so the honest options were
+     * to read from that or to describe what this actually does. Reading from the
+     * village would put two modules in charge of one number, which is a bug this
+     * settlement has already had once; so the behaviour stays and the claim goes.
+     *
+     * <p>It is also the kinder reading of the fiction. Barbara is paid for having
+     * built the place, not for its current condition, and its current condition
+     * is not good.
      *
      * @return true if the books actually moved, so the caller only marks the
      *         save dirty when there was something to save. A village with no
