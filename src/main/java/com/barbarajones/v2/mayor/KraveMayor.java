@@ -327,7 +327,7 @@ public final class KraveMayor {
             return false;
         }
         if (kind.residents() > 0
-                && village.population() + kind.residents() > residentCap(village, rank)) {
+                && housedByMayor(settlement) + kind.residents() > rank.residentSupport()) {
             project.setStall(MayorProject.Stall.HOUSING_FULL);
             return false;
         }
@@ -416,7 +416,7 @@ public final class KraveMayor {
                                     MayorProject project) {
         KraveProfession[] jobs = project.kind().staff();
         List<BlockPos> spots = project.staffSpots();
-        int cap = residentCap(village, settlement.rank());
+        int cap = residentCap(settlement.rank());
 
         for (int i = 0; i < jobs.length && i < spots.size(); i++) {
             if (village.population() >= cap) {
@@ -442,16 +442,46 @@ public final class KraveMayor {
     }
 
     /**
-     * How many residents this settlement may hold, and the only answer to that
-     * question this module recognises.
+     * How many residents Barbara has housed through her own finished projects.
      *
-     * <p>The smaller of what the village's own tier allows and what Barbara can
-     * feed. Taking the minimum rather than picking one is what stops the mayor
-     * and the village module owning the same number and disagreeing about it -
-     * see the class javadoc.
+     * <p>Her housing gate is measured against THIS rather than against the
+     * village's population, and that distinction is the whole of a deadlock
+     * that used to lock the module out permanently.
+     *
+     * <p>The gate was {@code village.population() + residents > min(tier cap,
+     * rank support)}. But the village module owns population and spends every
+     * hundred ticks driving it UP TO {@code tier.populationCap()} - which is
+     * one of the two terms in that minimum. So the moment its own spawner
+     * reached its own ceiling, the comparison became {@code cap + n > cap},
+     * true for every n at every rank and every tier. Every residential permit
+     * the player funded then sat in the queue reporting HOUSING_FULL forever,
+     * and the buildings Barbara does complete make it worse, because they add
+     * attraction and attraction is what the spawner runs on.
+     *
+     * <p>Two systems owning one number, and the one that ticks twice as often
+     * won. Counting only what she has built leaves the village module free to
+     * populate as it likes without ever closing her queue.
      */
-    public static int residentCap(Village village, MayorRank rank) {
-        return Math.min(village.tier().populationCap(), rank.residentSupport());
+    /**
+     * How many residents Barbara can support at her current rank.
+     *
+     * <p>Her number alone. It used to be the smaller of this and the village's
+     * own tier cap, which sounded conservative and was in fact the deadlock -
+     * see housedByMayor. What the village chooses to populate itself with is
+     * the village module's business.
+     */
+    public static int residentCap(MayorRank rank) {
+        return rank.residentSupport();
+    }
+
+    public static int housedByMayor(MayorSettlement settlement) {
+        int housed = 0;
+        for (ProjectKind kind : ProjectKind.values()) {
+            if (kind.residents() > 0) {
+                housed += settlement.completedCount(kind) * kind.residents();
+            }
+        }
+        return housed;
     }
 
     /** Drops office records for villages that have since been dissolved. */
@@ -548,7 +578,7 @@ public final class KraveMayor {
             payDollars(server, collected);
         }
         MayorReport.send(server, village, settlement,
-                residentCap(village, settlement.rank()), barbara.isRaging(), collected);
+                residentCap(settlement.rank()), barbara.isRaging(), collected);
         issueStarterPermit(server, settlement);
         office.setDirty();
         return InteractionResult.CONSUME;

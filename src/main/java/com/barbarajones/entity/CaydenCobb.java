@@ -370,7 +370,40 @@ public class CaydenCobb extends TamableAnimal {
             // flies him at scenery for no reason anybody could see.
             this.flight.forget();
         }
+        if (allowed == null && previous != null) {
+            endChase();
+        }
         super.setTarget(allowed);
+    }
+
+    /**
+     * Puts him back on the ground when a fight ends, however it ended.
+     *
+     * <p>This lived inside the invalid-target sweep, behind an early return on
+     * a null target - so it ran for the one case that barely happens and never
+     * for the one that happens constantly. A vanilla goal nulls the target the
+     * moment the thing he was fighting dies, and combatFlight is the only code
+     * that turns gravity back on, at the end of a burst that is now never going
+     * to end because what he was flying at is gone.
+     *
+     * <p>The result was Cayden hanging at burst altitude indefinitely, trailing
+     * his owner weightlessly, until some later fight happened to burn the stale
+     * counter down and dropped him out of the sky mid-chase.
+     *
+     * <p>Here in setTarget it covers every caller at once: the vanilla goals,
+     * the boss controller's three setTarget(null) calls, and the sanity sweep.
+     */
+    private void endChase() {
+        // The path was drawn to where that thing used to be. Left alone he
+        // walks it to the end and stands there looking at nothing.
+        getNavigation().stop();
+        if (this.flightTicks > 0) {
+            this.flightTicks = 0;
+            setNoGravity(false);
+            // Rule #1 is that he does not die, and least of all to being
+            // dropped by his own cleanup.
+            this.fallDistance = 0.0F;
+        }
     }
 
     /**
@@ -469,20 +502,9 @@ public class CaydenCobb extends TamableAnimal {
         if (target == null || isValidTarget(target)) {
             return;
         }
+        // setTarget does the rest: it sees the transition to null and calls
+        // endChase, which stops the navigation and puts him back under gravity.
         setTarget(null);
-        // The path was drawn to where that thing used to be. Left alone he
-        // walks it to the end and stands there looking at nothing.
-        getNavigation().stop();
-        if (this.flightTicks > 0) {
-            // combatFlight is the only thing that turns gravity off for a
-            // chase, and the only thing that turns it back on - at the end of a
-            // burst that is now never going to end, because what he was flying
-            // at is gone. Fall distance goes with it: Rule #1 is that he does
-            // not die, and least of all to being dropped by his own fix.
-            this.flightTicks = 0;
-            setNoGravity(false);
-            this.fallDistance = 0.0F;
-        }
     }
 
     @Override

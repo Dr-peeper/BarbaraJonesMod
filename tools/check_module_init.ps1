@@ -47,4 +47,36 @@ if ($bad.Count -gt 0) {
     foreach ($x in $bad) { Write-Host "  $x" }
     throw "$($bad.Count) DeferredRegister(s) are never registered. Add them to the module's init(IEventBus)."
 }
-Write-Host "Module init check: every DeferredRegister is handed to the bus."
+
+# ---------------------------------------------------------------------------
+# And the other half: an init that nobody calls.
+#
+# The check above proves the HANDOFF STATEMENT exists. It does not prove the
+# method containing it ever runs, and those are different facts. The mayor
+# module declared its register, wrote ITEMS.register(modEventBus) inside
+# init(IEventBus), and was never added to BarbaraJonesMod - so this file
+# reported success while ten items stayed unbound.
+#
+# What made it worse than silence: the module's creative-tab handler is
+# annotation-scanned, so it fired anyway and called .get() on an unbound
+# RegistryObject, NPE-ing while building the mod's own tab. A module that is
+# half-wired crashes harder than one that is not wired at all.
+$orphans = @()
+foreach ($f in $files) {
+    $text = $clean[$f.FullName]
+    $cls = $f.BaseName
+    if ($text -notmatch 'static\s+void\s+init\s*\(\s*IEventBus') { continue }
+    # A call from anywhere in the tree, by bare or qualified name. The
+    # declaration itself is excluded by requiring an argument that is not a
+    # type - init(bus) counts, init(IEventBus bus) does not.
+    $called = [regex]::Escape($cls) + '\s*\.\s*init\s*\(\s*[A-Za-z_$][A-Za-z_$0-9.]*\s*\)'
+    if ($all -notmatch $called) {
+        $orphans += "$cls`: init(IEventBus) is declared but nothing calls it"
+    }
+}
+
+if ($orphans.Count -gt 0) {
+    foreach ($x in $orphans) { Write-Host "  $x" -ForegroundColor Red }
+    throw "$($orphans.Count) module init(IEventBus) method(s) are never called. Add them to BarbaraJonesMod."
+}
+Write-Host "Module init check: every DeferredRegister is handed to the bus, and every init is called."

@@ -53,6 +53,7 @@ public class BarbaraJonesMod {
         com.barbarajones.v2.bonds.BondsRegistry.init(bus);
         com.barbarajones.v2.manual.ManualModule.init(bus);
         com.barbarajones.v2.airline.AirlineModule.init(bus);
+        com.barbarajones.v2.mayor.KraveMayor.init(bus);
 
         ModLoadingContext.get().registerConfig(ModConfig.Type.COMMON, Config.SPEC);
 

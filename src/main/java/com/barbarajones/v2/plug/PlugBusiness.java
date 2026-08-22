@@ -264,21 +264,35 @@ public final class PlugBusiness {
         }
         PlugJobData data = PlugJobData.getExisting(level.getServer());
         boolean away = data != null && data.isPlugAway(plug.getUUID());
+
+        // The three properties are re-asserted every sync rather than once on
+        // the transition, and the cached flag only gates the PUFF.
+        //
+        // They do not survive a save equally, which is the whole bug. Silent and
+        // NoAI are written to entity NBT; invisibility is a bit in the synched
+        // flags and is never persisted. So a reload mid-job restored a Plug who
+        // was frozen, silent and fully VISIBLE - and because the flag had been
+        // saved as well, the next sync compared away against it, matched, and
+        // returned before re-applying anything. He then stood there in plain
+        // sight for the rest of the contract: unclickable, unpushable, inert. A
+        // mannequin of himself.
+        //
+        // Setting all three unconditionally costs nothing - each is already a
+        // no-op when the value is unchanged - and it removes the cache from the
+        // path that actually matters.
+        plug.setInvisible(away);
+        plug.setSilent(away);
+        plug.setNoAi(away);
+        if (away) {
+            plug.setTarget(null);
+        }
+
+        // Only the smoke is once-per-transition. Puffing every sync would have
+        // him permanently steaming.
         if (away == plug.isAwayApplied()) {
             return;
         }
-        if (away) {
-            plug.setTarget(null);
-            plug.setInvisible(true);
-            plug.setSilent(true);
-            plug.setNoAi(true);
-            puff(level, plug, true);
-        } else {
-            plug.setInvisible(false);
-            plug.setSilent(false);
-            plug.setNoAi(false);
-            puff(level, plug, false);
-        }
+        puff(level, plug, away);
         plug.setAwayApplied(away);
     }
 
